@@ -45,7 +45,12 @@ def build_iBEAt_menu(wzl):
     wzl.add_menu(measure.menu)
     wzl.add_menu(menubar.segment.menu)
     wzl.add_menu(wezel.menubar.about.menu)
-    wzl.add_action(pyvista.action_show_mask_surface, menu='View', position=5)
+
+    wzl.add_separator(menu='View', position=5)
+    wzl.add_action(pyvista.action_show_mask_surface, menu='View', position=6)
+    wzl.add_action(pyvista.action_show_mask_surfaces, menu='View', position=7)
+    wzl.add_action(pyvista.action_show_mask_surfaces_with_reference, menu='View', position=8)
+    
     wzl.add_action(menubar.about.ibeat, menu='About')
     wzl.add_action(menubar.about.beat_dkd, menu='About')
     
