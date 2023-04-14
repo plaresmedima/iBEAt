@@ -1,48 +1,49 @@
+"""
+Batch script to overlay right- and left kidney masks on an out of phase DIXON image.
+
+The result is saved in a new directory along with a copy of the out of phase images.
+"""
+
 import os
 import dbdicom as db
 from dbdicom.wrappers import scipy
-import matplotlib.pyplot as plt
-import numpy as np
 
 #source_dir = 'C://Users//UOS//Desktop//13_04_2023_masks_original'
-source_dir = 'C://Users//md1jdsp//Desktop//test_source'
-resultsPath = 'C://Users//md1jdsp//Desktop//test_results'
+#source_dir = 'C://Users//md1jdsp//Desktop//test_source'
+#results_dir = 'C://Users//md1jdsp//Desktop//test_results'
 
-file_list = os.listdir(source_dir)
+# Define import and export directories
+data_dir = 'C:\\Users\\steve\\Dropbox\\Data'
+source_dir = os.path.join(data_dir, 'test_source')
+results_dir = os.path.join(data_dir, 'test_results')
 
+# Series descriptions of all data
 out_desc        = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
 left_mask_desc  = 'LK'
 right_mask_desc = 'RK'
 
 
-for file_name in file_list:
+# Loop over all subfolders of the source directory
+for subfolder in os.listdir(source_dir):
     
-    studie = source_dir + "//" + file_name
+    # Define paths for the subfolders
+    import_path = os.path.join(source_dir, subfolder)
 
-    folder = db.database(path=studie)
+    # Open the source folder
+    folder = db.database(path=import_path)
 
+    # Find the right series
     out_ph = folder.series(SeriesDescription=out_desc)
     mask_l = folder.series(SeriesDescription=left_mask_desc)
     mask_r = folder.series(SeriesDescription=right_mask_desc)
 
-    print(out_ph[0].SeriesDescription)
-    print(mask_l[0].SeriesDescription)
-    print(mask_r[0].SeriesDescription)
+    # Export the out of phase series
+    out_ph[0].export_as_dicom(results_dir)
 
-    mask_overlaid = []
-
+    # Overlay each mask on out-phase and export the result
     for mask in mask_l+mask_r:
-        overlaid = scipy.map_to(mask, out_ph[0])
-        mask_overlaid.append(overlaid)
+        overlay = scipy.map_to(mask, out_ph[0])
+        overlay.export_as_dicom(results_dir)
 
-    # array_mask_l_overlaid, header_mask_l_overlaid = mask_overlaid[0].array(['SliceLocation'], pixels_first=True)
-    # plt.imshow(np.squeeze(array_mask_l_overlaid[:,:,90,0]))
-    # plt.show()
-
-    exportToFolder = out_ph + mask_overlaid
-
-    for series in exportToFolder:
-        print(series.SeriesDescription)    
-        series.export_as_dicom(resultsPath+"//"+ file_name)
-
-
+    # Remove temporary files
+    folder.restore()
