@@ -211,20 +211,26 @@ def _mdr(series, number_slices, array, header, signal_model, elastix_file, signa
                                     aortaslice = int(i + 1)
                                     break
                                 else:
-                                    aortaslice = 9
+                                    aortaslice = int(9)
                         else:
-                            aortaslice = 1
+                            aortaslice = int(1)
 
                         aif = utilities.autoaif.DCEautoAIF(array, header, series, aortaslice, cutRatio, filter_kernel, regGrow_threshold)
 
                         time = np.zeros(header.shape[1])
-                        for i in range(header.shape[1]):
-                            tempTime = header[slice,i,0]['AcquisitionTime']
-                            tempH = int(tempTime[0:2])
-                            tempM = int(tempTime[2:4])
-                            tempS = int(tempTime[4:6])
-                            tempRest = float("0." + tempTime[7:])
-                            time[i] = tempH*3600+tempM*60+tempS+tempRest
+
+                        for i_2 in range(header.shape[1]):
+                            tempTime = str(header[slice,i_2,0]['AcquisitionTime'])
+                            beforepoint = tempTime.split(".")[0]
+                            afterpoint = tempTime.split(".")[1]
+                            print(tempTime)
+                            tempH = int(beforepoint[0:2])
+                            tempM = int(beforepoint[2:4])
+                            tempS = int(beforepoint[4:])
+                            tempRest = float("0." + afterpoint)
+                            time[i_2] = tempH*3600+tempM*60+tempS+tempRest
+                            print(time)
+                        print("time done")
                         time -=time[0]
                
                         baseline = 15
