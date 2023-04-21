@@ -223,14 +223,11 @@ def _mdr(series, number_slices, array, header, signal_model, elastix_file, signa
                             tempTime = str(header[slice,i_2,0]['AcquisitionTime'])
                             beforepoint = tempTime.split(".")[0]
                             afterpoint = tempTime.split(".")[1]
-                            print(tempTime)
                             tempH = int(beforepoint[0:2])
                             tempM = int(beforepoint[2:4])
                             tempS = int(beforepoint[4:])
                             tempRest = float("0." + afterpoint)
                             time[i_2] = tempH*3600+tempM*60+tempS+tempRest
-                            print(time)
-                        print("time done")
                         time -=time[0]
                
                         baseline = 15
