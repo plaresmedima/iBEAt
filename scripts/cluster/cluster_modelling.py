@@ -9,6 +9,7 @@ Find iBEAt motion corrected pulse sequence name (MDR output: *_mdr_moco) and exe
 import datetime
 import time
 import numpy as np
+import models.t1_philips_pixelwise as t1_pixelwise
 import models.t2s_pixelwise_fit
 import models.ivim_pixelwise_fit
 import tqdm
@@ -17,6 +18,39 @@ import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 from scipy.integrate import trapz
 
+def T1_Modelling_Philips(series=None, mask=None,export_ROI=False, study=None):
+
+    array, header = series.array(['SliceLocation',(0x2005, 0x1572)], pixels_first=True)
+
+    if slice is not None:
+        magnitude_array_T2s_slice = magnitude_array_T2s[:,:,int(slice-1),:]
+        magnitude_array_T2s = magnitude_array_T2s_slice
+    
+    if mask is not None:
+        mask = np.transpose(mask)
+        for i_slice in range (np.shape(magnitude_array_T2s)[2]):
+            for i_w in range (np.shape(magnitude_array_T2s)[3]):
+                magnitude_array_T2s[:,:,i_slice,i_w]=magnitude_array_T2s[:,:,i_slice,i_w]*mask
+
+    fittedMaps = t1_pixelwise.main(array, header)
+
+    M0map, T1_app_map, T1_map, rsquaremap = fittedMaps
+
+    M0_map_series = series.SeriesDescription + "_T1_" + "M0_Map"
+    M0_map_series = study.new_series(SeriesDescription=M0_map_series)
+    M0_map_series.set_array(M0map,np.squeeze(header[:,0]),pixels_first=True)
+
+    T1_app_map_series = series.SeriesDescription + "_T1_" + "T1_app_Map"
+    T1_app_map_series = study.new_series(SeriesDescription=T1_app_map_series)
+    T1_app_map_series.set_array(T1_app_map,np.squeeze(header[:,0]),pixels_first=True)
+
+    T1_map_series = series.SeriesDescription + "_T1_" + "T1_Map"
+    T1_map_series = study.new_series(SeriesDescription=T1_map_series)
+    T1_map_series.set_array(T1_map,np.squeeze(header[:,0]),pixels_first=True)
+
+    rsquare_map_series = series.SeriesDescription + "_T1_" + "rsquare_Map"
+    rsquare_map_series = study.new_series(SeriesDescription=rsquare_map_series)
+    rsquare_map_series.set_array(rsquaremap,np.squeeze(header[:,0]),pixels_first=True)
 
 def T2s_Modelling(series=None, mask=None,export_ROI=False,slice=None,Fat_export=False,study = None):
 
@@ -44,7 +78,7 @@ def T2s_Modelling(series=None, mask=None,export_ROI=False,slice=None,Fat_export=
                     magnitude_array_T2s[:,:,i_slice,i_w]=magnitude_array_T2s[:,:,i_slice,i_w]*mask
 
         #T2* mapping input: T2*-weighted images (x,y,z,TE), echo times, wezel as optional argument to create progress bars in to wezel interface
-        M0map, fwmap, T2smap, rsquaremap = models.T2s_pixelwise_fit.main(magnitude_array_T2s, TE_list)
+        M0map, fwmap, T2smap, rsquaremap = models.t2s_pixelwise_fit.main(magnitude_array_T2s, TE_list)
 
         #wezel vizualitation of T2* mapping parameters: M0 map, Water Fraction map, T2* map,T2* r square (goodness of fit)
         M0_map_series = series_T2s.SeriesDescription + "_T2s_" + "M0_Map"
@@ -293,16 +327,19 @@ def DCE_MAX_Modelling(series=None, mask=None,export_ROI=False, study=None):
 
     DCE_Max_map = np.empty(np.shape(pixel_array_DCE)[0:3])
     DCE_Area_map = np.empty(np.shape(pixel_array_DCE)[0:3])
+
     timeDCE = np.zeros(header.shape[1])
 
     for slice in range(number_slices):   
-        for i in range(header.shape[1]):
-            tempTime = header[slice,i]['AcquisitionTime']
-            tempH = int(tempTime[0:2])
-            tempM = int(tempTime[2:4])
-            tempS = int(tempTime[4:6])
-            tempRest = float("0." + tempTime[7:])
-            timeDCE[i] = tempH*3600+tempM*60+tempS+tempRest
+        for i_2 in range(header.shape[1]):
+            tempTime = str(header[slice,i_2,0]['AcquisitionTime'])
+            beforepoint = tempTime.split(".")[0]
+            afterpoint = tempTime.split(".")[1]
+            tempH = int(beforepoint[0:2])
+            tempM = int(beforepoint[2:4])
+            tempS = int(beforepoint[4:])
+            tempRest = float("0." + afterpoint)
+            timeDCE[i_2] = tempH*3600+tempM*60+tempS+tempRest
         timeDCE -=timeDCE[0]
 
         array_DCE_temp = np.squeeze(pixel_array_DCE[:,:,slice,:])
@@ -333,8 +370,6 @@ def main(folder,filename_log):
     for i,series in enumerate(list_of_series):
 
         if series["SequenceName"] is not None:
-
-            #print(series['SeriesDescription'])
 
             if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                 try:
@@ -407,5 +442,25 @@ def main(folder,filename_log):
                     file = open(filename_log, 'a')
                     file.write("\n"+str(datetime.datetime.now())[0:19] + ": MTR mapping was NOT completed; error: "+str(e)) 
                     file.close()
+            
+            elif series.SeriesDescription == 'T1_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco':
+                if series.Manufacturer == 'SIEMENS':
+                        
+                    try:
+                        start_time = time.time()
+                        file = open(filename_log, 'a')
+                        file.write("\n"+str(datetime.datetime.now())[0:19] + ": T1 mapping (Philips) has started")
+                        file.close()
+                        
+                        T1_Modelling_Philips(series, study=study)
+
+                        file = open(filename_log, 'a')
+                        file.write("\n"+str(datetime.datetime.now())[0:19] + ": T1 mapping (Philips) was completed --- %s seconds ---" % (int(time.time() - start_time))) 
+                        file.close()   
+
+                    except Exception as e: 
+                        file = open(filename_log, 'a')
+                        file.write("\n"+str(datetime.datetime.now())[0:19] + ": T1 mapping (Philips) was NOT completed; error: "+str(e)) 
+                        file.close()
 
     folder.save()
