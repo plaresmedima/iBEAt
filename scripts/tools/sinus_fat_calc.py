@@ -7,6 +7,8 @@ The result is saved in a new directory along with a copy of the out of phase ima
 import os
 import dbdicom as db
 from dbdicom.wrappers import skimage, scipy, dipy
+import csv
+import pandas as pd
 
 # Define import and export directories
 data_dir = 'C:\\Users\\md1jdsp\\Desktop\\'
@@ -20,7 +22,6 @@ left_mask_desc  = 'LK'
 right_mask_desc = 'RK'
 
 folder = db.database(path=source_dir)
-df = []
 
 for patient in folder.patients():
 
@@ -53,7 +54,13 @@ for patient in folder.patients():
     if cleanup:
         fat_mask.remove()
     #   Collect features & display
-    df.append(skimage.volume_features(sf_series))
 
+    df = df.append(pd.DataFrame(skimage.volume_features(sf_series)), ignore_index = True)
+    
     for series in sf_series:
         series.export_as_dicom(results_dir)
+
+df.to_csv(results_dir + '//' + 'sinus_fat.csv') 
+
+
+
