@@ -43,53 +43,51 @@ def _whole_kidney_mask(app):
 
 def _renal_sinus_fat(app):
 
-    out_desc = 'T1w_abdomen_dixon_cor_bh_fat_post_contrast'
-
     app.status.message('Finding correct sequences in the list..')
 
-    out = app.database().series(SeriesDescription=out_desc)
+    fat_image = app.database().series(SeriesDescription='T1w_abdomen_dixon_cor_bh_fat_post_contrast')
     lk = app.database().series(SeriesDescription='LK')
     rk = app.database().series(SeriesDescription='RK')
-    kidneys = lk+rk
 
-    if out==[] or lk==[] or rk==[] or len(out)>1 or len(lk)>1 or len(rk)>1:
-        all = app.database().series()
-        cancel, selected = app.dialog.input(
-            {"label":out_desc, "type":"select record", "options": all, 'default': out},
-            {"label":"Whole-kidney regions", "type":"select records", "options": all, 'default': kidneys},
-            title = "Please select input for renal sinus fat processing")
-        if cancel:
-            return
-        out = selected[0]
-        kidneys = selected[1]
-    else:
-        out = out[0]
+    all = app.database().series()
+    cancel, selected = app.dialog.input(
+        {"label":"Fat image (have you checked for fat-water swap?)", "type":"select record", "options": all, 'default': fat_image},
+        {"label":"Whole-kidney regions", "type":"select records", "options": all, 'default': lk+rk},
+        title = "Please select input for renal sinus fat processing")
+    if cancel:
+        return
+    fat_image = selected[0]
+    kidneys = selected[1]
 
     cleanup = True
 
     sf_series = []
-    fat_image_masked, fat_mask = dipy.median_otsu(out, median_radius=1, numpass=1)
+    fat_image_masked, fat_mask = dipy.median_otsu(fat_image, median_radius=1, numpass=1)
     for kidney in kidneys:
+
         # Pipeline calculation
         kidney_hull = skimage.convex_hull_image_3d(kidney)
-        # sinus = scipy.image_calculator(kidney_hull, kidney, 'series 1 - series 2', integer=True)
-        # sinus_fat = scipy.image_calculator(fat_mask, sinus, 'series 1 * series 2', integer=True)
         sinus_fat = scipy.image_calculator(fat_mask, kidney_hull, 'series 1 * series 2', integer=True)
-        sinus_fat_largest = scipy.extract_largest_cluster_3d(sinus_fat)
+        sinus_fat_open = skimage.opening_3d(sinus_fat)
+        sinus_fat_largest = scipy.extract_largest_cluster_3d(sinus_fat_open)
         sinus_fat_largest.SeriesDescription = kidney.instance().SeriesDescription + 'SF'
+
+        # Remove intermediate results
+        if cleanup:
+            kidney_hull.remove()
+            sinus_fat.remove()
+            sinus_fat_open.remove()
+    
         # Append and display
         sf_series.append(sinus_fat_largest)
         viewer = SurfaceDisplay(sinus_fat_largest)
         app.addWidget(viewer, title=sinus_fat_largest.label())
-        # Remove intermediate results
-        if cleanup:
-            kidney_hull.remove()
-            #sinus.remove()
-            sinus_fat.remove()
-    fat_image_masked.remove()
+
     if cleanup:
+        fat_image_masked.remove()
         fat_mask.remove()
-    #   Collect features & display
+
+    # Collect features & display
     df = skimage.volume_features(sf_series)
     app.addWidget(TableDisplay(df), 'ROI statistics')
     app.refresh()
