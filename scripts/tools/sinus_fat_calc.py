@@ -22,6 +22,7 @@ left_mask_desc  = 'LK'
 right_mask_desc = 'RK'
 
 folder = db.database(path=source_dir)
+df = []
 
 for patient in folder.patients():
 
