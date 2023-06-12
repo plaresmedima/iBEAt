@@ -1,0 +1,16 @@
+httplib2==0.15.0
+datetime
+#dbdicom         #editable install
+argparse
+#mdreg           #editable install
+numpy
+matplotlib
+scipy
+scikit-image
+scikit-learn
+tqdm
+dipy
+pydrive
+xnat
+opencv-python
+fsspec
