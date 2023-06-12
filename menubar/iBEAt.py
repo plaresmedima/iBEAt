@@ -97,7 +97,7 @@ def _renal_sinus_fat(app):
 whole_kidney_mask = Action("Presegment whole kidneys", on_clicked=_whole_kidney_mask, is_clickable=_if_a_database_is_open)
 renal_sinus_fat = Action("Renal sinus fat", on_clicked=_renal_sinus_fat, is_clickable=_if_a_database_is_open)
 
-menu = Menu('iBEAt-seg')
+menu = Menu('iBEAt')
 menu.add(whole_kidney_mask)
 menu.add(renal_sinus_fat)
 
