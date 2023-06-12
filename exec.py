@@ -43,7 +43,7 @@ def build_iBEAt_menu(wzl):
     wzl.add_menu(align.menu)
     wzl.add_menu(transform.menu)
     wzl.add_menu(measure.menu)
-    wzl.add_menu(menubar.segment.menu)
+    wzl.add_menu(menubar.iBEAt.menu)
     wzl.add_menu(wezel.menubar.about.menu)
 
     wzl.add_separator(menu='View', position=5)
