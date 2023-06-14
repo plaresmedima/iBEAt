@@ -7,7 +7,7 @@ Siemens 3T PRISMA - Leeds (T2* sequence)
 
 import numpy as np
 from tqdm import tqdm
-from models.model_library.single_pixel_forward_models import t2s_fm
+from scripts.cluster.models.model_library.single_pixel_forward_models import t2s_fm
 
 def main(T2s_images_to_be_fitted, sequenceParam,GUI_object=None):
     """ main function that performs the T2* model-fit with shared parameters at single pixel level. 
