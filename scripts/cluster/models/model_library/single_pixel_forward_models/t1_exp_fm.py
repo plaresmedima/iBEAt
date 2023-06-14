@@ -8,7 +8,7 @@ Siemens 3T PRISMA - Leeds (T1-mapping sequence)
 import numpy as np
 from scipy.optimize import curve_fit
 
-def T1_FLASH_MOLLI_Eq(TI,M_eq, M_eq_App,T1_App,Inv_Eff):
+def T1_FLASH_MOLLI_Eq(TI,M_eq, M_eq_App,T1_App):
     """ T1 Calculation using MOLLI.
 
     TI : list of inversion times (between 100 and 7700ms)
@@ -16,15 +16,18 @@ def T1_FLASH_MOLLI_Eq(TI,M_eq, M_eq_App,T1_App,Inv_Eff):
     Inv_Eff: Efficency of the 180 inversion pulse
 
     """
-    S_t = M_eq_App -(Inv_Eff*M_eq+M_eq_App)*np.exp(-TI/T1_App)
+    S_t = M_eq_App -(M_eq+M_eq_App)*np.exp(-TI/T1_App)
 
     return np.abs(S_t)
 
-def T1_corrected(M_eq, M_eq_App,T1_App,Inv_Eff):
+def T1_corrected(M_eq, M_eq_App,T1_App):
 
     A = M_eq_App
     B = M_eq_App + M_eq
-    T1 = (B/A - 1)*T1_App/Inv_Eff
+    if (A ==0):
+        T1 = 0
+    else:
+        T1 = (B/A - 1)*T1_App
 
     return T1
 
@@ -45,26 +48,35 @@ def T1_fitting(images_to_be_fitted, TI):
     """   
 
 
-    lb =            [0     , 0     , 0     , 0]
-    ub =            [np.inf, np.inf, np.inf, 1]
-    initial_guess = [1500  , 700   , 1000  , 1] 
+    lb =            [0     , 0     , 0     ]
+    ub =            [np.inf, np.inf, np.inf]
 
+    MeqA = np.max(images_to_be_fitted)
+    Meq = np.max(images_to_be_fitted)*1.9-np.max(images_to_be_fitted)
+    T1app = 1500/(1.9-1)
 
-    popt, pcov = curve_fit(T1_FLASH_MOLLI_Eq, TI, images_to_be_fitted, initial_guess, bounds=(lb,ub), method='trf',maxfev=5000)
+    initial_guess = [MeqA, Meq, T1app] 
+    try:
+        popt, pcov = curve_fit(T1_FLASH_MOLLI_Eq, TI, images_to_be_fitted, initial_guess, bounds=(lb,ub), method='trf',maxfev=500)
+        S0      = popt[0]
+        S0_App  = popt[1]
+        T1_app  = popt[2]
+    except:
+        S0      = 0
+        S0_App  = 0
+        T1_app  = 0
 
-    residuals = images_to_be_fitted - T1_FLASH_MOLLI_Eq(TI,*popt)
+    residuals = images_to_be_fitted - T1_FLASH_MOLLI_Eq(TI,S0, S0_App,T1_app)
     ss_res = np.sum(residuals**2)
     ss_tot = np.sum((images_to_be_fitted-np.mean(images_to_be_fitted))**2)
     r_squared = 1 - (ss_res / ss_tot)
 
-    S0      = popt[0]
-    S0_App  = popt[1]
-    T1_app  = popt[2]
-    Inv_Eff = popt[3]
+    
+    fit=T1_FLASH_MOLLI_Eq(TI,S0, S0_App,T1_app)
 
-    T1 = T1_corrected(S0, S0_App,T1_app,Inv_Eff)
+    T1 = T1_corrected(S0, S0_App,T1_app)
 
-    return S0, S0_App,T1_app,Inv_Eff,T1,r_squared
+    return fit, S0, S0_App,T1_app,T1,r_squared
 
 
 
@@ -85,14 +97,14 @@ def main(images_to_be_fitted, TI):
     
     results = T1_fitting(images_to_be_fitted, TI)
 
-    S0      = results[0]
-    S0_App  = results[1]
-    T1_app  = results[2]
-    Inv_Eff = results[3]
+    fit     = results[0]
+    S0      = results[1]
+    S0_App  = results[2]
+    T1_app  = results[3]
     T1      = results[4]
     r_square= results[5]
 
     
     
 
-    return S0, S0_App, T1_app, Inv_Eff, T1, r_square
+    return fit, S0, S0_App, T1_app, T1, r_square
