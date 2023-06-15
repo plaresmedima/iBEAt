@@ -21,6 +21,9 @@
 # distribution mode: splash screen, single file and no console
 # pyinstaller --name iBEAt --clean --onefile --noconsole --additional-hooks-dir=. --splash ibeat-logo.png exec.py
 
+# distribution mode for installer: splash screen and no console
+# pyinstaller --name iBEAt --clean --noconsole --additional-hooks-dir=. --splash ibeat-logo.png exec.py
+
 # debugging mode: multiple files & no splash & console included.
 # pyinstaller --name iBEAt --clean --additional-hooks-dir=. exec.py
 
