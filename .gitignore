@@ -3,6 +3,7 @@
 
 ### package builds
 .venv/*
+.venv_ibeat/*
 docs/*
 
 ### Python ###

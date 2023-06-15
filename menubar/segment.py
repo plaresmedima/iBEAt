@@ -89,7 +89,7 @@ def _renal_sinus_fat(app):
 
     # Collect features & display
     df = skimage.volume_features(sf_series)
-    app.addWidget(TableDisplay(df), 'ROI statistics')
+    app.addWidget(TableDisplay(df), 'Volume features')
     app.refresh()
 
 

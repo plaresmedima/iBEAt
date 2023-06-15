@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.ndimage as ndi
 from wezel.gui import Action
+from wezel.plugins.pyvista import SurfaceDisplay
+from wezel.displays import TableDisplay
 from dl_models import UNETR_kidneys_v1
 
 
@@ -22,6 +24,17 @@ def largest_cluster(array):
 
 def _UNETR_kidneys_v1(app):
 
+    # Get file with weights and check if valid
+    path = app.dialog.directory("Please select the folder with your kidney model")
+    if path == '':
+        app.status.hide() 
+        return
+    try:
+        file = UNETR_kidneys_v1.weights_file(path)
+    except FileNotFoundError as e:
+        app.dialog.information(str(e))
+        return
+
     # Find all series of the appropriate type
     app.status.message('Looking for ' + UNETR_kidneys_v1.trained_on)
     series = app.database().series(SeriesDescription=UNETR_kidneys_v1.trained_on)
@@ -40,32 +53,36 @@ def _UNETR_kidneys_v1(app):
             return
         series = f[0]
     
-    # Autosegment all series selection and save results in the database.
+    # Autosegment all series and save results in the database.
     for sery in series:
         desc = sery.instance().SeriesDescription
         array, header = sery.array(['SliceLocation','EchoTime'], pixels_first=True)
         sery.message('Calculating kidney masks for series ' + desc)
 
         # Calculate predictions 
-        masks = UNETR_kidneys_v1.apply(array)
+        masks = UNETR_kidneys_v1.apply(array, file)
 
         # Clean masks
         left_kidney = largest_cluster(masks == 2)
         right_kidney = largest_cluster(masks == 1)
 
-        # Save results in DICOM
+        # Save UNETR output
         result = sery.new_sibling(SeriesDescription = 'UNETR kidneys v1')
         result.set_array(masks, header, pixels_first=True)
         result[['WindowCenter','WindowWidth']] = [1.0,2.0]
-        app.display(result)
-        result = sery.new_sibling(SeriesDescription = 'LK')
-        result.set_array(left_kidney, header, pixels_first=True)
-        result[['WindowCenter','WindowWidth']] = [1.0,2.0]
-        app.display(result)
-        result = sery.new_sibling(SeriesDescription = 'RK')
-        result.set_array(right_kidney, header, pixels_first=True)
-        result[['WindowCenter','WindowWidth']] = [1.0,2.0]
-        app.display(result)
+
+        # Save and display left kidney data
+        left = sery.new_sibling(SeriesDescription = 'LK')
+        left.set_array(left_kidney, header, pixels_first=True)
+        left[['WindowCenter','WindowWidth']] = [1.0,2.0]
+        app.addWidget(SurfaceDisplay(left), title=left.label())
+
+        # Save and display right kidney data
+        right = sery.new_sibling(SeriesDescription = 'RK')
+        right.set_array(right_kidney, header, pixels_first=True)
+        right[['WindowCenter','WindowWidth']] = [1.0,2.0]
+        app.addWidget(SurfaceDisplay(right), title=right.label())
+
         app.refresh()
 
 
