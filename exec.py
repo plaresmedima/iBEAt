@@ -16,6 +16,7 @@
 # pip install -e C:\Users\steve\Dropbox\Software\QIB-Sheffield\dbdicom
 # pip install -e C:\Users\steve\Dropbox\Software\QIB-Sheffield\wezel
 # pip install -e C:\Users\steve\Dropbox\Software\QIB-Sheffield\mdreg
+# pip install -e C:\Users\steve\Dropbox\Software\QIB-Sheffield\iBEAt\MONAI
 
 # to build an executable:
 # -----------------------
@@ -24,6 +25,9 @@
 
 # distribution mode for installer: splash screen and no console
 # pyinstaller --name iBEAt --clean --noconsole --additional-hooks-dir=. --splash ibeat-logo.png exec.py
+
+# debugging mode: multiple files & no splash & no console included.
+# pyinstaller --name iBEAt --clean --noconsole --additional-hooks-dir=. exec.py
 
 # debugging mode: multiple files & no splash & console included.
 # pyinstaller --name iBEAt --clean --additional-hooks-dir=. exec.py
