@@ -5,6 +5,7 @@
 .venv/*
 .venv_ibeat/*
 docs/*
+MONAI/*
 
 ### Python ###
 # Byte-compiled / optimized / DLL files

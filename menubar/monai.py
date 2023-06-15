@@ -1,8 +1,8 @@
+import os
 import numpy as np
 import scipy.ndimage as ndi
 from wezel.gui import Action
 from wezel.plugins.pyvista import SurfaceDisplay
-from wezel.displays import TableDisplay
 from dl_models import UNETR_kidneys_v1
 
 
@@ -21,18 +21,18 @@ def largest_cluster(array):
     return label_img==max_label
 
 
-
 def _UNETR_kidneys_v1(app):
 
-    # Get file with weights and check if valid
+    # Get weights file and check if valid 
     path = app.dialog.directory("Please select the folder with your kidney model")
     if path == '':
         app.status.hide() 
         return
-    try:
-        file = UNETR_kidneys_v1.weights_file(path)
-    except FileNotFoundError as e:
-        app.dialog.information(str(e))
+    file = os.path.join(path, UNETR_kidneys_v1.filename)
+    if not os.path.isfile(file):
+        msg = 'The file ' + file + ' has not been found. \n'
+        msg += 'Please check that the file with model weights is in the folder, and is named ' + UNETR_kidneys_v1.filename
+        app.dialog.information(msg)
         return
 
     # Find all series of the appropriate type
@@ -56,7 +56,8 @@ def _UNETR_kidneys_v1(app):
     # Autosegment all series and save results in the database.
     for sery in series:
         desc = sery.instance().SeriesDescription
-        array, header = sery.array(['SliceLocation','EchoTime'], pixels_first=True)
+        #array, header = sery.array(['SliceLocation','EchoTime'], pixels_first=True)
+        array, header = sery.array(['SliceLocation'], pixels_first=True, first_volume=True)
         sery.message('Calculating kidney masks for series ' + desc)
 
         # Calculate predictions 
