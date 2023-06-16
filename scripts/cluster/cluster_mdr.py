@@ -30,7 +30,7 @@ def MDRegT2star(series=None,study=None):
     elastix_file = 'BSplines_T2star.txt'
     number_slices = array.shape[2]
 
-    _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='EchoTime',study=study)
+    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='EchoTime',study=study)
 
 def MDRegT1(series=None, study=None):
 
@@ -42,7 +42,7 @@ def MDRegT1(series=None, study=None):
         elastix_file = 'BSplines_T1.txt'
         number_slices = array.shape[2]
 
-        _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='InversionTime', study=study)
+        return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='InversionTime', study=study)
     
     else:
         array, header = series.array(['SliceLocation',(0x2005, 0x1572)], pixels_first=True)
@@ -52,7 +52,7 @@ def MDRegT1(series=None, study=None):
         elastix_file = 'BSplines_T1.txt'
         number_slices = array.shape[2]
 
-        _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by=(0x2005, 0x1572), study=study)
+        return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by=(0x2005, 0x1572), study=study)
 
 
 
@@ -73,7 +73,7 @@ def MDRegT2(series=None, study=None):
     elastix_file = 'BSplines_T2.txt'
     number_slices = array.shape[2]
     
-    _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None', study=study)
+    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None', study=study)
 
 
 def MDRegIVIM(series=None,study=None):
@@ -87,7 +87,7 @@ def MDRegIVIM(series=None,study=None):
     elastix_file = 'BSplines_IVIM.txt'
 
     number_slices = array.shape[2]
-    _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
+    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
 
 def MDRegDTI(series=None,study=None):
     """Perform MDR on all slices using a DTI model"""
@@ -107,7 +107,7 @@ def MDRegDTI(series=None,study=None):
     elastix_file = 'BSplines_DTI.txt'
     number_slices = array.shape[2]
 
-    _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DTI',study=study)
+    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DTI',study=study)
 
 def MDRegMT(series=None,study=None):
     """Perform MDR on all slices using a MT model"""
@@ -130,7 +130,7 @@ def MDRegMT(series=None,study=None):
     elastix_file = 'BSplines_MT.txt'
 
     number_slices = array.shape[2]
-    _mdr(mt_on, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
+    return _mdr(mt_on, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
 
 def MDRegDCE(series=None, study=None):
     """Perform MDR on all slices using a DCE linear model"""
@@ -143,7 +143,7 @@ def MDRegDCE(series=None, study=None):
     elastix_file = 'BSplines_DCE.txt'
 
     number_slices = array.shape[2]
-    _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DCE', study=study)
+    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DCE', study=study)
 
 def _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars,sort_by, study=None):
     """ MDR fit function.  
@@ -274,6 +274,8 @@ def _mdr(series, number_slices, array, header, signal_model, elastix_file, signa
     moco = series.SeriesDescription + '_mdr_moco'
     moco = study.new_series(SeriesDescription = moco)
     moco.set_array(coreg, np.squeeze(header[:,:]), pixels_first=True)
+
+    return fit, moco
 
 def main(folder,filename_log):
 
