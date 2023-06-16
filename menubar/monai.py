@@ -56,7 +56,6 @@ def _UNETR_kidneys_v1(app):
     # Autosegment all series and save results in the database.
     for sery in series:
         desc = sery.instance().SeriesDescription
-        #array, header = sery.array(['SliceLocation','EchoTime'], pixels_first=True)
         array, header = sery.array(['SliceLocation'], pixels_first=True, first_volume=True)
         sery.message('Calculating kidney masks for series ' + desc)
 
