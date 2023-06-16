@@ -1,4 +1,3 @@
-from os.path import dirname
 import datetime
 from wezel.gui import Action
 import scripts.cluster.cluster_rename as rename
