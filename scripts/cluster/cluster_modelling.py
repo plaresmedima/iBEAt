@@ -9,9 +9,8 @@ Find iBEAt motion corrected pulse sequence name (MDR output: *_mdr_moco) and exe
 import datetime
 import time
 import numpy as np
-import models.t1_philips_pixelwise as t1_pixelwise
-import models.t2s_pixelwise_fit
-import models.ivim_pixelwise_fit
+from .models import t1_philips_pixelwise as t1_pixelwise
+from .models import T2s_pixelwise_fit
 import tqdm
 from dipy.core.gradients import gradient_table
 import dipy.reconst.dti as dti
@@ -78,7 +77,7 @@ def T2s_Modelling(series=None, mask=None,export_ROI=False,slice=None,Fat_export=
                     magnitude_array_T2s[:,:,i_slice,i_w]=magnitude_array_T2s[:,:,i_slice,i_w]*mask
 
         #T2* mapping input: T2*-weighted images (x,y,z,TE), echo times, wezel as optional argument to create progress bars in to wezel interface
-        M0map, fwmap, T2smap, rsquaremap = models.t2s_pixelwise_fit.main(magnitude_array_T2s, TE_list)
+        M0map, fwmap, T2smap, rsquaremap = T2s_pixelwise_fit.main(magnitude_array_T2s, TE_list)
 
         #wezel vizualitation of T2* mapping parameters: M0 map, Water Fraction map, T2* map,T2* r square (goodness of fit)
         M0_map_series = series_T2s.SeriesDescription + "_T2s_" + "M0_Map"

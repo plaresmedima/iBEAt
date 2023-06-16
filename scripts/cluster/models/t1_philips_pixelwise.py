@@ -8,7 +8,7 @@ Siemens 3T PRISMA - Leeds (T2* sequence)
 import numpy as np
 from tqdm import tqdm
 
-from models.model_library.single_pixel_forward_models import t1_exp_fm
+from .model_library.single_pixel_forward_models import t1_exp_fm
 
 
 #from iBEAt_Model_Library.single_pixel_forward_models import iBEAT_T2s_FM
