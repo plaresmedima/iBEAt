@@ -1,3 +1,7 @@
+"""
+@Kanishka please include some header information, e.g. date these weights were generated, and on what data it was trained.
+"""
+
 import os
 import time
 import numpy as np 
