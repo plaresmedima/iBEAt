@@ -1,6 +1,6 @@
 import numpy as np
 from tqdm import tqdm
-from models.model_library.single_pixel_forward_models import ivim_fm
+from .model_library.single_pixel_forward_models import ivim_fm
 
 
 def main(IVIM_images_to_be_fitted, sequenceParam,GUI_object=None):

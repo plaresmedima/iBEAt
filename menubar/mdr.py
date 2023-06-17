@@ -1,79 +1,55 @@
 from wezel.gui import Action
-import scripts.cluster.cluster_mdr as mdr
+from dbdicom.pipelines import input_series
+
+import pipelines.mdr as mdr
+
+study_desc = 'MDRresults'
 
 
 def _if_a_database_is_open(app): 
     return app.database() is not None
 
 
-def _input(database, series_desc):
-    series = database.series(SeriesDescription=series_desc)
-    if series == []:
-        database.dialog.information("Cannot find series " + series_desc)
-        raise FileNotFoundError
-    series = series[-1]
-    study_desc = 'MDRresults'
-    studies = database.studies(StudyDescription=study_desc)
-    if studies == []:
-        study = series.new_pibling(StudyDescription=study_desc)
-    else:
-        study = studies[-1]
-    return series, study
-
-
 def _T2star(app):
-    try:
-        series, study = _input(app.database(), "T2star_map_kidneys_cor-oblique_mbh_magnitude")
-    except:
-        return
-    fit, _ = mdr.MDRegT2star(series, study=study)
-    app.display(fit)
+    series, study = input_series(app.database(), "T2star_map_kidneys_cor-oblique_mbh_magnitude")
+    if series is not None:
+        fit, _ = mdr.MDRegT2star(series, study=study)
+        app.display(fit)
     app.refresh()
 
 def _T1(app):
-    try:
-        series, study = _input(app.database(), "T1map_kidneys_cor-oblique_mbh_magnitude")
-    except:
-        return
-    fit, _ = mdr.MDRegT1(series, study=study)
-    app.display(fit)
+    series, study = input_series(app.database(), "T1map_kidneys_cor-oblique_mbh_magnitude")
+    if series is not None:
+        fit, _ = mdr.MDRegT1(series, study=study)
+        app.display(fit)
     app.refresh()
 
 def _T2(app):
-    try:
-        series, study = _input(app.database(), "T2map_kidneys_cor-oblique_mbh_magnitude")
-    except:
-        return
-    fit, _ = mdr.MDRegT2(series, study=study)
-    app.display(fit)
+    series, study = input_series(app.database(), "T2map_kidneys_cor-oblique_mbh_magnitude")
+    if series is not None:
+        fit, _ = mdr.MDRegT2(series, study=study)
+        app.display(fit)
     app.refresh()
 
 def _DTI(app):
-    try:
-        series, study = _input(app.database(),  "DTI_kidneys_cor-oblique_fb")
-    except:
-        return
-    fit, _ = mdr.MDRegDTI(series, study=study)
-    app.display(fit)
+    series, study = input_series(app.database(), "DTI_kidneys_cor-oblique_fb")
+    if series is not None:
+        fit, _ = mdr.MDRegDTI(series, study=study)
+        app.display(fit)
     app.refresh()
 
 def _MT(app):
-    try:
-        mt_off, study = _input(app.database(),  "MT_OFF_kidneys_cor-oblique_bh")
-        mt_on, study = _input(app.database(),  "MT_ON_kidneys_cor-oblique_bh")
-    except:
-        return
-    fit, _ = mdr.MDRegMT([mt_off, mt_on], study=study)
-    app.display(fit)
+    series, study = input_series(app.database(), ["MT_OFF_kidneys_cor-oblique_bh", "MT_ON_kidneys_cor-oblique_bh"])
+    if series is not None:
+        fit, _ = mdr.MDRegMT(series, study=study)
+        app.display(fit)
     app.refresh()
 
 def _DCE(app):
-    try:
-        series, study = _input(app.database(),  "DCE_kidneys_cor-oblique_fb")
-    except:
-        return
-    fit, _ = mdr.MDRegDCE(series, study=study)
-    app.display(fit)
+    series, study = input_series(app.database(), "DCE_kidneys_cor-oblique_fb")
+    if series is not None:
+        fit, _ = mdr.MDRegDCE(series, study=study)
+        app.display(fit)
     app.refresh()
 
 

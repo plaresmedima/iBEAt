@@ -1,6 +1,6 @@
 from dbdicom.wrappers import elastix
 from wezel.gui import Menu
-from wrappers import mdreg
+import pipelines.mdreg as mdreg
 
 
 def _if_a_series_is_selected(app):
