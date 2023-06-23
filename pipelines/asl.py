@@ -10,12 +10,14 @@ def perfusion(database):
     # Get input parameters
     series_desc = [   
         'ASL_kidneys_pCASL_cor-oblique_fb_M0_moco',
-        'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast',
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
         'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
         'LK',
         'RK',
     ]
     series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        return None, None
     m0 = series[0]
     dixon = series[1]
     rbf = series[2]

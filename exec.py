@@ -47,7 +47,7 @@ from wezel.plugins import (
     segment,
     align,
 )
-import menubar
+import gui
 
 
 def build_iBEAt_menu(wzl):
@@ -56,7 +56,7 @@ def build_iBEAt_menu(wzl):
     wzl.add_menu(align.menu)
     wzl.add_menu(transform.menu)
     wzl.add_menu(measure.menu)
-    wzl.add_menu(menubar.iBEAt.menu)
+    wzl.add_menu(gui.iBEAt.menu)
     wzl.add_menu(wezel.menubar.about.menu)
 
     wzl.add_separator(menu='View', position=5)
@@ -64,8 +64,8 @@ def build_iBEAt_menu(wzl):
     wzl.add_action(pyvista.action_show_mask_surfaces, menu='View', position=7)
     wzl.add_action(pyvista.action_show_mask_surfaces_with_reference, menu='View', position=8)
     
-    wzl.add_action(menubar.about.ibeat, menu='About')
-    wzl.add_action(menubar.about.beat_dkd, menu='About')
+    wzl.add_action(gui.about.ibeat, menu='About')
+    wzl.add_action(gui.about.beat_dkd, menu='About')
     
 
 

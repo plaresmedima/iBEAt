@@ -1,7 +1,7 @@
 from wezel.gui import Menu
 from . import segment
 from . import asl
-#from . import monai
+from . import monai
 from . import process
 from . import mdr
 from . import mapping
@@ -10,7 +10,8 @@ menu = Menu('iBEAt')
 menu.add(segment.whole_kidney_mask)
 menu.add(segment.renal_sinus_fat)
 menu.add(asl.perfusion)
-#menu.add(monai.segment)
+menu.add_separator()
+menu.add(monai.segment)
 menu.add_separator()
 menu.add(mdr.action_T2star)
 menu.add(mdr.action_T1)

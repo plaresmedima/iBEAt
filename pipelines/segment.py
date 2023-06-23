@@ -1,4 +1,5 @@
 import os
+import time
 
 from dbdicom.wrappers import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
@@ -7,6 +8,8 @@ export_study = 'SegmentationResults'
 
 
 def compute_whole_kidney_canvas(database):
+    start_time = time.time()
+    database.log('Sequantial K-means has started.')
     series_desc = [
         'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
         'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
@@ -17,10 +20,13 @@ def compute_whole_kidney_canvas(database):
     clusters = sklearn.sequential_kmeans(features, n_clusters=2, multiple_series=True)
     for c in clusters:
         c.move_to(study)
+    database.log("Sequential kmeans was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return clusters
 
 
 def export_whole_kidney_canvas(folder, path):
+    start_time = time.time()
+    folder.log("Export segmentation results has started")
 
     resultsFolder = 'segmentation_results'
     resultsPath = path + '_' + resultsFolder
@@ -47,8 +53,12 @@ def export_whole_kidney_canvas(folder, path):
         print(series.SeriesDescription)    
         series.export_as_dicom(resultsPath)
 
+    folder.log("Export segmentation results was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
 
 def compute_renal_sinus_fat(database):
+    start_time = time.time()
+    database.log("Compute renal sinus fat has started")
     series_desc = [
         'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
         'LK', 'RK',
@@ -83,5 +93,7 @@ def compute_renal_sinus_fat(database):
 
     # Collect features & display
     df = skimage.volume_features(sf_series)
+
+    database.log("Rebal sinus fat computation was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
     return sf_series, df

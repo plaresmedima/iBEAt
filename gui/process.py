@@ -1,10 +1,10 @@
 import datetime
 from wezel.gui import Action
-import scripts.cluster.cluster_rename as rename
-import scripts.cluster.cluster_mdr as mdr
-import scripts.cluster.cluster_modelling as modelling
-import scripts.cluster.cluster_segmentation as segmentation
-import scripts.cluster.cluster_upload as upload
+import scripts.rename as rename
+import scripts.mdr as mdr
+import scripts.modelling as modelling
+import scripts.segmentation as segmentation
+import scripts.upload as upload
 
 
 def _if_a_database_is_open(app): 

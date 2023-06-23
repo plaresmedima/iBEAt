@@ -4,7 +4,7 @@ iBEAt Rename Scrpit
 2022
 Pulse sequence name standardization for iBEAt MR Protcol
 """
-
+import time
 
 from itertools import chain
 
@@ -249,6 +249,9 @@ def Siemens_rename(series):
 
 
 def main(folder):
+    folder.log("Renaming has started!")
+    start_time = time.time()
+
     DCE=[]
     ASL_count = []
     Manufacturer = folder.series()[0]['Manufacturer']
@@ -284,6 +287,7 @@ def main(folder):
         print(series.SeriesDescription)
 
     folder.save()
+    folder.log("Renaming was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
     
 

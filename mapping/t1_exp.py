@@ -14,7 +14,6 @@ def T1_FLASH_MOLLI_Eq(TI,M_eq, M_eq_App,T1_App):
     TI : list of inversion times (between 100 and 7700ms)
     M_eq, M_eq_App, T1_App: tissue parameters
     Inv_Eff: Efficency of the 180 inversion pulse
-
     """
     S_t = M_eq_App -(M_eq+M_eq_App)*np.exp(-TI/T1_App)
 
@@ -46,8 +45,6 @@ def T1_fitting(images_to_be_fitted, TI):
     S0 (numpy.float64): fitted parameter 'S0' per pixel 
     T1 (numpy.float64): fitted parameter 'T1' (ms) per pixel.
     """   
-
-
     lb =            [0     , 0     , 0     ]
     ub =            [np.inf, np.inf, np.inf]
 
@@ -94,7 +91,6 @@ def main(images_to_be_fitted, TI):
     fitted_parameters (list): list with signal model fitted parameters 'S0','fw' (fraction of water) and 'T2sw'.  
     """
 
-    
     results = T1_fitting(images_to_be_fitted, TI)
 
     fit     = results[0]
@@ -103,8 +99,5 @@ def main(images_to_be_fitted, TI):
     T1_app  = results[3]
     T1      = results[4]
     r_square= results[5]
-
-    
-    
 
     return fit, S0, S0_App, T1_app, T1, r_square

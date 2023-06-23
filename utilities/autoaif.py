@@ -1,14 +1,55 @@
 import numpy as np
-import utilities.reggrow as reg
 import cv2
-    
+
+class Point(object):
+    def __init__(self,x,y):
+        self.x = x
+        self.y = y
+
+    def getX(self):
+        return self.x
+    def getY(self):
+        return self.y
+
+def getGrayDiff(img,currentPoint,tmpPoint):
+    return abs(int(img[currentPoint.x,currentPoint.y]) - int(img[tmpPoint.x,tmpPoint.y]))
+
+def selectConnects(p):
+ if p != 0:
+  connects = [Point(-1, -1), Point(0, -1), Point(1, -1), Point(1, 0), Point(1, 1), \
+     Point(0, 1), Point(-1, 1), Point(-1, 0)]
+ else:
+  connects = [ Point(0, -1), Point(1, 0),Point(0, 1), Point(-1, 0)]
+ return connects
+
+def regionGrow(img,seeds,thresh,p = 1):
+ height, weight = img.shape
+ seedMark = np.zeros(img.shape)
+ seedList = []
+ for seed in seeds:
+  seedList.append(seed)
+ label = 1
+ connects = selectConnects(p)
+ while(len(seedList)>0):
+  currentPoint = seedList.pop(0)
+
+  seedMark[currentPoint.x,currentPoint.y] = label
+  for i in range(8):
+   tmpX = currentPoint.x + connects[i].x
+   tmpY = currentPoint.y + connects[i].y
+   if tmpX < 0 or tmpY < 0 or tmpX >= height or tmpY >= weight:
+    continue
+   grayDiff = getGrayDiff(img,currentPoint,Point(tmpX,tmpY))
+   if grayDiff < thresh and seedMark[tmpX,tmpY] == 0:
+    seedMark[tmpX,tmpY] = label
+    seedList.append(Point(tmpX,tmpY))
+ return seedMark
+
+
 def DCEautoAIF(array, header, series,targetslice, cutRatio, filter_kernel, regGrow_threshold ):
 
     if np.shape(array)[-1] == 2:
         array = array[...,0]
-
-    if np.shape(header)[-1] == 2:
-        header = header[...,0:1]
 
 
     aortaImgs = array[:,:,targetslice-1,...]
@@ -42,14 +83,17 @@ def DCEautoAIF(array, header, series,targetslice, cutRatio, filter_kernel, regGr
 
     aif_mask = aif_mask[..., np.newaxis]
 
-    aif_maskTowezel = series.SeriesDescription + '_DCE_ART'
-    aif_maskTowezel = series.new_sibling(SeriesDescription=aif_maskTowezel)
-
-    aif_maskTowezel.set_array(aif_mask, (header[targetslice-1,0]), pixels_first=True)
-
     aif =[]
     for z in range(aortaImgs_cut.shape[2]):
         tmask = np.squeeze(aortaImgs[:,:,z]) * np.squeeze(aif_mask)
         aif.append(np.mean(tmask[tmask!=0]))
+
+    
+    if np.shape(header)[-1] == 2:
+        header = header[...,0:1]
+
+    aif_mask_series = series.SeriesDescription + '_DCE_ART'
+    aif_mask_series = series.new_sibling(SeriesDescription=aif_mask_series)
+    aif_mask_series.set_array(aif_mask, (header[targetslice-1,0]), pixels_first=True)
 
     return aif

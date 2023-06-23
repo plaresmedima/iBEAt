@@ -3,7 +3,7 @@ import numpy as np
 import scipy.ndimage as ndi
 from wezel.gui import Action
 from wezel.plugins.pyvista import SurfaceDisplay
-from dl_models import UNETR_kidneys_v1
+from mapping import UNETR_kidneys_v1
 
 
 def _if_a_database_is_open(app): 
@@ -69,18 +69,18 @@ def _UNETR_kidneys_v1(app):
         # Save UNETR output
         result = sery.new_sibling(SeriesDescription = 'UNETR kidneys v1')
         result.set_array(masks, header, pixels_first=True)
-        result[['WindowCenter','WindowWidth']] = [1.0,2.0]
+        result[['WindowCenter','WindowWidth']] = [1.0, 2.0]
 
         # Save and display left kidney data
         left = sery.new_sibling(SeriesDescription = 'LK')
         left.set_array(left_kidney, header, pixels_first=True)
-        left[['WindowCenter','WindowWidth']] = [1.0,2.0]
+        left[['WindowCenter','WindowWidth']] = [1.0, 2.0]
         app.addWidget(SurfaceDisplay(left), title=left.label())
 
         # Save and display right kidney data
         right = sery.new_sibling(SeriesDescription = 'RK')
         right.set_array(right_kidney, header, pixels_first=True)
-        right[['WindowCenter','WindowWidth']] = [1.0,2.0]
+        right[['WindowCenter','WindowWidth']] = [1.0, 2.0]
         app.addWidget(SurfaceDisplay(right), title=right.label())
 
         app.refresh()

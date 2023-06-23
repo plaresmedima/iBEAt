@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 
 import mdreg
@@ -11,10 +12,13 @@ import mdreg.models.DCE_2CFM
 
 import utilities.autoaif
 
-elastix_pars = os.path.join(os.path.join(os.path.dirname(__file__)).split("actions")[0], 'elastix')
+
+elastix_pars = os.path.join(os.path.join(os.path.dirname(os.path.dirname(__file__)),'utilities'), 'elastix')
 
 
 def MDRegT2star(series=None,study=None):
+    start_time = time.time()
+    series.log("T2* motion correction has started")
 
     #series = zoom(series, 0.5)
     array, header = series.array(['SliceLocation', 'EchoTime'], pixels_first=True)
@@ -24,9 +28,13 @@ def MDRegT2star(series=None,study=None):
     elastix_file = 'BSplines_T2star.txt'
     number_slices = array.shape[2]
 
-    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='EchoTime',study=study)
+    vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='EchoTime',study=study)
+    series.log("T2* motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    return vals
 
 def MDRegT1(series=None, study=None):
+    start_time = time.time()
+    series.log("T1 motion correction has started")
 
     if series.Manufacturer == 'SIEMENS':
         array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True)
@@ -36,7 +44,7 @@ def MDRegT1(series=None, study=None):
         elastix_file = 'BSplines_T1.txt'
         number_slices = array.shape[2]
 
-        return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='InversionTime', study=study)
+        vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='InversionTime', study=study)
     
     else:
         array, header = series.array(['SliceLocation',(0x2005, 0x1572)], pixels_first=True)
@@ -46,11 +54,16 @@ def MDRegT1(series=None, study=None):
         elastix_file = 'BSplines_T1.txt'
         number_slices = array.shape[2]
 
-        return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by=(0x2005, 0x1572), study=study)
+        vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by=(0x2005, 0x1572), study=study)
+
+    series.log("T1 motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    return vals
 
 
 def MDRegT2(series=None, study=None):
     """Perform MDR on all slices using a T2 mono-exp model"""
+    start_time = time.time()
+    series.log("T2 motion correction has started")
     
     #series = zoom(series, 0.5)
 
@@ -65,11 +78,15 @@ def MDRegT2(series=None, study=None):
     elastix_file = 'BSplines_T2.txt'
     number_slices = array.shape[2]
     
-    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None', study=study)
+    vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None', study=study)
+    series.log("T2 motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    return vals
 
 
 def MDRegIVIM(series=None,study=None):
     """Perform MDR on all slices using a DWI mono-exp model"""
+    start_time = time.time()
+    series.log("IVIM motion correction has started")
 
     #series = zoom(series, 0.5)
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
@@ -79,10 +96,14 @@ def MDRegIVIM(series=None,study=None):
     elastix_file = 'BSplines_IVIM.txt'
 
     number_slices = array.shape[2]
-    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
+    vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
+    series.log("IVIM motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    return vals
 
 def MDRegDTI(series=None,study=None):
     """Perform MDR on all slices using a DTI model"""
+    start_time = time.time()
+    series.log("DTI motion correction has started")
 
     if series.Manufacturer == 'SIEMENS':
         array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
@@ -99,10 +120,14 @@ def MDRegDTI(series=None,study=None):
     elastix_file = 'BSplines_DTI.txt'
     number_slices = array.shape[2]
 
-    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DTI',study=study)
+    vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DTI',study=study)
+    series.log("DTI motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    return vals
 
 def MDRegMT(series=None,study=None):
     """Perform MDR on all slices using a MT model"""
+    start_time = time.time()
+    series.log("MT motion correction has started")
 
     mt_off =series[0]
     mt_on =series[1]
@@ -122,10 +147,14 @@ def MDRegMT(series=None,study=None):
     elastix_file = 'BSplines_MT.txt'
 
     number_slices = array.shape[2]
-    return _mdr(mt_on, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
+    vals = _mdr(mt_on, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
+    series.log("MT motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    return vals
 
 def MDRegDCE(series=None, study=None):
     """Perform MDR on all slices using a DCE linear model"""
+    start_time = time.time()
+    series.log("DCE motion correction has started")
 
     #series = zoom(series, 0.5)
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
@@ -135,7 +164,10 @@ def MDRegDCE(series=None, study=None):
     elastix_file = 'BSplines_DCE.txt'
 
     number_slices = array.shape[2]
-    return _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DCE', study=study)
+    vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DCE', study=study)
+    series.log("DCE motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    return vals
+
 
 def _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars,sort_by, study=None):
     """ MDR fit function.  

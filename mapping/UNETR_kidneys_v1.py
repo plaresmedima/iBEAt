@@ -1,5 +1,5 @@
 """
-@Kanishka please include some header information, e.g. date these weights were generated, and on what data it was trained.
+Include some header information, e.g. date these weights were generated, and on what data it was trained.
 """
 
 import os
@@ -9,7 +9,7 @@ import torch
 from monai.inferers import sliding_window_inference
 from monai.networks.nets import UNETR
 
-# The model name must be the same as the filename of this module
+# The default model name must be the same as the filename of this module
 filename = os.path.basename(os.path.abspath(__file__))
 filename = filename[:-3] + ".pth"
 
@@ -42,8 +42,8 @@ def apply(input_array:np.ndarray, file:str, overlap=0.3)->np.ndarray:
     """apply UNETR model to DIXON out of phase volume.
 
     Args:
-        input_array (np.ndarray): 3D numpy array (x,y,z) with DIXON data
-        file (str): filepath to file with model weights
+        input_array (np.ndarray): 3D numpy array (x,y,z) with DIXON data.
+        file (str): filepath to file with model weights.
         overlap (float, optional): optimization parameter. Defaults to 0.2.
 
     Returns:

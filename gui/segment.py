@@ -25,7 +25,7 @@ def _renal_sinus_fat(app):
     app.refresh()
 
 
-whole_kidney_mask = Action("Segmentation background", on_clicked=_whole_kidney_canvas, is_clickable=_if_a_database_is_open)
+whole_kidney_mask = Action("Segmentation canvas", on_clicked=_whole_kidney_canvas, is_clickable=_if_a_database_is_open)
 renal_sinus_fat = Action("Renal Sinus Fat", on_clicked=_renal_sinus_fat, is_clickable=_if_a_database_is_open)
 
 
