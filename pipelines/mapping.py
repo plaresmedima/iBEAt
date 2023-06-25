@@ -7,11 +7,14 @@ from dipy.reconst.dti import fractional_anisotropy
 from scipy.integrate import trapz
 
 import mapping
+from pipelines.mapping_mdreg import fit_T1
 
 #from pipelines.mdreg import fit_DTI
 
 
-def T1_Philips(series=None, mask=None,export_ROI=False, study=None):
+
+
+def T1_Philips(series, study, mask=None):
 
     start_time = time.time()
     series.log("T1 mapping (Philips) mapping has started")
@@ -51,6 +54,15 @@ def T1_Philips(series=None, mask=None,export_ROI=False, study=None):
     series.log("T1 mapping (Philips) mapping was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
     return M0_map_series, T1_app_map_series, T1_map_series
+
+
+def T1(series, study):
+    if series.Manufacturer == 'SIEMENS': 
+        fit, pars = fit_T1(series, study)
+        return tuple([fit] + pars)
+    else:
+        return T1_Philips(series, study)
+
 
 def T2s(series=None, mask=None,export_ROI=False,slice=None,Fat_export=False,study = None):
 
@@ -395,3 +407,52 @@ def DCE_MAX(series=None, mask=None,export_ROI=False, study=None):
     series.log("DCE-MAX mapping was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
     return DCEMax_map_series, DCEArea_map_series
+
+
+def main(folder):
+
+    start_time = time.time()
+    folder.log(": Modelling has started!")
+
+    list_of_series = folder.series()
+
+    current_study = list_of_series[0].parent()
+    study = list_of_series[0].new_pibling(StudyDescription=current_study.StudyDescription + '_ModellingResults')
+
+    for i,series in enumerate(list_of_series):
+
+        if series["SequenceName"] is not None:
+
+            if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
+                try:
+                    T2s(series, study=study)
+                except Exception as e: 
+                    series.log("T2* mapping was NOT completed; error: "+str(e))
+
+            elif series['SeriesDescription'] == "DTI_kidneys_cor-oblique_fb_mdr_moco":
+                try:
+                    DTI(series, study=study)
+                except Exception as e: 
+                    series.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
+
+            elif series['SeriesDescription'] == "DCE_kidneys_cor-oblique_fb_mdr_moco":
+                try:
+                    DCE_MAX(series, study=study)
+                except Exception as e: 
+                    series.log("DCE-MAX mapping was NOT completed; error: "+str(e))
+
+            elif series.SeriesDescription == 'MT_ON_kidneys_cor-oblique_bh_mdr_moco':
+                try:
+                    MTR(series, study=study)
+                except Exception as e: 
+                    series.log("MTR mapping was NOT completed; error: "+str(e))
+
+            elif series.SeriesDescription == 'T1_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco':
+                if series.Manufacturer == 'SIEMENS': # TODO: Check this, something not right
+                    try:
+                        T1_Philips(series, study=study)  
+                    except Exception as e: 
+                        series.log("T1 mapping was NOT completed; error: "+str(e))
+
+    folder.save()
+    folder.log("Modelling was completed --- %s seconds ---" % (int(time.time() - start_time)))

@@ -3,13 +3,63 @@ import time
 
 from dbdicom.wrappers import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
+import mapping.UNETR_kidneys_v1 as unetr
 
-export_study = 'SegmentationResults'
+
+export_study = 'Segmentations'
+
+def segment_kidneys(database, weights):
+
+    start_time = time.time()
+    database.log('Kidney segmentation has started.')
+
+    # Get weights file and check if valid 
+    if not os.path.isfile(weights):
+        msg = 'The weights file ' + weights + ' has not been found. \n'
+        msg += 'Please check that the file with model weights is in the folder, and is named ' + unetr.filename
+        database.dialog.information(msg)
+        return
+
+    # Get appropriate series and check if valid
+    #series = database.series(SeriesDescription=unetr.trained_on)
+    sery, study = input_series(database, unetr.trained_on, export_study)
+    if sery is None:
+        return    
+
+    # Loop over the series and create the mask
+    desc = sery.instance().SeriesDescription
+    array, header = sery.array(['SliceLocation'], pixels_first=True, first_volume=True)
+    sery.message('Calculating kidney masks for series ' + desc)
+
+    # Calculate predictions 
+    masks = unetr.apply(array, weights)
+    left_kidney, right_kidney = unetr.kidney_masks(masks)
+
+    # Save UNETR output
+    result = study.new_child(SeriesDescription = 'UNETR kidneys v1')
+    result.set_array(masks, header, pixels_first=True)
+    result[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+
+    # Save and display left kidney data
+    left = study.new_child(SeriesDescription = 'LK')
+    left.set_array(left_kidney, header, pixels_first=True)
+    left[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+    
+    # Save and display right kidney data
+    right = study.new_child(SeriesDescription = 'RK')
+    right.set_array(right_kidney, header, pixels_first=True)
+    right[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+
+    kidneys = [left, right]
+    features = skimage.volume_features(kidneys)
+
+    database.log("Kidney segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    return kidneys, features
 
 
 def compute_whole_kidney_canvas(database):
     start_time = time.time()
-    database.log('Sequantial K-means has started.')
+    database.log('Sequential K-means has started.')
     series_desc = [
         'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
         'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
@@ -94,6 +144,6 @@ def compute_renal_sinus_fat(database):
     # Collect features & display
     df = skimage.volume_features(sf_series)
 
-    database.log("Rebal sinus fat computation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    database.log("Renal sinus fat computation was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
     return sf_series, df

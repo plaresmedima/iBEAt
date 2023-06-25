@@ -17,9 +17,9 @@ import os
 import datetime
 import dbdicom as db
 
-import scripts.rename as rename
-import scripts.mdr as mdr
-import scripts.modelling as modelling
+import pipelines.rename as rename
+import pipelines.mdr as mdr
+import pipelines.mapping as map
 import scripts.upload as upload
 import scripts.segmentation as segmentation
 
@@ -79,13 +79,13 @@ if __name__ == '__main__':
         folder.log("Renaming was NOT completed; error: " + str(e))
 
     try:
-        modelling.main(folder)
+        map.main(folder)
     except Exception as e:
-        folder.log("Modelling was NOT completed; error: "+str(e))
+        folder.log("Modelling was NOT completed; error: " + str(e))
 
     try:
         segmentation.main(folder,pathScan)
     except Exception as e:
-        folder.log("Segmentation was NOT completed; error: "+str(e))
+        folder.log("Segmentation was NOT completed; error: " + str(e))
 
-    upload.main(pathScan,filename_log)
+    upload.main(pathScan, filename_log)

@@ -1,8 +1,8 @@
 import datetime
 from wezel.gui import Action
-import scripts.rename as rename
-import scripts.mdr as mdr
-import scripts.modelling as modelling
+import pipelines.rename as rename
+import pipelines.mdr as mdr
+import pipelines.mapping as map
 import scripts.segmentation as segmentation
 import scripts.upload as upload
 
@@ -27,7 +27,7 @@ def _mdr(app):
 def _mapping(app):
     folder = app.database()
     filename_log = folder.path() + datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "log_mapping.txt"
-    modelling.main(folder, filename_log)
+    map.main(folder, filename_log)
     app.refresh()
 
 

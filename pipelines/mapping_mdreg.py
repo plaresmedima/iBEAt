@@ -51,7 +51,7 @@ def fit_DTI(series):
     return fit, series_par
 
 
-def fit_T1(series):
+def fit_T1(series, study=None):
 
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
     signal_model = T1_simple 
@@ -82,16 +82,15 @@ def fit_T1(series):
         pars[:,:,slice,:] = mdr.pars
 
     #EXPORT RESULTS
-    study = series.new_pibling(StudyDescription = 'T1')
+    if study is None:
+        study = series.new_pibling(StudyDescription = 'T1')
     
     series_par = []
     for p in range(len(parameters)):
-        par = series.SeriesDescription + '_T1_' + parameters[p]
-        par = study.new_series(SeriesDescription=par)
+        par = study.new_series(SeriesDescription='T1_' + parameters[p])
         par.set_array(pars[...,p], header[:,0], pixels_first=True)
         series_par.append(par)
-    fit = series.SeriesDescription + '_T1_fit'
-    fit = study.new_series(SeriesDescription=fit)
+    fit = study.new_series(SeriesDescription='T1_fit')
     fit.set_array(model_fit, header, pixels_first=True)
     return fit, series_par
 

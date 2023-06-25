@@ -1,10 +1,27 @@
 """
-Include some header information, e.g. date these weights were generated, and on what data it was trained.
+Script to apply the pretrained UNETR for 3D kidney segmentation.
+
+You will need:
+
+- dixon: A 3D numpy array with post-contrast out of phase DIXON data
+- weights: A file with pretrained model weights
+
+Apply the model:
+
+- segments = UNETR_kidneys_v1.apply(dixon, weights)
+
+Clean the results and extract masks as numpy arrays:
+
+- left_kidney, right_kidney = UNETR_kidneys_v1.kidney_masks(segments)
+
+or do both in one go:
+
+- left_kidney, right_kidney = UNETR_kidneys_v1.kidneys(dixon, weights)
 """
 
 import os
-import time
 import numpy as np 
+import scipy.ndimage as ndi
 import torch
 from monai.inferers import sliding_window_inference
 from monai.networks.nets import UNETR
@@ -37,6 +54,39 @@ model = UNETR(
 trained_on = "T1w_abdomen_dixon_cor_bh_out_phase_post_contrast"
 
 
+def largest_cluster(array:np.ndarray)->np.ndarray:
+    """Given a mask array, return a new mask array containing only the largesr cluster.
+
+    Args:
+        array (np.ndarray): mask array with values 1 (inside) or 0 (outside)
+
+    Returns:
+        np.ndarray: mask array with only a single connect cluster of pixels.
+    """
+    # Label all features in the array
+    label_img, cnt = ndi.label(array)
+    # Find the label of the largest feature
+    labels = range(1,cnt+1)
+    size = [np.count_nonzero(label_img==l) for l in labels]
+    max_label = labels[size.index(np.amax(size))]
+    # Return a mask corresponding to the largest feature
+    return label_img==max_label
+
+
+def kidney_masks(output_array:np.ndarray)->tuple:
+    """Extract kidney masks from the output array of the UNETR
+
+    Args:
+        output_array (np.ndarray): 3D numpy array (x,y,z) with integer labels (0=background, 1=right kidney, 2=left kidney)
+
+    Returns:
+        tuple: A tuple of 3D numpy arrays (left_kidney, right_kidney) with masks for the kidneys.
+    """
+    left_kidney = largest_cluster(output_array == 2)
+    right_kidney = largest_cluster(output_array == 1)
+    return left_kidney, right_kidney
+
+
 # Required
 def apply(input_array:np.ndarray, file:str, overlap=0.3)->np.ndarray:
     """apply UNETR model to DIXON out of phase volume.
@@ -49,8 +99,6 @@ def apply(input_array:np.ndarray, file:str, overlap=0.3)->np.ndarray:
     Returns:
         np.ndarray: 3D numpy array (x,y,z) with integer labels (0=background, 1=right kidney, 2=left kidney)
     """
-
-    tic = time.time()
 
     # Normalize data
     input_array = (input_array-np.average(input_array))/np.std(input_array)
@@ -81,7 +129,19 @@ def apply(input_array:np.ndarray, file:str, overlap=0.3)->np.ndarray:
     # Transpose to original shape
     output_array = output_array.transpose(1,0,2) #from (y,x,z) to (x,y,z)
 
-    toc = time.time()
-    print('Calculation time for UNETR prediction: ' + str (toc-tic) + " seconds")
-
     return output_array
+
+
+def kidneys(input_array:np.ndarray, file:str, **kwargs)->tuple:
+    """return kdiney masks directly from data
+
+    Args:
+        input_array (np.ndarray): 3D numpy array (x,y,z) with DIXON data.
+        file (str): filepath to file with model weights.
+        overlap (float, optional): optimization parameter. Defaults to 0.2.
+
+    Returns:
+        tuple: A tuple of 3D numpy arrays (left_kidney, right_kidney) with masks for the kidneys.
+    """
+    masks = apply(input_array, file, **kwargs)
+    return kidney_masks(masks)
