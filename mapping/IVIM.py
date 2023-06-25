@@ -1,22 +1,134 @@
+"""
+@author: Joao Periquito
+iBEAt study IVIM model-fit
+Siemens 3T PRISMA - Leeds (DW-EPI sequence)
+2021
+"""
+
 import numpy as np
+from scipy.optimize import curve_fit
 from tqdm import tqdm
-from models.model_library.single_pixel_forward_models import ivim_fm
 
 
-def main(IVIM_images_to_be_fitted, sequenceParam,GUI_object=None):
-    """ main function that performs the T2* model-fit with shared parameters at single pixel level. 
+
+def Mono_Exp_IVIM(x,S0, D):
+    """ MonoExponential Fit for IVIM data.
+
+    S0, D, Ds and f (perfsion fraction): tissue parameters
+    x : List of b-values used between 0 and 600 s/mm2)
+    """
+    S_IVIM = S0*(np.exp(-x*D))
+
+    return S_IVIM
+
+def Bi_Exp_IVIM(x,S0, D,Ds,f):
+    """ BiExponential Fit for IVIM data.
+
+    S0, D, Ds and f (perfsion fraction): tissue parameters
+    x : List of b-values used between 0 and 600 s/mm2)
+    """
+    S_IVIM = S0*(f*np.exp(-x*Ds) + (1-f)*np.exp(-x*D))
+
+    return S_IVIM
+
+
+def Bi_Exp_IVIM_fitting(images_to_be_fitted, Bval_list):
+    """ curve_fit function for IVIM-mapping.
 
     Args
     ----
-    IVIM_images_to_be_fitted (numpy.ndarray): pixel value for time-series (i.e. at each T2 prep time) with shape [x,:]
-    
-    sequenceParam (list): [TE_list]
+    images_to_be_fitted (numpy.ndarray): pixel value for time-series (i.e. at each TE time) with shape [x,:]
+    Bval_list (list): list of b-values
 
 
     Returns
     -------
-    fitted_parameters: Map with signal model fitted parameters: 'S0', 'T1','T2','Flip Efficency','180 Efficency'.  
+    fit (list): signal model fit per pixel
+    S0 (numpy.float64): fitted parameter 'S0' per pixel 
+    D (numpy.float64): fitted parameter 'tissue diffusion' (mm2/s) per pixel.
+    Ds (numpy.float64): fitted parameter 'pseudo diffusion' (mm2/s) per pixel.
+    f (numpy.float64): fitted parameter 'pseudo diffusion fraction per pixel [0-100%]
     """
+
+    lb_mono = [0,      0]
+    ub_mono = [1,      1]
+    initial_guess_mono = [1,0.002] 
+
+    lb_bi = [0,      0]
+    ub_bi = [1,      1]
+    initial_guess_bi = [1,0.02] 
+
+    try:
+        
+        fittedParameters_mono, pcov = curve_fit(Mono_Exp_IVIM, Bval_list[len(images_to_be_fitted)-3:len(images_to_be_fitted)], images_to_be_fitted[len(images_to_be_fitted)-3:len(images_to_be_fitted)], initial_guess_mono,bounds=(lb_mono,ub_mono),method='trf',maxfev=5000)
+
+        fittedParameters, pcov = curve_fit(lambda x, S0,Ds: Bi_Exp_IVIM(x,S0, fittedParameters_mono[1],Ds,1-fittedParameters_mono[0]), Bval_list, images_to_be_fitted,initial_guess_bi,bounds=(lb_bi,ub_bi),method='trf',maxfev=5000)    
+    
+        fit = []
+
+        fit.append(Bi_Exp_IVIM(Bval_list,fittedParameters[0],fittedParameters_mono[1],fittedParameters[1],1-fittedParameters_mono[0]))
+
+        S0 = fittedParameters[0]
+        D = fittedParameters_mono[1]
+        Ds = fittedParameters[1]
+        f = 1-fittedParameters_mono[0]
+
+
+
+    except:
+        fit = np.zeros(len(images_to_be_fitted))
+        S0  = 0
+        D  = 0
+        Ds = 0
+        f = 0
+
+    return fit, S0,D, Ds,f
+
+
+def Mono_Exp_IVIM_fitting(images_to_be_fitted, Bval_list):
+    """ curve_fit function for mono-exp IVIM-mapping (ADC only)
+
+    Args
+    ----
+    images_to_be_fitted (numpy.ndarray): pixel value for time-series (i.e. at each TE time) with shape [x,:]
+    Bval_list (list): list of b-values
+
+
+    Returns
+    -------
+    fit (list): signal model fit per pixel
+    S0 (numpy.float64): fitted parameter 'S0' per pixel 
+    D (numpy.float64): fitted parameter 'tissue diffusion' (mm2/s) per pixel.
+    Ds (numpy.float64): fitted parameter 'pseudo diffusion' (mm2/s) per pixel.
+    f (numpy.float64): fitted parameter 'pseudo diffusion fraction per pixel [0-100%]
+    """
+
+    lb_mono = [0,      0]
+    ub_mono = [1,      1]
+    initial_guess_mono = [1,0.002] 
+
+    try:
+        
+        fittedParameters_mono, pcov = curve_fit(Mono_Exp_IVIM, Bval_list, images_to_be_fitted, initial_guess_mono,bounds=(lb_mono,ub_mono),method='trf',maxfev=5000)
+    
+        fit = []
+
+        fit.append(Mono_Exp_IVIM(Bval_list,fittedParameters_mono[0],fittedParameters_mono[1]))
+
+        S0 = fittedParameters_mono[0]
+        D = fittedParameters_mono[1]
+
+
+    except:
+        fit = np.zeros(len(images_to_be_fitted))
+        S0  = 0
+        D  = 0
+
+    return fit, S0, D
+
+
+
+def main(IVIM_images_to_be_fitted, sequenceParam):
     
     bvals_list = np.array(sequenceParam)
     #print(bvals_list)
@@ -56,15 +168,10 @@ def main(IVIM_images_to_be_fitted, sequenceParam,GUI_object=None):
             bval_counter = bval_counter + len(b_vals_temp)
         
         for xi in tqdm(range((np.size(IVIM_images_avg,0))),desc="Rows Completed..."):
-
-            if GUI_object:
-                GUI_object.progress_bar(max=np.shape(IVIM_images_to_be_fitted)[0], index=xi+1)
-                GUI_object.update_progress_bar(index=xi+1)
             
             for yi in range((np.size(IVIM_images_avg,1))):
                 
                 Kidney_pixel_IVIM = np.squeeze(np.array(IVIM_images_avg[xi,yi,:]))
-
 
                 if (Kidney_pixel_IVIM[0]==0):
                     continue
@@ -72,14 +179,15 @@ def main(IVIM_images_to_be_fitted, sequenceParam,GUI_object=None):
                 #print(Kidney_pixel_IVIM)
                 Kidney_pixel_IVIM = Kidney_pixel_IVIM/Kidney_pixel_IVIM[0]
 
-                [Fit,Fitted_Parameters] = ivim_fm.main(Kidney_pixel_IVIM, bvals_unique)
+                results = Mono_Exp_IVIM_fitting(Kidney_pixel_IVIM, bvals_unique)
+                Fit = results[0]
+                Fitted_Parameters = [results[1], results[2]]
 
                 residuals =  Kidney_pixel_IVIM - Fit
                 ss_res = np.sum(residuals**2)
                 ss_tot = np.sum((Kidney_pixel_IVIM-np.mean(Kidney_pixel_IVIM))**2)
                 r_squared = 1 - (ss_res / ss_tot)
                 if (np.isnan(r_squared)): r_squared = 0
-
 
                 #print(r_squared)
                 #print(Fitted_Parameters[0])

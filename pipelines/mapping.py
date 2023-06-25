@@ -1,24 +1,19 @@
-""" 
-@author: Joao Periquito 
-iBEAt MODELLING Scrpit
-2022
-Find iBEAt motion corrected pulse sequence name (MDR output: *_mdr_moco) and execute custom modelling for: DCE, DTI, T2*
-(T1 & T2 modelling are done in the main due to parallelization requirements)
-"""
-
-import datetime
 import time
 import numpy as np
-import models.t1_philips_pixelwise as t1_pixelwise
-import models.t2s_pixelwise_fit
-import models.ivim_pixelwise_fit
 import tqdm
 from dipy.core.gradients import gradient_table
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 from scipy.integrate import trapz
 
-def T1_Modelling_Philips(series=None, mask=None,export_ROI=False, study=None):
+import mapping.t1_exp
+import mapping.t1_philips
+
+
+def T1_Philips(series, study, mask=None):
+
+    start_time = time.time()
+    series.log("T1 mapping (Philips) has started")
 
     array, header = series.array(['SliceLocation',(0x2005, 0x1572)], pixels_first=True)
 
@@ -32,7 +27,7 @@ def T1_Modelling_Philips(series=None, mask=None,export_ROI=False, study=None):
             for i_w in range (np.shape(magnitude_array_T2s)[3]):
                 magnitude_array_T2s[:,:,i_slice,i_w]=magnitude_array_T2s[:,:,i_slice,i_w]*mask
 
-    fittedMaps = t1_pixelwise.main(array, header)
+    fittedMaps = mapping.t1_philips.main(array, header)
 
     M0map, T1_app_map, T1_map, rsquaremap = fittedMaps
 
@@ -52,7 +47,64 @@ def T1_Modelling_Philips(series=None, mask=None,export_ROI=False, study=None):
     rsquare_map_series = study.new_series(SeriesDescription=rsquare_map_series)
     rsquare_map_series.set_array(rsquaremap,np.squeeze(header[:,0]),pixels_first=True)
 
-def T2s_Modelling(series=None, mask=None,export_ROI=False,slice=None,Fat_export=False,study = None):
+    series.log("T1 mapping (Philips) was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
+    return M0_map_series, T1_app_map_series, T1_map_series
+
+
+def T1_MOLLI(series, study):
+
+    start_time = time.time()
+    series.log("T1 mapping (Siemens) has started")
+    array, header = series.array(['SliceLocation','InversionTime'], pixels_first=True, first_volume=True)
+
+    # PARAMETER VARIABLES INITIALIZATION
+    model_fit = np.empty(array.shape)
+    pars = np.empty(array.shape[:3] + (5,) )
+
+    # LOOP THROUGH SLICE
+    for z in range(array.shape[2]):
+        msg = 'Fitting T1 model: slice ' + str(1+z) + ' out of ' + str(array.shape[2])
+        TI = np.array([hdr['InversionTime'] for hdr in header[z,:]])
+        for x in range(array.shape[0]):
+            series.progress(1+x, array.shape[0], msg)
+            for y in range(array.shape[1]):
+                fit, S0, S0_App, T1_app, T1, r_square = mapping.t1_exp.main(array[x,y,z,:], TI)
+                model_fit[x,y,z,:] = fit
+                pars[x,y,z,0] = S0
+                pars[x,y,z,1] = S0_App
+                pars[x,y,z,2] = T1_app
+                pars[x,y,z,3] = T1
+                pars[x,y,z,4] = r_square
+
+    M0_map_series = study.new_series(SeriesDescription="M0")
+    M0_map_series.set_array(pars[...,0], header[:,0], pixels_first=True)
+
+    T1_app_map_series = study.new_series(SeriesDescription="T1app")
+    T1_app_map_series.set_array(pars[...,2], header[:,0], pixels_first=True)
+
+    T1_map_series = study.new_series(SeriesDescription="T1")
+    T1_map_series.set_array(pars[...,3], header[:,0], pixels_first=True)
+
+    rsquare_map_series = study.new_series(SeriesDescription="Rsquare")
+    rsquare_map_series.set_array(pars[...,4], header[:,0], pixels_first=True)
+
+    series.log("T1 mapping (Siemens) was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
+    return M0_map_series, T1_app_map_series, T1_map_series
+
+
+def T1(series, study):
+    if series.Manufacturer == 'SIEMENS':
+        return T1_MOLLI(series, study)
+    else:
+        return T1_Philips(series, study)
+
+
+def T2s(series=None, mask=None,export_ROI=False,slice=None,Fat_export=False,study = None):
+
+    start_time = time.time()
+    series.log("T2* mapping has started")
 
     series_T2s = series
 
@@ -78,7 +130,7 @@ def T2s_Modelling(series=None, mask=None,export_ROI=False,slice=None,Fat_export=
                     magnitude_array_T2s[:,:,i_slice,i_w]=magnitude_array_T2s[:,:,i_slice,i_w]*mask
 
         #T2* mapping input: T2*-weighted images (x,y,z,TE), echo times, wezel as optional argument to create progress bars in to wezel interface
-        M0map, fwmap, T2smap, rsquaremap = models.t2s_pixelwise_fit.main(magnitude_array_T2s, TE_list)
+        M0map, fwmap, T2smap, rsquaremap = mapping.T2s.main(magnitude_array_T2s, TE_list)
 
         #wezel vizualitation of T2* mapping parameters: M0 map, Water Fraction map, T2* map,T2* r square (goodness of fit)
         M0_map_series = series_T2s.SeriesDescription + "_T2s_" + "M0_Map"
@@ -97,7 +149,12 @@ def T2s_Modelling(series=None, mask=None,export_ROI=False,slice=None,Fat_export=
         rsquare_map_series = study.new_series(SeriesDescription=rsquare_map_series)
         rsquare_map_series.set_array(rsquaremap,np.squeeze(header[:,0]),pixels_first=True)
 
-def T1T2_Modelling(series=None, mask=None,export_ROI=False, study=None):
+        series.log("T2* mapping was completed --- %s seconds ---" % (int(time.time() - start_time))) 
+
+        return M0_map_series, fw_map_series, T2s_map_series
+
+
+def T1T2(series=None, mask=None,export_ROI=False, study=None):
         
         series_T1 = series[0]
         series_T2 = series[1]
@@ -144,12 +201,12 @@ def T1T2_Modelling(series=None, mask=None,export_ROI=False, study=None):
 
                     try:
 
-                        fit_T1, fitted_parameters_T1 = models.model_library.single_pixel_forward_models.t1_fm.main (Kidney_pixel_T1, TI_temp, [FA_rad, TR, N_T1,FA_Cat])
+                        fit_T1, fitted_parameters_T1 = mapping.t1.main (Kidney_pixel_T1, TI_temp, [FA_rad, TR, N_T1,FA_Cat])
                                                                                                                 
 
                         S0_T1,T1,FA_eff = fitted_parameters_T1
 
-                        fit_T2, fitted_parameters_T2 = models.model_library.single_pixel_forward_models.t2_fm.main (Kidney_pixel_T2, TE,[T1,Tspoil,FA_rad,TR, N_T2,Trec,FA_eff])
+                        fit_T2, fitted_parameters_T2 = mapping.t2.main (Kidney_pixel_T2, TE,[T1,Tspoil,FA_rad,TR, N_T2,Trec,FA_eff])
 
                         S0_T2, T2, FA_eff_2 =  fitted_parameters_T2
 
@@ -224,7 +281,7 @@ def T1T2_Modelling(series=None, mask=None,export_ROI=False, study=None):
 
         #runpy.run_path("C://Users//md1jdsp//Documents//GitHub//iBEAt//Scripts//T1T2_ForwardModelling_wPara_standaloneScript//T1T2_alone_cluster.py", {}, "__main__")
 
-def IVIM_Modelling(series=None, mask=None,export_ROI=False, study = None):
+def IVIM(series=None, mask=None,export_ROI=False, study = None):
 
         series_IVIM = series
 
@@ -239,7 +296,7 @@ def IVIM_Modelling(series=None, mask=None,export_ROI=False, study = None):
                     for i_w in range (np.shape(pixel_array_IVIM)[3]):
                         pixel_array_IVIM[:,:,i_slice,i_w]=pixel_array_IVIM[:,:,i_slice,i_w]*mask
 
-        S0map, Dmap,rsquaremap = models.IVIM_pixelwise_fit.main(pixel_array_IVIM,b_vals)
+        S0map, Dmap,rsquaremap = mapping.IVIM.main(pixel_array_IVIM,b_vals)
 
         S0_map_series = series_IVIM.SeriesDescription + "_IVIM_" + "S0_Map"
         S0_map_series = study.new_series(SeriesDescription=S0_map_series)
@@ -253,7 +310,16 @@ def IVIM_Modelling(series=None, mask=None,export_ROI=False, study = None):
         rsquare_map_series = study.new_series(SeriesDescription=rsquare_map_series)
         rsquare_map_series.set_array(np.squeeze(rsquaremap),np.squeeze(header[:,0]),pixels_first=True)
 
-def DTI_Modelling(series=None, mask=None,export_ROI=False, study = None):
+def DTI(series=None, mask=None,export_ROI=False, study = None):
+
+    # # Added this as the original version (below) gave an error
+    # fit, par = fit_DTI(series)
+    # return par[0], par[1]
+
+    # Previous code
+
+    start_time = time.time()
+    series.log("DTI-FA & ADC mapping has started")
 
     series_DTI = series
 
@@ -264,7 +330,8 @@ def DTI_Modelling(series=None, mask=None,export_ROI=False, study = None):
     b_vals_check = [float(hdr[(0x19, 0x100c)]) for hdr in header[0,:]]
     b_vecs_check = [hdr[(0x19, 0x100e)] for hdr in header[0,:]]
 
-    #Check if the data corresponds to the Siemens protocol (more than 1 unique b-value)        
+    #Check if the data corresponds to the Siemens protocol (more than 1 unique b-value)     
+    return_vals = None, None   
     if len(b_vals_check) >= 1 and np.shape(b_vecs_check)[0] >=6:
 
 ######FROM DIPY
@@ -287,28 +354,43 @@ def DTI_Modelling(series=None, mask=None,export_ROI=False, study = None):
         MD_map_series = study.new_series(SeriesDescription=MD_map_series)
         MD_map_series.set_array(np.squeeze(MDmap),np.squeeze(header[:,0]),pixels_first=True)
 
-def MTR_Modelling(series=None, mask=None, export_ROI=False, study=None):
+        return_vals = FA_map_series, MD_map_series
+
+    series.log("DTI-FA & ADC mapping was completed --- %s seconds ---" % (int(time.time() - start_time))) 
+    
+    return return_vals
+
+def MTR(series=None, mask=None, export_ROI=False, study=None):
+
+    start_time = time.time()
+    series.log("MTR mapping has started")
         
-        array_mt_moco, header_mt_moco = series.array(['SliceLocation', 'AcquisitionTime'],pixels_first=True)
-        header_on = header_mt_moco[:,0,0]
+    array_mt_moco, header_mt_moco = series.array(['SliceLocation', 'AcquisitionTime'],pixels_first=True)
+    header_on = header_mt_moco[:,0,0]
 
-        array_mt_off = np.squeeze(array_mt_moco[:,:,:,0])
-        array_mt_on = np.squeeze(array_mt_moco[:,:,:,1])
-        array_mtr = np.zeros((np.shape(array_mt_off)[0:3]))
-        
-        for s in range (np.shape(array_mt_off)[2]):
-            temp_off_moco = np.squeeze(array_mt_off[:,:,s])
-            temp_on_moco = np.squeeze(array_mt_on[:,:,s])
+    array_mt_off = np.squeeze(array_mt_moco[:,:,:,0])
+    array_mt_on = np.squeeze(array_mt_moco[:,:,:,1])
+    array_mtr = np.zeros((np.shape(array_mt_off)[0:3]))
+    
+    for s in range (np.shape(array_mt_off)[2]):
+        temp_off_moco = np.squeeze(array_mt_off[:,:,s])
+        temp_on_moco = np.squeeze(array_mt_on[:,:,s])
 
-            array_mtr[:,:,s] = np.divide((temp_off_moco - temp_on_moco),temp_off_moco, out=np.zeros_like(temp_off_moco - temp_on_moco), where=temp_off_moco!=0) * 100
-        
-        study = series.parent()
-        mtr = series.SeriesDescription + '_MTR'
-        mtr = study.new_series(SeriesDescription=mtr)
-        mtr.set_array(array_mtr, np.squeeze(header_on), pixels_first=True)
+        array_mtr[:,:,s] = np.divide((temp_off_moco - temp_on_moco),temp_off_moco, out=np.zeros_like(temp_off_moco - temp_on_moco), where=temp_off_moco!=0) * 100
+    
+    study = series.parent()
+    mtr = series.SeriesDescription + '_MTR'
+    mtr = study.new_series(SeriesDescription=mtr)
+    mtr.set_array(array_mtr, np.squeeze(header_on), pixels_first=True)
+
+    series.log("MTR mapping was completed --- %s seconds ---" % (int(time.time() - start_time))) 
+    return mtr
 
 
-def DCE_MAX_Modelling(series=None, mask=None,export_ROI=False, study=None):
+def DCE_MAX(series=None, mask=None,export_ROI=False, study=None):
+
+    start_time = time.time()
+    series.log("DCE-MAX mapping has started")
 
     series_DCE = series
 
@@ -360,7 +442,15 @@ def DCE_MAX_Modelling(series=None, mask=None,export_ROI=False, study=None):
     DCEArea_map_series = study.new_series(SeriesDescription=DCEArea_map_series)
     DCEArea_map_series.set_array(np.squeeze(DCE_Area_map),np.squeeze(header[:,0]),pixels_first=True)
 
-def main(folder,filename_log):
+    series.log("DCE-MAX mapping was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
+    return DCEMax_map_series, DCEArea_map_series
+
+
+def main(folder):
+
+    start_time = time.time()
+    folder.log(": Modelling has started!")
 
     list_of_series = folder.series()
 
@@ -373,94 +463,34 @@ def main(folder,filename_log):
 
             if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                 try:
-                    start_time = time.time()
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": T2* mapping has started")
-                    file.close()
-
-                    T2s_Modelling(series, study=study)
-
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": T2* mapping was completed --- %s seconds ---" % (int(time.time() - start_time))) 
-                    file.close()   
+                    T2s(series, study=study)
                 except Exception as e: 
-
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": T2* mapping was NOT completed; error: "+str(e)) 
-                    file.close()
+                    series.log("T2* mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DTI_kidneys_cor-oblique_fb_mdr_moco":
                 try:
-                    start_time = time.time()
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": DTI-FA & ADC mapping has started")
-                    file.close()
-                    
-                    DTI_Modelling(series, study=study)
-
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": DTI-FA & ADC mapping was completed --- %s seconds ---" % (int(time.time() - start_time))) 
-                    file.close()   
-
+                    DTI(series, study=study)
                 except Exception as e: 
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": DTI-FA mapping was NOT completed; error: "+str(e)) 
-                    file.close()
+                    series.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DCE_kidneys_cor-oblique_fb_mdr_moco":
                 try:
-                    start_time = time.time()
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": DCE-MAX mapping has started")
-                    file.close()
-                    
-                    DCE_MAX_Modelling(series, study=study)
-
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": DCE-MAX mapping was completed --- %s seconds ---" % (int(time.time() - start_time))) 
-                    file.close()   
-
+                    DCE_MAX(series, study=study)
                 except Exception as e: 
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": DCE-MAX mapping was NOT completed; error: "+str(e)) 
-                    file.close()
+                    series.log("DCE-MAX mapping was NOT completed; error: "+str(e))
 
             elif series.SeriesDescription == 'MT_ON_kidneys_cor-oblique_bh_mdr_moco':
                 try:
-                    start_time = time.time()
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": MTR mapping has started")
-                    file.close()
-                    
-                    MTR_Modelling(series, study=study)
-
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": MTR mapping was completed --- %s seconds ---" % (int(time.time() - start_time))) 
-                    file.close()   
-
+                    MTR(series, study=study)
                 except Exception as e: 
-                    file = open(filename_log, 'a')
-                    file.write("\n"+str(datetime.datetime.now())[0:19] + ": MTR mapping was NOT completed; error: "+str(e)) 
-                    file.close()
-            
+                    series.log("MTR mapping was NOT completed; error: "+str(e))
+
             elif series.SeriesDescription == 'T1_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco':
-                if series.Manufacturer == 'SIEMENS':
-                        
+                if series.Manufacturer == 'SIEMENS': # TODO: Check this, something not right
                     try:
-                        start_time = time.time()
-                        file = open(filename_log, 'a')
-                        file.write("\n"+str(datetime.datetime.now())[0:19] + ": T1 mapping (Philips) has started")
-                        file.close()
-                        
-                        T1_Modelling_Philips(series, study=study)
-
-                        file = open(filename_log, 'a')
-                        file.write("\n"+str(datetime.datetime.now())[0:19] + ": T1 mapping (Philips) was completed --- %s seconds ---" % (int(time.time() - start_time))) 
-                        file.close()   
-
+                        T1_Philips(series, study=study)  
                     except Exception as e: 
-                        file = open(filename_log, 'a')
-                        file.write("\n"+str(datetime.datetime.now())[0:19] + ": T1 mapping (Philips) was NOT completed; error: "+str(e)) 
-                        file.close()
+                        series.log("T1 mapping was NOT completed; error: "+str(e))
 
     folder.save()
+    folder.log("Modelling was completed --- %s seconds ---" % (int(time.time() - start_time)))

@@ -7,8 +7,7 @@ Siemens 3T PRISMA - Leeds (T2* sequence)
 
 import numpy as np
 from tqdm import tqdm
-
-from scripts.cluster.models.model_library.single_pixel_forward_models import t2_exp_w_offset
+import mapping
 
 #from iBEAt_Model_Library.single_pixel_forward_models import iBEAT_T2s_FM
 
@@ -47,7 +46,7 @@ def main(T1_images_to_be_fitted, sequenceParam):
                 if Kidney_pixel_T2[0] == 0:
                     continue
 
-                fit, S0, T2,C, r_square = t2_exp_w_offset.main(Kidney_pixel_T2, TE)
+                fit, S0, T2,C, r_square = mapping.t2_exp_w_offset.main(Kidney_pixel_T2, TE)
 
                 residuals = Kidney_pixel_T2 - fit
                 ss_res = np.sum(residuals**2)

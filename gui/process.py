@@ -1,11 +1,10 @@
-from os.path import dirname
 import datetime
 from wezel.gui import Action
-import scripts.cluster.cluster_rename as rename
-import scripts.cluster.cluster_mdr as mdr
-import scripts.cluster.cluster_modelling as modelling
-import scripts.cluster.cluster_segmentation as segmentation
-import scripts.cluster.cluster_upload as upload
+import pipelines.rename as rename
+import pipelines.mdr as mdr
+import pipelines.mapping as map
+import scripts.segmentation as segmentation
+import scripts.upload as upload
 
 
 def _if_a_database_is_open(app): 
@@ -28,7 +27,7 @@ def _mdr(app):
 def _mapping(app):
     folder = app.database()
     filename_log = folder.path() + datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "log_mapping.txt"
-    modelling.main(folder, filename_log)
+    map.main(folder, filename_log)
     app.refresh()
 
 
