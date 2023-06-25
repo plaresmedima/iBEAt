@@ -6,18 +6,14 @@ import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 from scipy.integrate import trapz
 
-import mapping
-from pipelines.mapping_mdreg import fit_T1
-
-#from pipelines.mdreg import fit_DTI
-
-
+import mapping.t1_exp
+import mapping.t1_philips
 
 
 def T1_Philips(series, study, mask=None):
 
     start_time = time.time()
-    series.log("T1 mapping (Philips) mapping has started")
+    series.log("T1 mapping (Philips) has started")
 
     array, header = series.array(['SliceLocation',(0x2005, 0x1572)], pixels_first=True)
 
@@ -51,15 +47,56 @@ def T1_Philips(series, study, mask=None):
     rsquare_map_series = study.new_series(SeriesDescription=rsquare_map_series)
     rsquare_map_series.set_array(rsquaremap,np.squeeze(header[:,0]),pixels_first=True)
 
-    series.log("T1 mapping (Philips) mapping was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    series.log("T1 mapping (Philips) was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
+    return M0_map_series, T1_app_map_series, T1_map_series
+
+
+def T1_MOLLI(series, study):
+
+    start_time = time.time()
+    series.log("T1 mapping (Siemens) has started")
+    array, header = series.array(['SliceLocation','InversionTime'], pixels_first=True, first_volume=True)
+
+    # PARAMETER VARIABLES INITIALIZATION
+    model_fit = np.empty(array.shape)
+    pars = np.empty(array.shape[:3] + (5,) )
+
+    # LOOP THROUGH SLICE
+    for z in range(array.shape[2]):
+        msg = 'Fitting T1 model: slice ' + str(1+z) + ' out of ' + str(array.shape[2])
+        TI = np.array([hdr['InversionTime'] for hdr in header[z,:]])
+        for x in range(array.shape[0]):
+            series.progress(1+x, array.shape[0], msg)
+            for y in range(array.shape[1]):
+                fit, S0, S0_App, T1_app, T1, r_square = mapping.t1_exp.main(array[x,y,z,:], TI)
+                model_fit[x,y,z,:] = fit
+                pars[x,y,z,0] = S0
+                pars[x,y,z,1] = S0_App
+                pars[x,y,z,2] = T1_app
+                pars[x,y,z,3] = T1
+                pars[x,y,z,4] = r_square
+
+    M0_map_series = study.new_series(SeriesDescription="M0")
+    M0_map_series.set_array(pars[...,0], header[:,0], pixels_first=True)
+
+    T1_app_map_series = study.new_series(SeriesDescription="T1app")
+    T1_app_map_series.set_array(pars[...,2], header[:,0], pixels_first=True)
+
+    T1_map_series = study.new_series(SeriesDescription="T1")
+    T1_map_series.set_array(pars[...,3], header[:,0], pixels_first=True)
+
+    rsquare_map_series = study.new_series(SeriesDescription="Rsquare")
+    rsquare_map_series.set_array(pars[...,4], header[:,0], pixels_first=True)
+
+    series.log("T1 mapping (Siemens) was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
     return M0_map_series, T1_app_map_series, T1_map_series
 
 
 def T1(series, study):
-    if series.Manufacturer == 'SIEMENS': 
-        fit, pars = fit_T1(series, study)
-        return tuple([fit] + pars)
+    if series.Manufacturer == 'SIEMENS':
+        return T1_MOLLI(series, study)
     else:
         return T1_Philips(series, study)
 
@@ -115,6 +152,7 @@ def T2s(series=None, mask=None,export_ROI=False,slice=None,Fat_export=False,stud
         series.log("T2* mapping was completed --- %s seconds ---" % (int(time.time() - start_time))) 
 
         return M0_map_series, fw_map_series, T2s_map_series
+
 
 def T1T2(series=None, mask=None,export_ROI=False, study=None):
         

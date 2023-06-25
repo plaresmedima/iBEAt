@@ -63,13 +63,11 @@ def T1_fitting(images_to_be_fitted, TI):
         S0_App  = 0
         T1_app  = 0
 
-    residuals = images_to_be_fitted - T1_FLASH_MOLLI_Eq(TI,S0, S0_App,T1_app)
+    fit = T1_FLASH_MOLLI_Eq(TI,S0, S0_App,T1_app)
+    residuals = images_to_be_fitted - fit
     ss_res = np.sum(residuals**2)
     ss_tot = np.sum((images_to_be_fitted-np.mean(images_to_be_fitted))**2)
     r_squared = 1 - (ss_res / ss_tot)
-
-    
-    fit=T1_FLASH_MOLLI_Eq(TI,S0, S0_App,T1_app)
 
     T1 = T1_corrected(S0, S0_App,T1_app)
 
@@ -78,18 +76,6 @@ def T1_fitting(images_to_be_fitted, TI):
 
 
 def main(images_to_be_fitted, TI):
-    """ main function that performs the T2 model-fit at single pixel level. 
-
-    Args
-    ----
-    images_to_be_fitted (numpy.ndarray): pixel value for time-series (i.e. at each echo time) with shape [x,:]
-    TE_list (list): list of echo times
-
-    Returns
-    -------
-    fit (list): signal model fit per pixel
-    fitted_parameters (list): list with signal model fitted parameters 'S0','fw' (fraction of water) and 'T2sw'.  
-    """
 
     results = T1_fitting(images_to_be_fitted, TI)
 

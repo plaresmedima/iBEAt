@@ -1,7 +1,6 @@
 from wezel.gui import Menu
 from . import segment
-from . import asl
-from . import T1
+from . import contrasts
 from . import process
 from . import mdr
 from . import mapping
@@ -11,8 +10,9 @@ menu = Menu('iBEAt')
 menu.add(process.action_rename)
 menu.add(segment.action_unetr)
 menu.add(segment.renal_sinus_fat)
-menu.add(asl.perfusion)
-menu.add(T1.action_mdr)
+menu.add(contrasts.asl_perfusion)
+menu.add(contrasts.T1_mdr)
+menu.add(contrasts.T1_map)
 menu.add_separator()
 menu.add(segment.whole_kidney_mask)
 menu.add_separator()
