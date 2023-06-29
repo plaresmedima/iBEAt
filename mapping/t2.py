@@ -40,7 +40,7 @@ def FLASHreadout(M_init, M_eq, T1, FA, TR, N):
     """
     M_current = M_init
     
-    for i in range(np.int(N)):
+    for i in range(int(N)):
         M_current = pulse(M_current, FA)
         M_current = freeRecoveryMagnetization(M_current, TR, M_eq, T1)
     return M_current
