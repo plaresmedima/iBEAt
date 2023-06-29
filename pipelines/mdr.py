@@ -117,7 +117,7 @@ def MDRegDTI(series=None,study=None):
 def MDRegMT(series=None,study=None):
     """Perform MDR on all slices using a MT model"""
     start_time = time.time()
-    series.log("MT motion correction has started")
+    series[0].log("MT motion correction has started")
 
     mt_off =series[0]
     mt_on =series[1]
@@ -138,7 +138,7 @@ def MDRegMT(series=None,study=None):
 
     number_slices = array.shape[2]
     vals = _mdr(mt_on, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
-    series.log("MT motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    series[0].log("MT motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return vals
 
 def MDRegDCE(series=None, study=None):
@@ -316,13 +316,15 @@ def main(folder):
 
             elif SeqName == "T1map_kidneys_cor-oblique_mbh_magnitude":
                 try:
-                    MDRegT1(series, study)
+                    print("starting T1 mapping")
+                    #MDRegT1(series, study)
                 except Exception as e: 
                     folder.log("T1 motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "T2map_kidneys_cor-oblique_mbh_magnitude":
                 try:
-                    MDRegT2(series, study=study)
+                    print("starting T2 mapping")
+                    #MDRegT2(series, study=study)
                 except Exception as e: 
                     folder.log("T2 motion correction was NOT completed; error: "+str(e))   
 
