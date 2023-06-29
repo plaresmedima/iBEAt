@@ -1,13 +1,18 @@
 import time
 import numpy as np
-import tqdm
+from tqdm import tqdm
+import multiprocessing
 from dipy.core.gradients import gradient_table
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 from scipy.integrate import trapz
+from pipelines import cluster_parallel_curve_fit_t1_t2_alone
 
 import mapping.t1_exp
 import mapping.t1_philips
+import mapping.t1
+import mapping.t2
+import os
 
 
 def T1_Philips(series, study, mask=None):
@@ -154,127 +159,114 @@ def T2s(series=None, mask=None,export_ROI=False,slice=None,Fat_export=False,stud
         return M0_map_series, fw_map_series, T2s_map_series
 
 
-def T1T2(series=None, mask=None,export_ROI=False, study=None):
-        
-        series_T1 = series[0]
-        series_T2 = series[1]
+def T1T2_Modelling(series_T1_T2, study=None):
 
-        array_T1, header_T1 = series_T1.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
-        array_T2, header_T2 = series_T2.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
+    series_T1 = series_T1_T2[0]
+    series_T2 = series_T1_T2[1]
 
-        header_T1 = np.squeeze(header_T1)
-        header_T2 = np.squeeze(header_T2)
+    array_T1, header_T1 = series_T1.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
+    array_T2, header_T2 = series_T2.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
 
-        TR = 4.6                            #in ms
-        FA = header_T1[0,0]['FlipAngle']    #in degrees
-        FA_rad = FA/360*(2*np.pi)           #convert to rads
-        N_T1 = 66                           #number of k-space lines
-        FA_Cat  = [(-FA/5)/360*(2*np.pi), (2*FA/5)/360*(2*np.pi), (-3*FA/5)/360*(2*np.pi), (4*FA/5)/360*(2*np.pi), (-5*FA/5)/360*(2*np.pi)] #cat module
-        
-        TE = [0,30,40,50,60,70,80,90,100,110,120]
-        Tspoil = 1
-        N_T2 = 72
-        Trec = 463*2
+    array_T1 = np.squeeze(array_T1[:,:,:,:,0])
+    array_T2 = np.squeeze(array_T2[:,:,:,:,0])
 
-        number_slices = np.shape(array_T1)[2]
+    header_T1 = np.squeeze(header_T1[:,...])
+    header_T2 = np.squeeze(header_T2[:,...])
 
-        T1_S0_map = np.empty(np.shape(array_T1)[0:3])
-        T1_map = np.empty(np.shape(array_T1)[0:3])
-        FA_Eff_map = np.empty(np.shape(array_T1)[0:3])
-        Ref_Eff_map = np.empty(np.shape(array_T1)[0:3])
-        T2_S0_map = np.empty(np.shape(array_T1)[0:3])
-        T2_map = np.empty(np.shape(array_T1)[0:3])
-        T1_rsquare_map = np.empty(np.shape(array_T1)[0:3])
-        T2_rsquare_map = np.empty(np.shape(array_T1)[0:3])
+    TR = 4.6                            #in ms
+    FA = 12    #in degrees
+    FA_rad = FA/360*(2*np.pi)           #convert to rads
+    N_T1 = 66                           #number of k-space lines
+    FA_Cat  = [(-FA/5)/360*(2*np.pi), (2*FA/5)/360*(2*np.pi), (-3*FA/5)/360*(2*np.pi), (4*FA/5)/360*(2*np.pi), (-5*FA/5)/360*(2*np.pi)] #cat module
 
-        for slice in tqdm(range(number_slices),desc="Slice Completed..."):
-            
-            TI_temp =  [float(hdr['InversionTime']) for hdr in header_T1[slice,:]]
+    FA_Cat  = [(-FA/5)/360*(2*np.pi), (2*FA/5)/360*(2*np.pi), (-3*FA/5)/360*(2*np.pi), (4*FA/5)/360*(2*np.pi), (-5*FA/5)/360*(2*np.pi)] #cat module
 
-            array_T1_temp = np.squeeze(array_T1[:,:,slice,:])
-            array_T2_temp = np.squeeze(array_T2[:,:,slice,:])
-            for xi in tqdm (range((np.size(array_T1_temp,0))),desc="Rows Completed..."):
-                for yi in range((np.size(array_T1_temp,1))):
-                    
-                    Kidney_pixel_T1 = np.squeeze(np.array(array_T1_temp[xi,yi,:]))
-                    Kidney_pixel_T2 = np.squeeze(np.array(array_T2_temp[xi,yi,:]))
+    TE = [0,30,40,50,60,70,80,90,100,110,120]
+    Tspoil = 1
+    N_T2 = 72
+    Trec = 463*2
+    FA_eff = 0.6
 
-                    try:
+    number_slices = np.shape(array_T1)[2]
 
-                        fit_T1, fitted_parameters_T1 = mapping.t1.main (Kidney_pixel_T1, TI_temp, [FA_rad, TR, N_T1,FA_Cat])
-                                                                                                                
+    T1_S0_map = np.zeros(np.shape(array_T1)[0:3])
+    T1_map = np.zeros(np.shape(array_T1)[0:3])
+    FA_Eff_map = np.zeros(np.shape(array_T1)[0:3])
+    Ref_Eff_map = np.zeros(np.shape(array_T1)[0:3])
+    T2_S0_map = np.zeros(np.shape(array_T1)[0:3])
+    T2_map = np.zeros(np.shape(array_T1)[0:3])
+    T1_rsquare_map = np.zeros(np.shape(array_T1)[0:3])
+    T2_rsquare_map = np.zeros(np.shape(array_T1)[0:3])
 
-                        S0_T1,T1,FA_eff = fitted_parameters_T1
+    for i in range(np.shape(array_T1)[2]):
+        Kidney_pixel_T1 = np.squeeze(array_T1[...,i,:])
+        Kidney_pixel_T2 = np.squeeze(array_T2[...,i,:])
 
-                        fit_T2, fitted_parameters_T2 = mapping.t2.main (Kidney_pixel_T2, TE,[T1,Tspoil,FA_rad,TR, N_T2,Trec,FA_eff])
+        if np.size(np.shape(np.squeeze(header_T1)))==2:
+            TI_temp =  [float(hdr['InversionTime']) for hdr in header_T1[i,:]]
+        elif np.size(np.shape(np.squeeze(header_T1)))==3:
+            TI_temp =  [float(hdr['InversionTime']) for hdr in header_T1[i,:,0]]
 
-                        S0_T2, T2, FA_eff_2 =  fitted_parameters_T2
+        pool = multiprocessing.Pool(processes=os.cpu_count())
 
-                        T1_S0_map[xi,yi,slice] = S0_T1
-                        T1_map[xi,yi,slice]     = T1
-                        FA_Eff_map[xi,yi,slice] = FA_eff
-                        T2_S0_map[xi,yi,slice] = S0_T2
-                        T2_map[xi,yi,slice] = T2
+        arguments =[]
+        pool = multiprocessing.Pool(initializer=multiprocessing.freeze_support,processes=os.cpu_count())
+        for (x, y), _ in np.ndenumerate(Kidney_pixel_T1[..., 0]):
+            t1_value = Kidney_pixel_T1[x, y, :]
+            t2_value = Kidney_pixel_T2[x, y, :]
 
-                        residuals_T1 = Kidney_pixel_T1-np.squeeze(fit_T1) 
-                        residuals_T2 = Kidney_pixel_T2-np.squeeze(fit_T2) 
+            arguments.append((x,y,t1_value,t2_value,TI_temp,TE,FA_rad,TR,N_T1,N_T2,FA_Cat,Trec,FA_eff,Tspoil))
 
-                        #r squared calculation 
-                        ss_res_T1 = np.sum(residuals_T1**2)
-                        ss_res_T2 = np.sum(residuals_T2**2)
+        results = list(tqdm(pool.imap(cluster_parallel_curve_fit_t1_t2_alone.main, arguments), total=len(arguments), desc='Processing pixels of slice ' + str(i)))
 
-                        ss_tot_T1 = np.sum((Kidney_pixel_T1-np.mean(Kidney_pixel_T1))**2)
-                        ss_tot_T2 = np.sum((Kidney_pixel_T2-np.mean(Kidney_pixel_T2))**2)
+        for result in results:
+            xi = result[0]
+            yi = result[1]
+            T1 = result[2]
+            T2 = result[3]
+            S0_T1 = result[4]
+            S0_T2 = result[5]
+            FA_eff = result[6]
+            r_squared_T1 = result[7]
+            r_squared_T2 = result[8]
 
-                        r_squared_T1 = 1 - (ss_res_T1 / ss_tot_T1)
-                        r_squared_T2 = 1 - (ss_res_T2 / ss_tot_T2)
+            r_squared_T1 = result[7]
+            r_squared_T2 = result[8]
+            T1_map[xi,yi,i] = T1
+            T2_map[xi,yi,i] = T2
+            T1_S0_map[xi,yi,i] = S0_T1
+            T2_S0_map[xi,yi,i] = S0_T2
+            FA_Eff_map[xi,yi,i] = FA_eff
+            T1_rsquare_map[xi,yi,i] = r_squared_T1
+            T2_rsquare_map[xi,yi,i] = r_squared_T2
 
-                        #replace possible nan (from division by 0: ss_res_T1 / ss_tot_T1) to 0
-                        if (np.isnan(r_squared_T1)): r_squared_T1 = 0
-                        if (np.isnan(r_squared_T2)): r_squared_T2 = 0
-                        
-                        T1_rsquare_map[xi,yi,slice] = r_squared_T1
-                        T2_rsquare_map[xi,yi,slice] = r_squared_T2
+    T1_S0_map_series = series_T1.SeriesDescription + "_T1_" + "S0_Map_v2"
+    T1_S0_map_series = series_T1.new_sibling(SeriesDescription=T1_S0_map_series)
+    T1_S0_map_series.set_array(np.squeeze(T1_S0_map),np.squeeze(header_T1[:,0]),pixels_first=True)
 
-                    except:
+    T1_map_series = series_T1.SeriesDescription + "_T1_" + "T1_Map_v2"
+    T1_map_series = series_T1.new_sibling(SeriesDescription=T1_map_series)
+    T1_map_series.set_array(np.squeeze(T1_map),np.squeeze(header_T1[:,0]),pixels_first=True)
 
-                        T1_S0_map[xi,yi,slice] = 0
-                        T1_map[xi,yi,slice]     = 0
-                        FA_Eff_map[xi,yi,slice] = 0
-                        T2_S0_map[xi,yi,slice] = 0
-                        T2_map[xi,yi,slice] = 0
+    FA_Eff_map_series = series_T1.SeriesDescription + "_T1_" + "FA_Eff_Map_v2"
+    FA_Eff_map_series = series_T1.new_sibling(SeriesDescription=FA_Eff_map_series)
+    FA_Eff_map_series.set_array(np.squeeze(FA_Eff_map),np.squeeze(header_T1[:,0]),pixels_first=True)
 
-                        T1_rsquare_map[xi,yi,slice] = 0
-                        T2_rsquare_map[xi,yi,slice] = 0
+    T2_S0_map_series = series_T1.SeriesDescription + "_T2_" + "S0_Map_v2"
+    T2_S0_map_series = series_T1.new_sibling(SeriesDescription=T2_S0_map_series)
+    T2_S0_map_series.set_array(np.squeeze(T2_S0_map),np.squeeze(header_T2[:,0]),pixels_first=True)
 
+    T2_map_series = series_T1.SeriesDescription + "_T2_" + "T2_Map_v2"
+    T2_map_series = series_T1.new_sibling(SeriesDescription=T2_map_series)
+    T2_map_series.set_array(np.squeeze(T2_map),np.squeeze(header_T2[:,0]),pixels_first=True)
 
-        T1_S0_map_series = series_T1.SeriesDescription + "_T1_" + "S0_Map"
-        T1_S0_map_series = study.new_series(SeriesDescription=T1_S0_map_series)
-        T1_S0_map_series.set_array(np.squeeze(T1_S0_map),np.squeeze(header_T1[:,0]),pixels_first=True)
-            
-        T1_map_series = series_T1.SeriesDescription + "_T1_" + "T1_Map"
-        T1_map_series = study.new_series(SeriesDescription=T1_map_series)
-        T1_map_series.set_array(np.squeeze(T1_map),np.squeeze(header_T1[:,0]),pixels_first=True)
+    T1_rsquare_map_series = series_T1.SeriesDescription + "_T1_" + "rsquare_Map_v2"
+    T1_rsquare_map_series = series_T1.new_sibling(SeriesDescription=T1_rsquare_map_series)
+    T1_rsquare_map_series.set_array(np.squeeze(T1_rsquare_map),np.squeeze(header_T1[:,0]),pixels_first=True)
 
-        FA_Eff_map_series = series_T1.SeriesDescription + "_T1_" + "FA_Eff_Map"
-        FA_Eff_map_series = study.new_series(SeriesDescription=FA_Eff_map_series)
-        FA_Eff_map_series.set_array(np.squeeze(FA_Eff_map),np.squeeze(header_T1[:,0]),pixels_first=True)
-
-        T2_S0_map_series = series_T2.SeriesDescription + "_T2_" + "S0_Map"
-        T2_S0_map_series = study.new_series(SeriesDescription=T2_S0_map_series)
-        T2_S0_map_series.set_array(np.squeeze(T2_S0_map),np.squeeze(header_T2[:,0]),pixels_first=True)
-
-        T2_map_series = series_T2.SeriesDescription + "_T2_" + "T2_Map"
-        T2_map_series = study.new_series(SeriesDescription=T2_map_series)
-        T2_map_series.set_array(np.squeeze(T2_map),np.squeeze(header_T2[:,0]),pixels_first=True)
-
-        T1_rsquare_map_series = series_T1.SeriesDescription + "_T1_" + "rsquare_Map"
-        T1_rsquare_map_series = study.new_series(SeriesDescription=T1_rsquare_map_series)
-        T1_rsquare_map_series.set_array(np.squeeze(T1_rsquare_map),np.squeeze(header_T1[:,0]),pixels_first=True)
-
-        T2_rsquare_map_series = series_T2.SeriesDescription + "_T2_" + "rsquare_Map"
-        T2_rsquare_map_series = study.new_series(SeriesDescription=T2_rsquare_map_series)
-        T2_rsquare_map_series.set_array(np.squeeze(T2_rsquare_map),np.squeeze(header_T2[:,0]),pixels_first=True)
+    T2_rsquare_map_series = series_T1.SeriesDescription + "_T2_" + "rsquare_Map_v2"
+    T2_rsquare_map_series = series_T1.new_sibling(SeriesDescription=T2_rsquare_map_series)
+    T2_rsquare_map_series.set_array(np.squeeze(T2_rsquare_map),np.squeeze(header_T2[:,0]),pixels_first=True)
 
 
 # def T1T2_Modelling_with_Par(series=None, mask=None,export_ROI=False, study = None):
@@ -458,39 +450,51 @@ def main(folder):
     study = list_of_series[0].new_pibling(StudyDescription=current_study.StudyDescription + '_ModellingResults')
 
     for i,series in enumerate(list_of_series):
-
+        print(series['SeriesDescription'])
         if series["SequenceName"] is not None:
 
             if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                 try:
-                    T2s(series, study=study)
+                    print('Starting T2s')
+                    #T2s(series, study=study)
                 except Exception as e: 
                     series.log("T2* mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DTI_kidneys_cor-oblique_fb_mdr_moco":
                 try:
-                    DTI(series, study=study)
+                    print('Starting DTI')
+                    #DTI(series, study=study)
                 except Exception as e: 
                     series.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DCE_kidneys_cor-oblique_fb_mdr_moco":
                 try:
-                    DCE_MAX(series, study=study)
+                    print('Starting DCE_MAX')
+                    #DCE_MAX(series, study=study)
                 except Exception as e: 
                     series.log("DCE-MAX mapping was NOT completed; error: "+str(e))
 
             elif series.SeriesDescription == 'MT_ON_kidneys_cor-oblique_bh_mdr_moco':
                 try:
-                    MTR(series, study=study)
+                    print('Starting MTR')
+                    #MTR(series, study=study)
                 except Exception as e: 
                     series.log("MTR mapping was NOT completed; error: "+str(e))
 
-            elif series.SeriesDescription == 'T1_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco':
-                if series.Manufacturer == 'SIEMENS': # TODO: Check this, something not right
+            elif series.SeriesDescription == 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco':
+                if series.Manufacturer != 'SIEMENS': # TODO: Check this, something not right
                     try:
                         T1_Philips(series, study=study)  
                     except Exception as e: 
                         series.log("T1 mapping was NOT completed; error: "+str(e))
+                else:
+                    T1 = series
+                    for i_2,series in enumerate(list_of_series):
+                        print(series['SeriesDescription'])
+                        if series['SeriesDescription'] == "T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
+                            T2 = series
+                            T1T2_Modelling([T1,T2], study=study)
+                            break
 
     folder.save()
     folder.log("Modelling was completed --- %s seconds ---" % (int(time.time() - start_time)))
