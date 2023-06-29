@@ -13,6 +13,7 @@ import mapping.t1_philips
 import mapping.t1
 import mapping.t2
 import os
+import mapping.T2s
 
 
 def T1_Philips(series, study, mask=None):
@@ -98,14 +99,6 @@ def T1_MOLLI(series, study):
 
     return M0_map_series, T1_app_map_series, T1_map_series
 
-
-def T1(series, study):
-    if series.Manufacturer == 'SIEMENS':
-        return T1_MOLLI(series, study)
-    else:
-        return T1_Philips(series, study)
-
-
 def T2s(series=None, mask=None,export_ROI=False,slice=None,Fat_export=False,study = None):
 
     start_time = time.time()
@@ -187,8 +180,6 @@ def T1T2_Modelling(series_T1_T2, study=None):
     Trec = 463*2
     FA_eff = 0.6
 
-    number_slices = np.shape(array_T1)[2]
-
     T1_S0_map = np.zeros(np.shape(array_T1)[0:3])
     T1_map = np.zeros(np.shape(array_T1)[0:3])
     FA_Eff_map = np.zeros(np.shape(array_T1)[0:3])
@@ -268,10 +259,6 @@ def T1T2_Modelling(series_T1_T2, study=None):
     T2_rsquare_map_series = series_T1.new_sibling(SeriesDescription=T2_rsquare_map_series)
     T2_rsquare_map_series.set_array(np.squeeze(T2_rsquare_map),np.squeeze(header_T2[:,0]),pixels_first=True)
 
-
-# def T1T2_Modelling_with_Par(series=None, mask=None,export_ROI=False, study = None):
-
-        #runpy.run_path("C://Users//md1jdsp//Documents//GitHub//iBEAt//Scripts//T1T2_ForwardModelling_wPara_standaloneScript//T1T2_alone_cluster.py", {}, "__main__")
 
 def IVIM(series=None, mask=None,export_ROI=False, study = None):
 
@@ -456,7 +443,7 @@ def main(folder):
             if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                 try:
                     print('Starting T2s')
-                    #T2s(series, study=study)
+                    T2s(series, study=study)
                 except Exception as e: 
                     series.log("T2* mapping was NOT completed; error: "+str(e))
 
@@ -492,8 +479,8 @@ def main(folder):
                     for i_2,series in enumerate(list_of_series):
                         print(series['SeriesDescription'])
                         if series['SeriesDescription'] == "T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
-                            T2 = series
-                            T1T2_Modelling([T1,T2], study=study)
+                            #T2 = series
+                            #T1T2_Modelling([T1,T2], study=study)
                             break
 
     folder.save()
