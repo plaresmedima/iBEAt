@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from . import reggrow as reg
 
 class Point(object):
     def __init__(self,x,y):
