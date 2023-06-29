@@ -12,67 +12,32 @@ import mdreg.models.DCE_2CFM
 
 import utilities.autoaif
 
-
 elastix_pars = os.path.join(os.path.join(os.path.dirname(os.path.dirname(__file__)),'utilities'), 'elastix')
-
 
 def MDRegT1(series, study):
     start_time = time.time()
     series.log("T1 motion correction has started")
     if series.Manufacturer == 'SIEMENS':
         sort_by = 'InversionTime'
+
     else:
         sort_by = (0x2005, 0x1572)
+
+    array, header = series.array(['SliceLocation', sort_by], pixels_first=True)
+    
+    signal_pars =0
     signal_model = mdreg.models.T1_parallel
     elastix_file = 'BSplines_T1.txt'
-    vals = mdr_slice_by_slice(series, study, sort_by, signal_model, elastix_file)
+    number_slices = array.shape[2]
+    
+    vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by=sort_by, study=study)
     series.log("T1 motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return vals
-
-
-def mdr_slice_by_slice(series, study, sort_by, signal_model, elastix_file):
-
-    array, header = series.array(['SliceLocation',sort_by], pixels_first=True)
-    
-    # PARAMETER VARIABLES INITIALIZATION
-    parameters = signal_model.pars()
-    model_fit = np.empty(array.shape)
-    coreg = np.empty(array.shape)
-    pars = np.empty(array.shape[:3] + (len(parameters),) )
-
-    # LOOP THROUGH SLICES
-    s=0
-    number_slices = array.shape[2]
-    for slice in range(number_slices):
-        s+=1
-        series.progress(s, number_slices, 'Performing model-driven registration')
-        mdr = mdreg.MDReg()
-        mdr.signal_parameters = [hdr[sort_by] for hdr in (header[slice,:,0])]
-        mdr.set_array(array[:,:,slice,:,0])    
-        mdr.pixel_spacing = header[slice,0,0].PixelSpacing
-        mdr.signal_model = signal_model
-        mdr.read_elastix(os.path.join(elastix_pars, elastix_file))
-        mdr.fit()
-        model_fit[:,:,slice,:,0] = mdr.model_fit
-        coreg[:,:,slice,:,0] = mdr.coreg
-        pars[:,:,slice,:] = mdr.pars
-
-    for p in range(len(parameters)):
-        par = study.new_series(SeriesDescription='mdr_par_' + parameters[p])
-        par.set_array(np.squeeze(pars[...,p]), np.squeeze(header[:,0]), pixels_first=True)
-    fit = study.new_series(SeriesDescription='mdr_fit')
-    fit.set_array(model_fit, np.squeeze(header[:,:]), pixels_first=True)
-    moco = study.new_series(SeriesDescription = 'mdr_moco')
-    moco.set_array(coreg, np.squeeze(header[:,:]), pixels_first=True)
-
-    return fit, moco
-
 
 def MDRegT2star(series=None,study=None):
     start_time = time.time()
     series.log("T2* motion correction has started")
 
-    #series = zoom(series, 0.5)
     array, header = series.array(['SliceLocation', 'EchoTime'], pixels_first=True)
 
     signal_pars = 0
@@ -344,7 +309,8 @@ def main(folder):
 
             if SeqName == "T2star_map_kidneys_cor-oblique_mbh_magnitude":
                 try:
-                    MDRegT2star(series, study=study)
+                    print('starting t2s')
+                    #MDRegT2star(series, study=study)
                 except Exception as e: 
                     folder.log("T2* motion correction was NOT completed; error: "+str(e))
 
@@ -362,7 +328,8 @@ def main(folder):
 
             elif SeqName == "DTI_kidneys_cor-oblique_fb":
                 try:
-                    MDRegDTI(series, study=study) 
+                    print('starting dti')
+                    #MDRegDTI(series, study=study) 
                 except Exception as e: 
                     folder.log("DTI motion correction was NOT completed; error: "+str(e))
             
@@ -379,9 +346,47 @@ def main(folder):
 
             elif SeqName == "DCE_kidneys_cor-oblique_fb":
                 try:
-                    MDRegDCE(series, study=study)   
+                    print('starting DCE')
+                    #MDRegDCE(series, study=study)   
                 except Exception as e: 
                     folder.log("DCE motion correction was NOT completed; error: "+str(e))
 
     folder.save()
     folder.log("MDR was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
+def mdr_slice_by_slice(series, study, sort_by, signal_model, elastix_file):
+
+    array, header = series.array(['SliceLocation',sort_by], pixels_first=True)
+    
+    # PARAMETER VARIABLES INITIALIZATION
+    parameters = signal_model.pars()
+    model_fit = np.empty(array.shape)
+    coreg = np.empty(array.shape)
+    pars = np.empty(array.shape[:3] + (len(parameters),) )
+
+    # LOOP THROUGH SLICES
+    s=0
+    number_slices = array.shape[2]
+    for slice in range(number_slices):
+        s+=1
+        series.progress(s, number_slices, 'Performing model-driven registration')
+        mdr = mdreg.MDReg()
+        mdr.signal_parameters = [hdr[sort_by] for hdr in (header[slice,:,0])]
+        mdr.set_array(array[:,:,slice,:,0])    
+        mdr.pixel_spacing = header[slice,0,0].PixelSpacing
+        mdr.signal_model = signal_model
+        mdr.read_elastix(os.path.join(elastix_pars, elastix_file))
+        mdr.fit()
+        model_fit[:,:,slice,:,0] = mdr.model_fit
+        coreg[:,:,slice,:,0] = mdr.coreg
+        pars[:,:,slice,:] = mdr.pars
+
+    for p in range(len(parameters)):
+        par = study.new_series(SeriesDescription='mdr_par_' + parameters[p])
+        par.set_array(np.squeeze(pars[...,p]), np.squeeze(header[:,0]), pixels_first=True)
+    fit = study.new_series(SeriesDescription='mdr_fit')
+    fit.set_array(model_fit, np.squeeze(header[:,:]), pixels_first=True)
+    moco = study.new_series(SeriesDescription = 'mdr_moco')
+    moco.set_array(coreg, np.squeeze(header[:,:]), pixels_first=True)
+
+    return fit, moco
