@@ -22,12 +22,13 @@ import pipelines.mdr as mdr
 import pipelines.mapping as map
 import scripts.upload as upload
 import scripts.segmentation as segmentation
+from scripts import xnat
 
 if __name__ == '__main__':
 
     #################### INPUT ######################
-    username = "**********"
-    password = "**********"
+    username = "*******"
+    password = "*******"
     #path = "//mnt//fastdata//" + username #CLUSTER PATH TO SAVE DATA, ADD YOUR LOCAL PATH IF YOU WANT TO RUN IT LOCALLY
     path = "C://Users//md1jdsp//Desktop"
     #################################################
@@ -39,8 +40,8 @@ if __name__ == '__main__':
     #                     type=int)
 
     # args = parser.parse_args()
-
     #dataset = [2,1,args.num]
+    #dataset = [2,1,11]
 
     ################################################# EXAMPLE DATASET SELECTION #############################################################
     #DATASET CODE FOR LEEDS
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     #########################################################################################################################################
 
     #ExperimentName = xnat.main(username, password, path, dataset)
-    ExperimentName = "iBE-2128_008_baseline"
+    ExperimentName = "iBE-2128_013_baseline"
     pathScan = path + "//" + ExperimentName
     filename_log = pathScan + datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
     
@@ -69,21 +70,25 @@ if __name__ == '__main__':
     folder.log("CPU cores: " + str(UsedCores))
     
     try:
+        print("starting renaming")
         rename.main(folder)
     except Exception as e:
         folder.log("Renaming was NOT completed; error: " + str(e))
 
     try:
+        print("starting mdr")
         mdr.main(folder)
     except Exception as e:
         folder.log("Renaming was NOT completed; error: " + str(e))
 
     try:
+        print("staring mapping")
         map.main(folder)
     except Exception as e:
         folder.log("Modelling was NOT completed; error: " + str(e))
 
     try:
+        print('starting segmentation')
         segmentation.main(folder,pathScan)
     except Exception as e:
         folder.log("Segmentation was NOT completed; error: " + str(e))
