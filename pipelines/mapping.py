@@ -1,7 +1,9 @@
+import os
 import time
 import numpy as np
 from tqdm import tqdm
 import multiprocessing
+
 from dipy.core.gradients import gradient_table
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
@@ -12,7 +14,6 @@ import mapping.t1_exp
 import mapping.t1_philips
 import mapping.t1
 import mapping.t2
-import os
 import mapping.T2s
 
 
@@ -376,12 +377,12 @@ def DCE_MAX(series=None, mask=None,export_ROI=False, study=None):
     array, header = series_DCE.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
     
     header = np.squeeze(header)
-
     if np.shape(array)[-1] == 2:
         array = array[...,0]
 
     if np.shape(header)[-1] == 2:
         header = header[...,0:1]
+        header = np.squeeze(header)
 
     pixel_array_DCE = array
     number_slices = np.shape(pixel_array_DCE)[2]
@@ -393,7 +394,11 @@ def DCE_MAX(series=None, mask=None,export_ROI=False, study=None):
 
     for slice in range(number_slices):   
         for i_2 in range(header.shape[1]):
-            tempTime = str(header[slice,i_2,0]['AcquisitionTime'])
+            if len (header.shape) == 2:
+                tempTime = str(header[slice,i_2]['AcquisitionTime'])
+            elif len (header.shape==3):
+                tempTime = str(header[slice,i_2,0]['AcquisitionTime'])
+
             beforepoint = tempTime.split(".")[0]
             afterpoint = tempTime.split(".")[1]
             tempH = int(beforepoint[0:2])
@@ -443,7 +448,7 @@ def main(folder):
             if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                 try:
                     print('Starting T2s')
-                    T2s(series, study=study)
+                    #T2s(series, study=study)
                 except Exception as e: 
                     series.log("T2* mapping was NOT completed; error: "+str(e))
 
@@ -457,7 +462,7 @@ def main(folder):
             elif series['SeriesDescription'] == "DCE_kidneys_cor-oblique_fb_mdr_moco":
                 try:
                     print('Starting DCE_MAX')
-                    #DCE_MAX(series, study=study)
+                    DCE_MAX(series, study=study)
                 except Exception as e: 
                     series.log("DCE-MAX mapping was NOT completed; error: "+str(e))
 
