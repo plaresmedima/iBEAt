@@ -233,31 +233,31 @@ def T1T2_Modelling(series_T1_T2, study=None):
             T2_rsquare_map[xi,yi,i] = r_squared_T2
 
     T1_S0_map_series = series_T1.SeriesDescription + "_T1_" + "S0_Map_v2"
-    T1_S0_map_series = series_T1.new_sibling(SeriesDescription=T1_S0_map_series)
+    T1_S0_map_series = series_T1.new_series(SeriesDescription=T1_S0_map_series)
     T1_S0_map_series.set_array(np.squeeze(T1_S0_map),np.squeeze(header_T1[:,0]),pixels_first=True)
 
     T1_map_series = series_T1.SeriesDescription + "_T1_" + "T1_Map_v2"
-    T1_map_series = series_T1.new_sibling(SeriesDescription=T1_map_series)
+    T1_map_series = series_T1.new_series(SeriesDescription=T1_map_series)
     T1_map_series.set_array(np.squeeze(T1_map),np.squeeze(header_T1[:,0]),pixels_first=True)
 
     FA_Eff_map_series = series_T1.SeriesDescription + "_T1_" + "FA_Eff_Map_v2"
-    FA_Eff_map_series = series_T1.new_sibling(SeriesDescription=FA_Eff_map_series)
+    FA_Eff_map_series = series_T1.new_series(SeriesDescription=FA_Eff_map_series)
     FA_Eff_map_series.set_array(np.squeeze(FA_Eff_map),np.squeeze(header_T1[:,0]),pixels_first=True)
 
     T2_S0_map_series = series_T1.SeriesDescription + "_T2_" + "S0_Map_v2"
-    T2_S0_map_series = series_T1.new_sibling(SeriesDescription=T2_S0_map_series)
+    T2_S0_map_series = series_T1.new_series(SeriesDescription=T2_S0_map_series)
     T2_S0_map_series.set_array(np.squeeze(T2_S0_map),np.squeeze(header_T2[:,0]),pixels_first=True)
 
     T2_map_series = series_T1.SeriesDescription + "_T2_" + "T2_Map_v2"
-    T2_map_series = series_T1.new_sibling(SeriesDescription=T2_map_series)
+    T2_map_series = series_T1.new_series(SeriesDescription=T2_map_series)
     T2_map_series.set_array(np.squeeze(T2_map),np.squeeze(header_T2[:,0]),pixels_first=True)
 
     T1_rsquare_map_series = series_T1.SeriesDescription + "_T1_" + "rsquare_Map_v2"
-    T1_rsquare_map_series = series_T1.new_sibling(SeriesDescription=T1_rsquare_map_series)
+    T1_rsquare_map_series = series_T1.new_series(SeriesDescription=T1_rsquare_map_series)
     T1_rsquare_map_series.set_array(np.squeeze(T1_rsquare_map),np.squeeze(header_T1[:,0]),pixels_first=True)
 
     T2_rsquare_map_series = series_T1.SeriesDescription + "_T2_" + "rsquare_Map_v2"
-    T2_rsquare_map_series = series_T1.new_sibling(SeriesDescription=T2_rsquare_map_series)
+    T2_rsquare_map_series = series_T1.new_series(SeriesDescription=T2_rsquare_map_series)
     T2_rsquare_map_series.set_array(np.squeeze(T2_rsquare_map),np.squeeze(header_T2[:,0]),pixels_first=True)
 
 
@@ -448,14 +448,14 @@ def main(folder):
             if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                 try:
                     print('Starting T2s')
-                    #T2s(series, study=study)
+                    T2s(series, study=study)
                 except Exception as e: 
                     series.log("T2* mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DTI_kidneys_cor-oblique_fb_mdr_moco":
                 try:
                     print('Starting DTI')
-                    #DTI(series, study=study)
+                    DTI(series, study=study)
                 except Exception as e: 
                     series.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
 
@@ -469,7 +469,7 @@ def main(folder):
             elif series.SeriesDescription == 'MT_ON_kidneys_cor-oblique_bh_mdr_moco':
                 try:
                     print('Starting MTR')
-                    #MTR(series, study=study)
+                    MTR(series, study=study)
                 except Exception as e: 
                     series.log("MTR mapping was NOT completed; error: "+str(e))
 
