@@ -1,6 +1,6 @@
 from dbdicom.pipelines import input_series
 from pipelines.mdr import MDRegT1
-from pipelines.mapping import T1
+#from pipelines.mapping import T1
 from dbdicom.wrappers import vreg
 
 export_study = "T1"
@@ -17,7 +17,8 @@ def map(database):
     series, study = input_series(database, magn_series, export_study)
     if series is None:
         return
-    return T1(series, study)
+    #return T1(series, study)
+    return 0
 
 def mdr_and_map(database):
     series, study = input_series(database, magn_series, export_study)
