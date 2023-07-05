@@ -291,8 +291,6 @@ def _mdr(series, number_slices, array, header, signal_model, elastix_file, signa
 
     return fit, moco
 
-
-
 def main(folder):
     start_time = time.time()
     folder.log("MDR has started!")
@@ -310,28 +308,28 @@ def main(folder):
             if SeqName == "T2star_map_kidneys_cor-oblique_mbh_magnitude":
                 try:
                     print('starting t2s')
-                    #MDRegT2star(series, study=study)
+                    MDRegT2star(series, study=study)
                 except Exception as e: 
                     folder.log("T2* motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "T1map_kidneys_cor-oblique_mbh_magnitude":
                 try:
                     print("starting T1 mapping")
-                    #MDRegT1(series, study)
+                    MDRegT1(series, study)
                 except Exception as e: 
                     folder.log("T1 motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "T2map_kidneys_cor-oblique_mbh_magnitude":
                 try:
                     print("starting T2 mapping")
-                    #MDRegT2(series, study=study)
+                    MDRegT2(series, study=study)
                 except Exception as e: 
                     folder.log("T2 motion correction was NOT completed; error: "+str(e))   
 
             elif SeqName == "DTI_kidneys_cor-oblique_fb":
                 try:
                     print('starting dti')
-                    #MDRegDTI(series, study=study) 
+                    MDRegDTI(series, study=study) 
                 except Exception as e: 
                     folder.log("DTI motion correction was NOT completed; error: "+str(e))
             
@@ -348,8 +346,7 @@ def main(folder):
 
             elif SeqName == "DCE_kidneys_cor-oblique_fb":
                 try:
-                    print('starting DCE')
-                    #MDRegDCE(series, study=study)   
+                    MDRegDCE(series, study=study)   
                 except Exception as e: 
                     folder.log("DCE motion correction was NOT completed; error: "+str(e))
 
