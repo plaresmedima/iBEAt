@@ -8,7 +8,7 @@ from dipy.core.gradients import gradient_table
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 from scipy.integrate import trapz
-from pipelines import cluster_parallel_curve_fit_t1_t2_alone
+from mapping import t1_t2_alone
 
 import mapping.t1_exp
 import mapping.t1_philips
@@ -209,7 +209,7 @@ def T1T2_Modelling(series_T1_T2, study=None):
 
             arguments.append((x,y,t1_value,t2_value,TI_temp,TE,FA_rad,TR,N_T1,N_T2,FA_Cat,Trec,FA_eff,Tspoil))
 
-        results = list(tqdm(pool.imap(cluster_parallel_curve_fit_t1_t2_alone.main, arguments), total=len(arguments), desc='Processing pixels of slice ' + str(i)))
+        results = list(tqdm(pool.imap(t1_t2_alone.main, arguments), total=len(arguments), desc='Processing pixels of slice ' + str(i)))
 
         for result in results:
             xi = result[0]
