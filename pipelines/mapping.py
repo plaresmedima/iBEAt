@@ -9,12 +9,16 @@ import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 from scipy.integrate import trapz
 from mapping import t1_t2_alone
+from mapping import t1_alone
 
 import mapping.t1_exp
 import mapping.t1_philips
 import mapping.t1
 import mapping.t2
 import mapping.T2s
+
+from utilities import T1_map_to_dixon_mask
+from utilities import fill_kidney_holes_interp_v2
 
 
 def T1_Philips(series, study, mask=None):
@@ -260,6 +264,157 @@ def T1T2_Modelling(series_T1_T2, study=None):
     T2_rsquare_map_series = series_T1.new_series(SeriesDescription=T2_rsquare_map_series)
     T2_rsquare_map_series.set_array(np.squeeze(T2_rsquare_map),np.squeeze(header_T2[:,0]),pixels_first=True)
 
+def T1_then_T2(series_T1_T2, series_mask, study=None):
+
+    #Prepare T1w/T2w arrays
+    series_T1 = series_T1_T2[0]
+    series_T2 = series_T1_T2[1]
+
+    array_T1, header_T1 = series_T1.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
+    array_T2, header_T2 = series_T2.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
+
+    array_T1 = np.squeeze(array_T1[:,:,:,:,0])
+    array_T2 = np.squeeze(array_T2[:,:,:,:,0])
+
+    header_T1 = np.squeeze(header_T1[:,...])
+    header_T2 = np.squeeze(header_T2[:,...])
+    #######################
+
+    #Setup parameters
+    TR = 4.6                            #in ms
+    FA = 12    #in degrees
+    FA_rad = FA/360*(2*np.pi)           #convert to rads
+    N_T1 = 66                           #number of k-space lines
+    FA_Cat  = [(-FA/5)/360*(2*np.pi), (2*FA/5)/360*(2*np.pi), (-3*FA/5)/360*(2*np.pi), (4*FA/5)/360*(2*np.pi), (-5*FA/5)/360*(2*np.pi)] #cat module
+
+    TE = [0,30,40,50,60,70,80,90,100,110,120]
+    Tspoil = 1
+    N_T2 = 72
+    Trec = 463*2
+    FA_eff = 0.6
+
+    #initialize result arrays
+    T1_S0_map = np.zeros(np.shape(array_T1)[0:3])
+    T1_map = np.zeros(np.shape(array_T1)[0:3])
+    FA_Eff_map = np.zeros(np.shape(array_T1)[0:3])
+    Ref_Eff_map = np.zeros(np.shape(array_T1)[0:3])
+    T2_S0_map = np.zeros(np.shape(array_T1)[0:3])
+    T2_map = np.zeros(np.shape(array_T1)[0:3])
+    T1_rsquare_map = np.zeros(np.shape(array_T1)[0:3])
+    T2_rsquare_map = np.zeros(np.shape(array_T1)[0:3])
+
+    #perform T1 mapping slice by slice
+    for i in range(np.shape(array_T1)[2]):
+        Kidney_pixel_T1 = np.squeeze(array_T1[...,i,:])
+
+        if np.size(np.shape(np.squeeze(header_T1)))==2:
+            TI_temp =  [float(hdr['InversionTime']) for hdr in header_T1[i,:]]
+        elif np.size(np.shape(np.squeeze(header_T1)))==3:
+            TI_temp =  [float(hdr['InversionTime']) for hdr in header_T1[i,:,0]]
+
+        pool = multiprocessing.Pool(processes=os.cpu_count())
+
+        arguments =[]
+        pool = multiprocessing.Pool(initializer=multiprocessing.freeze_support,processes=os.cpu_count())
+        for (x, y), _ in np.ndenumerate(Kidney_pixel_T1[..., 0]):
+            t1_value = Kidney_pixel_T1[x, y, :]
+
+            arguments.append((x,y,t1_value,TI_temp,FA_rad,TR,N_T1,FA_Cat,FA_eff))
+            
+        results = list(tqdm(pool.imap(t1_alone.main, arguments), total=len(arguments), desc='Processing pixels of slice ' + str(i)))
+
+        for result in results:
+            xi = result[0]
+            yi = result[1]
+            T1 = result[2]
+            S0_T1 = result[3]
+            FA_eff = result[4]
+            r_squared_T1 = result[5]
+
+            T1_map[xi,yi,i] = T1
+            T1_S0_map[xi,yi,i] = S0_T1
+            FA_Eff_map[xi,yi,i] = FA_eff
+            T1_rsquare_map[xi,yi,i] = r_squared_T1
+
+    #Coregiser T1 map to dixon mask using active alignment 
+    T1_map_coreg_series = T1_map_to_dixon_mask.main(T1_map,series_mask)
+    T1_map_coreg_array, T1_map_coreg_header = T1_map_coreg_series.array(['SliceLocation'], pixels_first=True)
+    T1_map_coreg_array = np.squeeze(T1_map_coreg_array)
+
+    #fill coreg T1 map array usint scipy interpret
+    mask_array, mask_header = series_mask.array(['SliceLocation'], pixels_first=True)
+    mask_array = np.squeeze(mask_array)
+    T1_map_coreg_array_filled = fill_kidney_holes_interp_v2.main(T1_map_coreg_array, mask_array)
+
+    #Coregister T2w images to dixon mask using active alignment 
+    T2w_imgs_coreg_series = T1_map_to_dixon_mask.main(series_T2,series_mask)
+    T2w_imgs_coreg_array, T2w_imgs_coreg_header = T2w_imgs_coreg_series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
+    T2w_imgs_coreg_array = np.squeeze(T2w_imgs_coreg_array)
+
+    #fill coreg T2w images array usint scipy interpret (by T2_prep)
+    T2w_imgs_coreg_array_filled = np.zeros(T2w_imgs_coreg_array.shape)
+
+    for T2_prep in range(np.shape(T2w_imgs_coreg_array)[3]):
+
+        T2w_imgs_coreg_array_temp = np.squeeze(T2w_imgs_coreg_array[:,:,:,T2_prep])
+        T2w_imgs_coreg_array_filled_temp = fill_kidney_holes_interp_v2.main(T2w_imgs_coreg_array_temp, mask_array)
+        T2w_imgs_coreg_array_filled[:,:,:,T2_prep] = T2w_imgs_coreg_array_filled_temp
+
+    #perform T2 mapping slice by slice
+    for i in range(np.shape(T2w_imgs_coreg_array_filled)[2]):
+
+        Kidney_pixel_T2 = np.squeeze(T2w_imgs_coreg_array_filled[...,i,:])
+
+        arguments =[]
+        pool = multiprocessing.Pool(initializer=multiprocessing.freeze_support,processes=os.cpu_count())
+        for (x, y), _ in np.ndenumerate(Kidney_pixel_T1[..., 0]):
+            t1_map =   T1_map_coreg_array_filled[x,y,i]
+            t2_value = Kidney_pixel_T2[x, y, :]
+
+            arguments.append((x,y,t1_map,t2_value,TE,FA_rad,TR,N_T2,Trec,FA_eff,Tspoil))
+
+        results = list(tqdm(pool.imap(t1_t2_alone.main, arguments), total=len(arguments), desc='Processing pixels of slice ' + str(i)))
+
+        for result in results:
+            xi = result[0]
+            yi = result[1]
+            T2 = result[2]
+            S0_T2 = result[3]
+            FA_eff = result[4]
+            r_squared_T2 = result[5]
+            T2_map[xi,yi,i] = T2
+            T2_S0_map[xi,yi,i] = S0_T2
+            FA_Eff_map[xi,yi,i] = FA_eff
+            T2_rsquare_map[xi,yi,i] = r_squared_T2
+
+    #save calculated series
+    T1_S0_map_series = series_T1.SeriesDescription + "_T1_" + "S0_Map_v2"
+    T1_S0_map_series = series_T1.new_series(SeriesDescription=T1_S0_map_series)
+    T1_S0_map_series.set_array(np.squeeze(T1_S0_map),np.squeeze(header_T1[:,0]),pixels_first=True)
+
+    T1_map_series = series_T1.SeriesDescription + "_T1_" + "T1_Map_v2"
+    T1_map_series = series_T1.new_series(SeriesDescription=T1_map_series)
+    T1_map_series.set_array(np.squeeze(T1_map),np.squeeze(header_T1[:,0]),pixels_first=True)
+
+    FA_Eff_map_series = series_T1.SeriesDescription + "_T1_" + "FA_Eff_Map_v2"
+    FA_Eff_map_series = series_T1.new_series(SeriesDescription=FA_Eff_map_series)
+    FA_Eff_map_series.set_array(np.squeeze(FA_Eff_map),np.squeeze(header_T1[:,0]),pixels_first=True)
+
+    T2_S0_map_series = series_T1.SeriesDescription + "_T2_" + "S0_Map_v2"
+    T2_S0_map_series = series_T1.new_series(SeriesDescription=T2_S0_map_series)
+    T2_S0_map_series.set_array(np.squeeze(T2_S0_map),np.squeeze(header_T2[:,0]),pixels_first=True)
+
+    T2_map_series = series_T1.SeriesDescription + "_T2_" + "T2_Map_v2"
+    T2_map_series = series_T1.new_series(SeriesDescription=T2_map_series)
+    T2_map_series.set_array(np.squeeze(T2_map),np.squeeze(header_T2[:,0]),pixels_first=True)
+
+    T1_rsquare_map_series = series_T1.SeriesDescription + "_T1_" + "rsquare_Map_v2"
+    T1_rsquare_map_series = series_T1.new_series(SeriesDescription=T1_rsquare_map_series)
+    T1_rsquare_map_series.set_array(np.squeeze(T1_rsquare_map),np.squeeze(header_T1[:,0]),pixels_first=True)
+
+    T2_rsquare_map_series = series_T1.SeriesDescription + "_T2_" + "rsquare_Map_v2"
+    T2_rsquare_map_series = series_T1.new_series(SeriesDescription=T2_rsquare_map_series)
+    T2_rsquare_map_series.set_array(np.squeeze(T2_rsquare_map),np.squeeze(header_T2[:,0]),pixels_first=True)
 
 def IVIM(series=None, mask=None,export_ROI=False, study = None):
 
@@ -448,28 +603,28 @@ def main(folder):
             if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                 try:
                     print('Starting T2s')
-                    T2s(series, study=study)
+                    #T2s(series, study=study)
                 except Exception as e: 
                     series.log("T2* mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DTI_kidneys_cor-oblique_fb_mdr_moco":
                 try:
                     print('Starting DTI')
-                    DTI(series, study=study)
+                    #DTI(series, study=study)
                 except Exception as e: 
                     series.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DCE_kidneys_cor-oblique_fb_mdr_moco":
                 try:
                     print('Starting DCE_MAX')
-                    DCE_MAX(series, study=study)
+                    #DCE_MAX(series, study=study)
                 except Exception as e: 
                     series.log("DCE-MAX mapping was NOT completed; error: "+str(e))
 
             elif series.SeriesDescription == 'MT_ON_kidneys_cor-oblique_bh_mdr_moco':
                 try:
                     print('Starting MTR')
-                    MTR(series, study=study)
+                    #MTR(series, study=study)
                 except Exception as e: 
                     series.log("MTR mapping was NOT completed; error: "+str(e))
 
@@ -484,8 +639,8 @@ def main(folder):
                     for i_2,series in enumerate(list_of_series):
                         print(series['SeriesDescription'])
                         if series['SeriesDescription'] == "T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
-                            #T2 = series
-                            #T1T2_Modelling([T1,T2], study=study)
+                            T2 = series
+                            T1T2_Modelling([T1,T2], study=study)
                             break
 
     folder.save()
