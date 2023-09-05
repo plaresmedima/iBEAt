@@ -17,7 +17,7 @@ import mapping.t1
 import mapping.t2
 import mapping.T2s
 
-from utilities import T1_map_to_dixon_mask
+from utilities import map_to_dixon_mask
 from utilities import fill_kidney_holes_interp_v2
 
 
@@ -337,7 +337,7 @@ def T1_then_T2(series_T1_T2, series_mask, study=None):
             T1_rsquare_map[xi,yi,i] = r_squared_T1
 
     #Coregiser T1 map to dixon mask using active alignment 
-    T1_map_coreg_series = T1_map_to_dixon_mask.main(T1_map,series_mask)
+    T1_map_coreg_series,params_T1map = map_to_dixon_mask.main(T1_map,series_mask)
     T1_map_coreg_array, T1_map_coreg_header = T1_map_coreg_series.array(['SliceLocation'], pixels_first=True)
     T1_map_coreg_array = np.squeeze(T1_map_coreg_array)
 
@@ -346,19 +346,29 @@ def T1_then_T2(series_T1_T2, series_mask, study=None):
     mask_array = np.squeeze(mask_array)
     T1_map_coreg_array_filled = fill_kidney_holes_interp_v2.main(T1_map_coreg_array, mask_array)
 
-    #Coregister T2w images to dixon mask using active alignment 
-    T2w_imgs_coreg_series = T1_map_to_dixon_mask.main(series_T2,series_mask)
-    T2w_imgs_coreg_array, T2w_imgs_coreg_header = T2w_imgs_coreg_series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
-    T2w_imgs_coreg_array = np.squeeze(T2w_imgs_coreg_array)
+    #Split T2w images by Echo Time
+    T2w_splitted_echoes = series_T2.split_by("Echo Time")
+    
+    #### JUST TO CONFIRM THIS IS THE FIRST ECHO ####
+    #array_T2_TE0, header_T2_TE0 = T2w_splitted_echoes[0].array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
+    #print(header_T2_TE0['Echo Time'])
+    ################################################
+
+    #Coregister T2w images to dixon mask using active alignment
+    T2w,params_T2w = map_to_dixon_mask.main(T2w_splitted_echoes[0],series_mask) 
+    T2w_imgs_coreg_series = []
+    for echo_series in T2w_splitted_echoes:
+        T2w_imgs_coreg_series.append(map_to_dixon_mask.main(echo_series,series_mask,params_T2w))
 
     #fill coreg T2w images array usint scipy interpret (by T2_prep)
     T2w_imgs_coreg_array_filled = np.zeros(T2w_imgs_coreg_array.shape)
-
-    for T2_prep in range(np.shape(T2w_imgs_coreg_array)[3]):
-
-        T2w_imgs_coreg_array_temp = np.squeeze(T2w_imgs_coreg_array[:,:,:,T2_prep])
-        T2w_imgs_coreg_array_filled_temp = fill_kidney_holes_interp_v2.main(T2w_imgs_coreg_array_temp, mask_array)
-        T2w_imgs_coreg_array_filled[:,:,:,T2_prep] = T2w_imgs_coreg_array_filled_temp
+    for series in T2w_imgs_coreg_series:
+        T2w_imgs_coreg_array, T2w_imgs_coreg_header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
+        T2w_imgs_coreg_array = np.squeeze(T2w_imgs_coreg_array)
+        for T2_prep in range(np.shape(T2w_imgs_coreg_array)[3]):
+            T2w_imgs_coreg_array_temp = np.squeeze(T2w_imgs_coreg_array[:,:,:,T2_prep])
+            T2w_imgs_coreg_array_filled_temp = fill_kidney_holes_interp_v2.main(T2w_imgs_coreg_array_temp, mask_array)
+            T2w_imgs_coreg_array_filled[:,:,:,T2_prep] = T2w_imgs_coreg_array_filled_temp
 
     #perform T2 mapping slice by slice
     for i in range(np.shape(T2w_imgs_coreg_array_filled)[2]):
@@ -640,7 +650,11 @@ def main(folder):
                         print(series['SeriesDescription'])
                         if series['SeriesDescription'] == "T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                             T2 = series
-                            T1T2_Modelling([T1,T2], study=study)
+                            for i_2,series in enumerate(list_of_series):
+                                print(series['SeriesDescription'])
+                                if series['SeriesDescription'] == "LK":
+                                    Kidney_mask = series
+                                    T1_then_T2([T1,T2],Kidney_mask, study=study)
                             break
 
     folder.save()
