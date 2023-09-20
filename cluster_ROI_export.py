@@ -25,14 +25,14 @@ import shutil
 if __name__ == '__main__':
 
     # Define the directory you want to list folders from
-    #directory_path = "G:\\My Drive\\CLUSTER_RESULTS\\Bordeaux\\Successful"
-    directory_path = "C:\\Users\\md1jdsp\\Desktop\\G_drive"
+    directory_path = "G:\\My Drive\\CLUSTER_RESULTS\\Exeter\\Successful"
+    #directory_path = "C:\\Users\\md1jdsp\\Desktop\\G_drive"
     mask_path = "C:\\Users\\md1jdsp\\Desktop\\iBEAt_KidneyMasks"
 
     dataset_list=[]
     items = os.listdir(directory_path)
     for element in items:        
-        if len(element)<30 and element != 'desktop.ini':
+        if len(element)<30 and element != 'desktop.ini' and element != 'Done'and element != 'Failed':
             dataset_list.append(element)
 
     mask_list = os.listdir(mask_path)
@@ -50,8 +50,19 @@ if __name__ == '__main__':
         ExperimentName = ExperimentName[:-4]
         pathScan = extract_to_directory + "\\" + ExperimentName
 
-        MaskExperimentName_LK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[0].split("-")[2] + "_LK"
-        MaskExperimentName_RK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[0].split("-")[2] + "_RK"
+        try:
+            MaskExperimentName_LK = ExperimentName.split("-")[1] + "_" + ExperimentName.split("-")[2] + "_LK"
+            MaskExperimentName_RK = ExperimentName.split("-")[1] + "_" + ExperimentName.split("-")[2] + "_RK"
+        except:
+            MaskExperimentName_LK = ExperimentName.split("_")[-1][:4] + "_" + ExperimentName.split("_")[-1][4:] + "_LK"
+            MaskExperimentName_RK = ExperimentName.split("_")[-1][:4] + "_" + ExperimentName.split("_")[-1][4:] + "_RK"
+
+        # try:
+        #     MaskExperimentName_LK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[0].split("-")[2] + "_LK"
+        #     MaskExperimentName_RK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[0].split("-")[2] + "_RK"
+        # except:
+        #     MaskExperimentName_LK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[1] + "_LK"
+        #     MaskExperimentName_RK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[1] + "_RK"
 
         shutil.copytree(mask_path+"\\"+MaskExperimentName_LK, pathScan+"\\"+"Mask_LK")
         shutil.copytree(mask_path+"\\"+MaskExperimentName_RK, pathScan+"\\"+"Mask_RK")

@@ -18,7 +18,15 @@ def perfusion(database,master_table):
     ]
     series, study = input_series(database, series_desc, export_study)
     if series is None:
-        return None, None
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
     dixon = series[0]
     rbf = series[1]
     lk = series[2]
@@ -64,7 +72,15 @@ def fa(database,master_table):
     ]
     series, study = input_series(database, series_desc, export_study)
     if series is None:
-        return None, None
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
     dixon = series[0]
     fa_map = series[1]
     lk = series[2]
@@ -111,7 +127,15 @@ def ADC(database,master_table):
     ]
     series, study = input_series(database, series_desc, export_study)
     if series is None:
-        return None, None
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
     dixon = series[0]
     ADC_map = series[1]
     lk = series[2]
@@ -158,7 +182,15 @@ def MTR(database,master_table):
     ]
     series, study = input_series(database, series_desc, export_study)
     if series is None:
-        return None, None
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
     dixon = series[0]
     MTR_map = series[1]
     lk = series[2]
@@ -205,7 +237,15 @@ def T2s(database,master_table):
     ]
     series, study = input_series(database, series_desc, export_study)
     if series is None:
-        return None, None
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
     dixon = series[0]
     T2s_map = series[1]
     lk = series[2]
@@ -236,6 +276,396 @@ def T2s(database,master_table):
 
     T2s_map_table = pd.concat(T2s_map_stats)
     master_table = pd.concat([master_table,T2s_map_table])
+
+    return master_table
+
+def T2s_water_fraction(database,master_table):
+
+    export_study = "T2s water fraction"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2s_fw_Map',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    T2s_water_fraction_map = series[1]
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    T2s_water_fraction_map_moved = []
+    T2s_water_fraction_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(T2s_water_fraction_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(T2s_water_fraction_map, params, target=dixon, description='T2s water fraction - ' + kidney[1])
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved)
+
+        # Organise results
+        moved.move_to(study)
+        T2s_water_fraction_map_moved.append(moved)
+        T2s_water_fraction_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    T2s_water_fraction_map_table = pd.concat(T2s_water_fraction_map_stats)
+    master_table = pd.concat([master_table,T2s_water_fraction_map_table])
+
+    return master_table
+
+def DCE_FP(database,master_table):
+
+    export_study = "DCE FP"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DCE_kidneys_cor-oblique_fb_mdr_par_FP',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    DCE_FP_map = series[1]
+    DCE_FP_map = DCE_FP_map.subseries(InPlanePhaseEncodingDirection='ROW')
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    DCE_FP_map_moved = []
+    DCE_FP_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(DCE_FP_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(DCE_FP_map, params, target=dixon, description='DCE FP - ' + kidney[1])
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved)
+
+        # Organise results
+        moved.move_to(study)
+        DCE_FP_map_moved.append(moved)
+        DCE_FP_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    DCE_FP_map_table = pd.concat(DCE_FP_map_stats)
+    master_table = pd.concat([master_table,DCE_FP_map_table])
+
+    return master_table
+
+def DCE_TP(database,master_table):
+
+    export_study = "DCE TP"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DCE_kidneys_cor-oblique_fb_mdr_par_TP',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    DCE_TP_map = series[1]
+    DCE_TP_map = DCE_TP_map.subseries(InPlanePhaseEncodingDirection='ROW')
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    DCE_TP_map_moved = []
+    DCE_TP_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(DCE_TP_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(DCE_TP_map, params, target=dixon, description='DCE TP - ' + kidney[1])
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved)
+
+        # Organise results
+        moved.move_to(study)
+        DCE_TP_map_moved.append(moved)
+        DCE_TP_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    DCE_TP_map_table = pd.concat(DCE_TP_map_stats)
+    master_table = pd.concat([master_table,DCE_TP_map_table])
+
+    return master_table
+
+def DCE_PS(database,master_table):
+
+    export_study = "DCE PS"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DCE_kidneys_cor-oblique_fb_mdr_par_PS',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    DCE_PS_map = series[1]
+    DCE_PS_map = DCE_PS_map.subseries(InPlanePhaseEncodingDirection='ROW')
+    
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    DCE_PS_map_moved = []
+    DCE_PS_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(DCE_PS_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(DCE_PS_map, params, target=dixon, description='DCE PS - ' + kidney[1])
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved)
+
+        # Organise results
+        moved.move_to(study)
+        DCE_PS_map_moved.append(moved)
+        DCE_PS_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    DCE_PS_map_table = pd.concat(DCE_PS_map_stats)
+    master_table = pd.concat([master_table,DCE_PS_map_table])
+
+    return master_table
+
+def DCE_TE(database,master_table):
+
+    export_study = "DCE TE"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DCE_kidneys_cor-oblique_fb_mdr_par_TE',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    DCE_TE_map = series[1]
+    DCE_TE_map = DCE_TE_map.subseries(InPlanePhaseEncodingDirection='ROW')
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    DCE_TE_map_moved = []
+    DCE_TE_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(DCE_TE_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(DCE_TE_map, params, target=dixon, description='DCE TE - ' + kidney[1])
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved)
+
+        # Organise results
+        moved.move_to(study)
+        DCE_TE_map_moved.append(moved)
+        DCE_TE_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    DCE_TE_map_table = pd.concat(DCE_TE_map_stats)
+    master_table = pd.concat([master_table,DCE_TE_map_table])
+
+    return master_table
+
+def T1(database,master_table):
+
+    export_study = "T1"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_par_T1',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    T1_map = series[1]
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    T1_map_moved = []
+    T1_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(T1_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(T1_map, params, target=dixon, description='T1 - ' + kidney[1])
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved)
+
+        # Organise results
+        moved.move_to(study)
+        T1_map_moved.append(moved)
+        T1_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    T1_map_table = pd.concat(T1_map_stats)
+    master_table = pd.concat([master_table,T1_map_table])
+
+    return master_table
+
+def T2(database,master_table):
+
+    export_study = "T2"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_par_T2',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    T2_map = series[1]
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    T2_map_moved = []
+    T2_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(T2_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(T2_map, params, target=dixon, description='T2 - ' + kidney[1])
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved)
+
+        # Organise results
+        moved.move_to(study)
+        T2_map_moved.append(moved)
+        T2_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    T2_map_table = pd.concat(T2_map_stats)
+    master_table = pd.concat([master_table,T2_map_table])
 
     return master_table
 
@@ -274,6 +704,48 @@ def main(folder,ExperimentName):
         master_table = T2s(folder,master_table)
     except Exception as e: 
         folder.log("T2s export was NOT completed; error: "+str(e))
+
+    try:
+        print('T2s water fraction export started')
+        master_table = T2s_water_fraction(folder,master_table)
+    except Exception as e: 
+        folder.log("T2s water fraction export was NOT completed; error: "+str(e))
+
+    try:
+        print('DCE FP water fraction export started')
+        master_table = DCE_FP(folder,master_table)
+    except Exception as e: 
+        folder.log("DCE FP export was NOT completed; error: "+str(e))
+
+    try:
+        print('DCE TP water fraction export started')
+        master_table = DCE_TP(folder,master_table)
+    except Exception as e: 
+        folder.log("DCE TP export was NOT completed; error: "+str(e))
+
+    try:
+        print('DCE PS water fraction export started')
+        master_table = DCE_PS(folder,master_table)
+    except Exception as e: 
+        folder.log("DCE PS export was NOT completed; error: "+str(e))
+
+    try:
+        print('DCE TE water fraction export started')
+        master_table = DCE_TE(folder,master_table)
+    except Exception as e: 
+        folder.log("DCE TE export was NOT completed; error: "+str(e))
+
+    try:
+        print('T1 export started')
+        master_table = T1(folder,master_table)
+    except Exception as e: 
+        folder.log("T1 export was NOT completed; error: "+str(e))
+
+    try:
+        print('T2 export started')
+        master_table = T2(folder,master_table)
+    except Exception as e: 
+        folder.log("T2 export was NOT completed; error: "+str(e))
 
     filename_csv = datetime.datetime.now().strftime('%Y%m%d_%H%M_') + ExperimentName+'.csv'
     master_table.to_csv(filename_csv, index=False)
