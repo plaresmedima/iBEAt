@@ -92,6 +92,7 @@ def fa(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
+        # Perform coregistration based on m0
         params = vreg.find_rigid_transformation(fa_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
 
         # Apply transformation to rbf image
@@ -148,8 +149,9 @@ def ADC(database,master_table):
 
         # Perform coregistration based on m0
         params = vreg.find_rigid_transformation(ADC_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
-
+        #params = vreg.find_sbs_rigid_transformation(ADC_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
         # Apply transformation to rbf image
+       # moved = vreg.apply_sbs_passive_rigid_transformation(ADC_map, params)
         moved = vreg.apply_rigid_transformation(ADC_map, params, target=dixon, description='ADC - ' + kidney[1])
 
         # Get ROI statistics
@@ -202,10 +204,11 @@ def MTR(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
-        params = vreg.find_rigid_transformation(MTR_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
-
+        #params = vreg.find_rigid_transformation(MTR_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        params = vreg.find_sbs_rigid_transformation(MTR_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
         # Apply transformation to rbf image
-        moved = vreg.apply_rigid_transformation(MTR_map, params, target=dixon, description='MTR - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(MTR_map, params)
+        #moved = vreg.apply_rigid_transformation(MTR_map, params, target=dixon, description='MTR - ' + kidney[1])
 
         # Get ROI statistics
         df = scipy.mask_statistics(kidney[0], moved)
@@ -257,10 +260,12 @@ def T2s(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
-        params = vreg.find_rigid_transformation(T2s_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        #params = vreg.find_rigid_transformation(T2s_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        params = vreg.find_sbs_rigid_transformation(T2s_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
 
         # Apply transformation to rbf image
-        moved = vreg.apply_rigid_transformation(T2s_map, params, target=dixon, description='T2s - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(T2s_map, params)
+        #moved = vreg.apply_rigid_transformation(T2s_map, params, target=dixon, description='T2s - ' + kidney[1])
 
         # Get ROI statistics
         df = scipy.mask_statistics(kidney[0], moved)
@@ -312,10 +317,11 @@ def T2s_water_fraction(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
-        params = vreg.find_rigid_transformation(T2s_water_fraction_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
-
+        #params = vreg.find_rigid_transformation(T2s_water_fraction_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        params = vreg.find_sbs_rigid_transformation(T2s_water_fraction_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
         # Apply transformation to rbf image
-        moved = vreg.apply_rigid_transformation(T2s_water_fraction_map, params, target=dixon, description='T2s water fraction - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(T2s_water_fraction_map, params)
+        #moved = vreg.apply_rigid_transformation(T2s_water_fraction_map, params, target=dixon, description='T2s water fraction - ' + kidney[1])
 
         # Get ROI statistics
         df = scipy.mask_statistics(kidney[0], moved)
@@ -368,11 +374,12 @@ def DCE_FP(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
-        params = vreg.find_rigid_transformation(DCE_FP_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        params = vreg.find_sbs_rigid_transformation(DCE_FP_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        #params = vreg.find_rigid_transformation(DCE_FP_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
 
         # Apply transformation to rbf image
-        moved = vreg.apply_rigid_transformation(DCE_FP_map, params, target=dixon, description='DCE FP - ' + kidney[1])
-
+        #moved = vreg.apply_rigid_transformation(DCE_FP_map, params, target=dixon, description='DCE FP - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(DCE_FP_map, params)
         # Get ROI statistics
         df = scipy.mask_statistics(kidney[0], moved)
 
@@ -424,10 +431,13 @@ def DCE_TP(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
-        params = vreg.find_rigid_transformation(DCE_TP_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        params = vreg.find_sbs_rigid_transformation(DCE_TP_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        #params = vreg.find_rigid_transformation(DCE_TP_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
 
         # Apply transformation to rbf image
-        moved = vreg.apply_rigid_transformation(DCE_TP_map, params, target=dixon, description='DCE TP - ' + kidney[1])
+        #moved = vreg.apply_rigid_transformation(DCE_TP_map, params, target=dixon, description='DCE TP - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(DCE_TP_map, params)
+        
 
         # Get ROI statistics
         df = scipy.mask_statistics(kidney[0], moved)
@@ -481,10 +491,12 @@ def DCE_PS(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
-        params = vreg.find_rigid_transformation(DCE_PS_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        params = vreg.find_sbs_rigid_transformation(DCE_PS_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        #params = vreg.find_rigid_transformation(DCE_PS_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
 
         # Apply transformation to rbf image
-        moved = vreg.apply_rigid_transformation(DCE_PS_map, params, target=dixon, description='DCE PS - ' + kidney[1])
+        #moved = vreg.apply_rigid_transformation(DCE_PS_map, params, target=dixon, description='DCE PS - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(DCE_PS_map, params)
 
         # Get ROI statistics
         df = scipy.mask_statistics(kidney[0], moved)
@@ -537,11 +549,12 @@ def DCE_TE(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
-        params = vreg.find_rigid_transformation(DCE_TE_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        #params = vreg.find_rigid_transformation(DCE_TE_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        params = vreg.find_sbs_rigid_transformation(DCE_TE_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
 
         # Apply transformation to rbf image
-        moved = vreg.apply_rigid_transformation(DCE_TE_map, params, target=dixon, description='DCE TE - ' + kidney[1])
-
+        #moved = vreg.apply_rigid_transformation(DCE_TE_map, params, target=dixon, description='DCE TE - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(DCE_TE_map, params)
         # Get ROI statistics
         df = scipy.mask_statistics(kidney[0], moved)
 
@@ -592,10 +605,13 @@ def T1(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
-        params = vreg.find_rigid_transformation(T1_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
-
+        #params = vreg.find_rigid_transformation(T1_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        params = vreg.find_sbs_rigid_transformation(T1_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
         # Apply transformation to rbf image
-        moved = vreg.apply_rigid_transformation(T1_map, params, target=dixon, description='T1 - ' + kidney[1])
+
+        #moved = vreg.apply_rigid_transformation(T1_map, params, target=dixon, description='T1 - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(T1_map, params)
+
 
         # Get ROI statistics
         df = scipy.mask_statistics(kidney[0], moved)
@@ -647,10 +663,11 @@ def T2(database,master_table):
     for kidney in [(lk,'LK'), (rk,'RK')]:
 
         # Perform coregistration based on m0
-        params = vreg.find_rigid_transformation(T2_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+        params = vreg.find_sbs_rigid_transformation(T2_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
 
         # Apply transformation to rbf image
-        moved = vreg.apply_rigid_transformation(T2_map, params, target=dixon, description='T2 - ' + kidney[1])
+        #moved = vreg.apply_rigid_transformation(T2_map, params, target=dixon, description='T2 - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(T2_map, params)
 
         # Get ROI statistics
         df = scipy.mask_statistics(kidney[0], moved)
@@ -711,29 +728,29 @@ def main(folder,ExperimentName):
     except Exception as e: 
         folder.log("T2s water fraction export was NOT completed; error: "+str(e))
 
-    try:
-        print('DCE FP water fraction export started')
-        master_table = DCE_FP(folder,master_table)
-    except Exception as e: 
-        folder.log("DCE FP export was NOT completed; error: "+str(e))
+    # try:
+    #     print('DCE FP water fraction export started')
+    #     master_table = DCE_FP(folder,master_table)
+    # except Exception as e: 
+    #     folder.log("DCE FP export was NOT completed; error: "+str(e))
 
-    try:
-        print('DCE TP water fraction export started')
-        master_table = DCE_TP(folder,master_table)
-    except Exception as e: 
-        folder.log("DCE TP export was NOT completed; error: "+str(e))
+    # try:
+    #     print('DCE TP water fraction export started')
+    #     master_table = DCE_TP(folder,master_table)
+    # except Exception as e: 
+    #     folder.log("DCE TP export was NOT completed; error: "+str(e))
 
-    try:
-        print('DCE PS water fraction export started')
-        master_table = DCE_PS(folder,master_table)
-    except Exception as e: 
-        folder.log("DCE PS export was NOT completed; error: "+str(e))
+    # try:
+    #     print('DCE PS water fraction export started')
+    #     master_table = DCE_PS(folder,master_table)
+    # except Exception as e: 
+    #     folder.log("DCE PS export was NOT completed; error: "+str(e))
 
-    try:
-        print('DCE TE water fraction export started')
-        master_table = DCE_TE(folder,master_table)
-    except Exception as e: 
-        folder.log("DCE TE export was NOT completed; error: "+str(e))
+    # try:
+    #     print('DCE TE water fraction export started')
+    #     master_table = DCE_TE(folder,master_table)
+    # except Exception as e: 
+    #     folder.log("DCE TE export was NOT completed; error: "+str(e))
 
     try:
         print('T1 export started')
