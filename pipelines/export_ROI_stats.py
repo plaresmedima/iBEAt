@@ -74,7 +74,7 @@ def fa(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_FA_Map',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -130,7 +130,7 @@ def ADC(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_MD_Map',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -186,7 +186,7 @@ def MTR(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'MT_ON_kidneys_cor-oblique_bh_mdr_moco_MTR',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -242,7 +242,7 @@ def T2s(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        '2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2s_T2s_Map',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -299,7 +299,7 @@ def T2s_water_fraction(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2s_fw_Map',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -355,7 +355,7 @@ def DCE_FP(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'DCE_kidneys_cor-oblique_fb_mdr_par_FP',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -412,7 +412,7 @@ def DCE_TP(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'DCE_kidneys_cor-oblique_fb_mdr_par_TP',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -471,7 +471,7 @@ def DCE_PS(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'DCE_kidneys_cor-oblique_fb_mdr_par_PS',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -530,7 +530,7 @@ def DCE_TE(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'DCE_kidneys_cor-oblique_fb_mdr_par_TE',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -587,7 +587,7 @@ def T1(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_par_T1',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -645,7 +645,7 @@ def T2(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_par_T2',
         'LK [overlay]',
         'RK [overlay]',
     ]

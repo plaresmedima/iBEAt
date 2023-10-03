@@ -50,19 +50,19 @@ if __name__ == '__main__':
         ExperimentName = ExperimentName[:-4]
         pathScan = extract_to_directory + "\\" + ExperimentName
 
-        try:
-            MaskExperimentName_LK = ExperimentName.split("-")[1] + "_" + ExperimentName.split("-")[2] + "_LK"
-            MaskExperimentName_RK = ExperimentName.split("-")[1] + "_" + ExperimentName.split("-")[2] + "_RK"
-        except:
-            MaskExperimentName_LK = ExperimentName.split("_")[-1][:4] + "_" + ExperimentName.split("_")[-1][4:] + "_LK"
-            MaskExperimentName_RK = ExperimentName.split("_")[-1][:4] + "_" + ExperimentName.split("_")[-1][4:] + "_RK"
-
         # try:
-        #     MaskExperimentName_LK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[0].split("-")[2] + "_LK"
-        #     MaskExperimentName_RK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[0].split("-")[2] + "_RK"
+        #     MaskExperimentName_LK = ExperimentName.split("-")[1] + "_" + ExperimentName.split("-")[2] + "_LK"
+        #     MaskExperimentName_RK = ExperimentName.split("-")[1] + "_" + ExperimentName.split("-")[2] + "_RK"
         # except:
-        #     MaskExperimentName_LK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[1] + "_LK"
-        #     MaskExperimentName_RK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[1] + "_RK"
+        #     MaskExperimentName_LK = ExperimentName.split("_")[-1][:4] + "_" + ExperimentName.split("_")[-1][4:] + "_LK"
+        #     MaskExperimentName_RK = ExperimentName.split("_")[-1][:4] + "_" + ExperimentName.split("_")[-1][4:] + "_RK"
+
+        try:
+            MaskExperimentName_LK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[0].split("-")[2] + "_LK"
+            MaskExperimentName_RK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[0].split("-")[2] + "_RK"
+        except:
+            MaskExperimentName_LK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[1] + "_LK"
+            MaskExperimentName_RK = ExperimentName.split("_")[0].split("-")[1] + "_" + ExperimentName.split("_")[1] + "_RK"
 
         shutil.copytree(mask_path+"\\"+MaskExperimentName_LK, pathScan+"\\"+"Mask_LK")
         shutil.copytree(mask_path+"\\"+MaskExperimentName_RK, pathScan+"\\"+"Mask_RK")
