@@ -38,32 +38,35 @@ def segment_kidneys(database, weights):
     # Save UNETR output
     result = study.new_child(SeriesDescription = 'UNETR kidneys v1')
     result.set_array(masks, header, pixels_first=True)
-    result[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+    # result[['WindowCenter','WindowWidth']] = [1.0, 2.0]
 
     # Save and display left kidney data
     left = study.new_child(SeriesDescription = 'LK')
     left.set_array(left_kidney, header, pixels_first=True)
-    left[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+    # left[['WindowCenter','WindowWidth']] = [1.0, 2.0]
     
     # Save and display right kidney data
     right = study.new_child(SeriesDescription = 'RK')
     right.set_array(right_kidney, header, pixels_first=True)
-    right[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+    # right[['WindowCenter','WindowWidth']] = [1.0, 2.0]
 
     kidneys = [left, right]
     features = skimage.volume_features(kidneys)
 
     database.log("Kidney segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
-    return kidneys, features
-
 
 def compute_whole_kidney_canvas(database):
     start_time = time.time()
     database.log('Sequential K-means has started.')
+    # series_desc = [
+    #     'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
+    #     'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
+    # ] 
     series_desc = [
-        'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
-        'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
+        'T1w_abdomen_dixon_cor_bh_fat',
+        'T1w_abdomen_dixon_cor_bh_out_phase'
     ] 
+
     features, study = input_series(database, series_desc, export_study)
     if features is None:
         return None

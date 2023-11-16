@@ -8,21 +8,30 @@ Download XNAT dataset -> Name Standardization -> Execute MDR    -> Custom Moddel
 
 TO RUN THE SCRIPT YOU USE: python main_cluster.py --num n (WHERE n is an integer with the value of the XNAT dataset)
 """
-
+import argparse
 from scripts.subject_all import single_subject
 
 
 if __name__ == '__main__':
 
     #################### INPUT ######################
-    username = "***"
-    password = "***"
-    path = "***"
+    username = "*******"
+    password = "*******"
+    path = "//mnt//fastdata//" + username #CLUSTER PATH TO SAVE DATA, ADD YOUR LOCAL PATH IF YOU WANT TO RUN IT LOCALLY
+
     #################################################
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--num',
+                        dest='num',
+                        help='Define the XNAT dataset',
+                        type=int)
+
+    args = parser.parse_args()
+
     #SELECT YOUR DATASET
-    #dataset = [site, study, dataset] see below "EXAMPLE DATASET SELECTION"
-    dataset = [2,1,11]
+    #dataset = [site, study, dataset]
+    dataset = [2,1,args.num]
 
     ################################################# EXAMPLE DATASET SELECTION #############################################################
     #DATASET CODE FOR LEEDS
@@ -35,6 +44,5 @@ if __name__ == '__main__':
     #  7: BEAt-DKD-WP4-Sheffield      4: Leeds_setup_scans                      ->14: Leeds_Patient_4128015
     #########################################################################################################################################
 
-    #function responsable for ibeat analysis of a single subject (processed images and .csv results are exported to Google Drive)
     single_subject(username, password, path, dataset)
 

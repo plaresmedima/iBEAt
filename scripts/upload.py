@@ -15,14 +15,13 @@ def zipdir(path, ziph):
                        os.path.relpath(os.path.join(root, file), 
                                        os.path.join(path, '..')))
 
-def GoogleDrive_Upload(pathScan,filename_log):
+def GoogleDrive_Upload(pathScan,filename_log,filename_csv):
 
     gauth = GoogleAuth()
     drive = GoogleDrive (gauth)
 
-
     #upload_file_list = [filename_log,pathScan + '.zip',pathScan + '_segmentation_results' + '.zip']
-    upload_file_list = [filename_log,pathScan + '_segmentation_results' + '.zip']
+    upload_file_list = [filename_log,pathScan + '_segmentation_results' + '.zip', filename_csv]
     #upload_file_list = [filename_log]
 
     for upload_file in upload_file_list:

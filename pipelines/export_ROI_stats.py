@@ -4,6 +4,7 @@ from dbdicom.pipelines import input_series
 import os, sys, time
 import csv
 import datetime
+import pipelines.segment as seg
 
 def perfusion(database,master_table):
 
@@ -690,6 +691,10 @@ def main(folder,ExperimentName):
 
     start_time = time.time()
     folder.log(": ROI Stats has started!")
+    weights = 'UNETR_kidneys_v1.pth'
+    seg.segment_kidneys(folder, weights)
+    folder.save()
+    folder.scan()
 
     master_table = pd.DataFrame()
     try:
@@ -769,3 +774,5 @@ def main(folder,ExperimentName):
 
     folder.save()
     folder.log("Export was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
+    return filename_csv
