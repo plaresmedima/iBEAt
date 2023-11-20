@@ -1,25 +1,22 @@
 """ 
 @author: Joao Periquito 
-iBEAt CLUSTER MAIN Scrpit
+iBEAt Analysis MAIN CLUSTER Scrpit
 2022
-Download XNAT dataset -> Name Standardization -> Execute MDR    -> Custom Moddeling (DCE, T2*, DCE)  -> T1 & T2 modelling with parallelization (done in the main)
-    XNAT_cluster.py   ->  RENAME_Cluster.py   -> MDR_Cluster.py -> MODELLING_cluster.py
-(T1 & T2 modelling are done in the main due to parallelization requirements)
+Download XNAT dataset -> Name Standardization ->    Execute MDR   -> Custom Moddeling (T1, T2...) ->     Biomarker extraction   -> Google Drive Upload
+  pipelines.xnat.py   -> pipelines.rename.py  -> pipelines.mdr.py ->      pipelines.mapping.py    -> pipelines.export_ROI_stats -> scripts.upload.py
 
 TO RUN THE SCRIPT YOU USE: python main_cluster.py --num n (WHERE n is an integer with the value of the XNAT dataset)
 """
 import argparse
 from scripts.subject_all import single_subject
-
+import scripts.XNAT_credentials as XNAT_cred
 
 if __name__ == '__main__':
 
-    #################### INPUT ######################
-    username = "*******"
-    password = "*******"
-    path = "//mnt//fastdata//" + username #CLUSTER PATH TO SAVE DATA, ADD YOUR LOCAL PATH IF YOU WANT TO RUN IT LOCALLY
+    #XNAT Credentials
+    username, password = XNAT_cred.main()
 
-    #################################################
+    path = "//mnt//fastdata//" + username #CLUSTER PATH TO SAVE DATA, ADD YOUR LOCAL PATH IF YOU WANT TO RUN IT LOCALLY
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--num',

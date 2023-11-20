@@ -613,28 +613,28 @@ def main(folder):
             if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                 try:
                     print('Starting T2s')
-                    #T2s(series, study=study)
+                    T2s(series, study=study)
                 except Exception as e: 
                     series.log("T2* mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DTI_kidneys_cor-oblique_fb_mdr_moco":
                 try:
                     print('Starting DTI')
-                    #DTI(series, study=study)
+                    DTI(series, study=study)
                 except Exception as e: 
                     series.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DCE_kidneys_cor-oblique_fb_mdr_moco":
                 try:
                     print('Starting DCE_MAX')
-                    #DCE_MAX(series, study=study)
+                    DCE_MAX(series, study=study)
                 except Exception as e: 
                     series.log("DCE-MAX mapping was NOT completed; error: "+str(e))
 
             elif series.SeriesDescription == 'MT_ON_kidneys_cor-oblique_bh_mdr_moco':
                 try:
                     print('Starting MTR')
-                    #MTR(series, study=study)
+                    MTR(series, study=study)
                 except Exception as e: 
                     series.log("MTR mapping was NOT completed; error: "+str(e))
 

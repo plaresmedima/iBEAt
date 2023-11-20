@@ -6,7 +6,6 @@ import pipelines.rename as rename
 import pipelines.mdr as mdr
 import pipelines.mapping as map
 import pipelines.export_ROI_stats as export_ROIs
-import pipelines.segment as seg
 
 import scripts.upload as upload
 from scripts import xnat
@@ -15,9 +14,9 @@ def single_subject(username, password, path, dataset):
     
     #import data from XNAT
     ExperimentName = xnat.main(username, password, path, dataset)
-    #ExperimentName = "Leeds_REP_VOL_001_01"
+    #ExperimentName = "iBE-2128_013_baseline"
     pathScan = path + "//" + ExperimentName
-    filename_log = pathScan + datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
+    filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
     
     #available CPU cores
     try: 

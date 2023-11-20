@@ -1,28 +1,25 @@
 """ 
 @author: Joao Periquito 
-iBEAt CLUSTER MAIN Scrpit
+iBEAt Analysis MAIN LOCAL Scrpit
 2022
-Download XNAT dataset -> Name Standardization -> Execute MDR    -> Custom Moddeling (DCE, T2*, DCE)  -> T1 & T2 modelling with parallelization (done in the main)
-    XNAT_cluster.py   ->  RENAME_Cluster.py   -> MDR_Cluster.py -> MODELLING_cluster.py
-(T1 & T2 modelling are done in the main due to parallelization requirements)
-
-TO RUN THE SCRIPT YOU USE: python main_cluster.py --num n (WHERE n is an integer with the value of the XNAT dataset)
+Download XNAT dataset -> Name Standardization ->    Execute MDR   -> Custom Moddeling (T1, T2...) ->     Biomarker extraction   -> Google Drive Upload
+  pipelines.xnat.py   -> pipelines.rename.py  -> pipelines.mdr.py ->      pipelines.mapping.py    -> pipelines.export_ROI_stats -> scripts.upload.py
 """
 
 from scripts.subject_all import single_subject
-
+import scripts.XNAT_credentials as XNAT_cred
+import scripts.select_folder_to_save as select_save_folder
 
 if __name__ == '__main__':
 
-    #################### INPUT ######################
-    username = "***"
-    password = "***"
-    path = "***"
-    #################################################
+    path = select_save_folder.main()
+    
+    #XNAT Credentials
+    username, password = XNAT_cred.main()
 
     #SELECT YOUR DATASET
     #dataset = [site, study, dataset] see below "EXAMPLE DATASET SELECTION"
-    dataset = [2,1,11]
+    dataset = [2,1,10]
 
     ################################################# EXAMPLE DATASET SELECTION #############################################################
     #DATASET CODE FOR LEEDS
@@ -35,6 +32,5 @@ if __name__ == '__main__':
     #  7: BEAt-DKD-WP4-Sheffield      4: Leeds_setup_scans                      ->14: Leeds_Patient_4128015
     #########################################################################################################################################
 
-    #function responsable for ibeat analysis of a single subject (processed images and .csv results are exported to Google Drive)
+    #function responsable for ibeat analysis of a single subject (processed images, logs, and csv results are exported to Google Drive)
     single_subject(username, password, path, dataset)
-

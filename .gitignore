@@ -154,3 +154,4 @@ cython_debug/
 client_secrets.json
 credentials.json
 settings.yaml
+user_XNAT.txt
