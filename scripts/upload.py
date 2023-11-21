@@ -20,8 +20,9 @@ def GoogleDrive_Upload(pathScan,filename_log,filename_csv):
     gauth = GoogleAuth()
     drive = GoogleDrive (gauth)
 
+    upload_file_list = [filename_log,pathScan + '.zip', filename_csv]
     #upload_file_list = [filename_log,pathScan + '.zip',pathScan + '_segmentation_results' + '.zip']
-    upload_file_list = [filename_log,pathScan + '_segmentation_results' + '.zip', filename_csv]
+    #upload_file_list = [filename_log,pathScan + '_segmentation_results' + '.zip', filename_csv]
     #upload_file_list = [filename_log]
 
     for upload_file in upload_file_list:
@@ -46,11 +47,11 @@ def main(pathScan,filename_log):
         file.write("\n"+str(datetime.datetime.now())[0:19] + ": Compressing into a zip file has started")
         file.close()
 
-        # with zipfile.ZipFile(pathScan + '.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
-        #     zipdir(pathScan, zipf)
+        with zipfile.ZipFile(pathScan + '.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
+            zipdir(pathScan, zipf)
 
-        with zipfile.ZipFile(pathSegmentation + '.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
-            zipdir(pathSegmentation, zipf)
+        # with zipfile.ZipFile(pathSegmentation + '.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
+        #     zipdir(pathSegmentation, zipf)
 
         file = open(filename_log, 'a')
         file.write("\n"+str(datetime.datetime.now())[0:19] + ": Compressing into a zip file was completed --- %s seconds ---" % (int(time.time() - start_time))) 
