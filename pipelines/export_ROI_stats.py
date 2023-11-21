@@ -689,11 +689,6 @@ def T2(database,master_table):
 
 def main(folder,ExperimentName):
 
-    start_time = time.time()
-    folder.log(": ROI Stats has started!")
-    weights = 'UNETR_kidneys_v1.pth'
-    seg.segment_kidneys(folder, weights)
-    folder.save()
     folder.scan()
 
     master_table = pd.DataFrame()

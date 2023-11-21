@@ -17,6 +17,8 @@ import mapping.t1
 import mapping.t2
 import mapping.T2s
 
+import pipelines.segment as seg
+
 from utilities import map_to_dixon_mask
 from utilities import fill_kidney_holes_interp_v2
 
@@ -599,7 +601,12 @@ def DCE_MAX(series=None, mask=None,export_ROI=False, study=None):
 def main(folder):
 
     start_time = time.time()
-    folder.log(": Modelling has started!")
+    folder.log("AI segmentation has started!")
+    weights = 'UNETR_kidneys_v1.pth'
+    seg.segment_kidneys(folder, weights)
+    folder.scan()
+
+    folder.log("Modelling has started!")
 
     list_of_series = folder.series()
 
@@ -613,32 +620,37 @@ def main(folder):
             if series['SeriesDescription'] == "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco":
                 try:
                     print('Starting T2s')
-                    T2s(series, study=study)
+                    series.log("T2s mapping has started")
+                    #T2s(series, study=study)
                 except Exception as e: 
                     series.log("T2* mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DTI_kidneys_cor-oblique_fb_mdr_moco":
                 try:
                     print('Starting DTI')
-                    DTI(series, study=study)
+                    series.log("DTI mapping has started")
+                    #DTI(series, study=study)
                 except Exception as e: 
                     series.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
 
             elif series['SeriesDescription'] == "DCE_kidneys_cor-oblique_fb_mdr_moco":
                 try:
                     print('Starting DCE_MAX')
-                    DCE_MAX(series, study=study)
+                    series.log("DCE mapping has started")
+                    #DCE_MAX(series, study=study)
                 except Exception as e: 
                     series.log("DCE-MAX mapping was NOT completed; error: "+str(e))
 
             elif series.SeriesDescription == 'MT_ON_kidneys_cor-oblique_bh_mdr_moco':
                 try:
                     print('Starting MTR')
-                    MTR(series, study=study)
+                    series.log("MTR mapping has started")
+                    #MTR(series, study=study)
                 except Exception as e: 
                     series.log("MTR mapping was NOT completed; error: "+str(e))
 
             elif series.SeriesDescription == 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco':
+                print(series.Manufacturer)
                 if series.Manufacturer != 'SIEMENS': # TODO: Check this, something not right
                     try:
                         T1_Philips(series, study=study)  
@@ -654,6 +666,7 @@ def main(folder):
                                 print(series['SeriesDescription'])
                                 if series['SeriesDescription'] == "LK":
                                     Kidney_mask = series
+                                    series.log("T1, T2 mapping has started")
                                     T1_then_T2([T1,T2],Kidney_mask, study=study)
                             break
 
