@@ -14,14 +14,14 @@ def segment_kidneys(database, weights):
     database.log('Kidney segmentation has started.')
 
     # Get weights file and check if valid 
-    if not os.path.isfile(weights):
-        msg = 'The weights file ' + weights + ' has not been found. \n'
-        msg += 'Please check that the file with model weights is in the folder, and is named ' + unetr.filename
-        database.dialog.information(msg)
-        return
+    # if not os.path.isfile(weights):
+    #     msg = 'The weights file ' + weights + ' has not been found. \n'
+    #     msg += 'Please check that the file with model weights is in the folder, and is named ' + unetr.filename
+    #     database.dialog.information(msg)
+    #     return
 
     # Get appropriate series and check if valid
-    #series = database.series(SeriesDescription=unetr.trained_on)
+    series = database.series(SeriesDescription=unetr.trained_on)
     sery, study = input_series(database, unetr.trained_on, export_study)
     if sery is None:
         return    
@@ -29,7 +29,6 @@ def segment_kidneys(database, weights):
     # Loop over the series and create the mask
     desc = sery.instance().SeriesDescription
     array, header = sery.array(['SliceLocation'], pixels_first=True, first_volume=True)
-    sery.message('Calculating kidney masks for series ' + desc)
 
     # Calculate predictions 
     masks = unetr.apply(array, weights)
@@ -52,6 +51,7 @@ def segment_kidneys(database, weights):
 
     kidneys = [left, right]
     features = skimage.volume_features(kidneys)
+    database.save()
 
     database.log("Kidney segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
