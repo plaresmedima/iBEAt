@@ -10,8 +10,33 @@ import zipfile
 import datetime
 import os
 
-def XNAT_download(username,password,path,DatasetSelected):
+def XNAT_download(username,password,path,DatasetSelected,SpecificDataset=None):
     url = "https://qib.shef.ac.uk"
+
+    if SpecificDataset!=None:
+        
+        site = SpecificDataset.split('_')[0]
+        patient = SpecificDataset.split('_')[1]
+        
+        if   site == '1128': #Bari
+            DatasetSelected[0] = 5
+            DatasetSelected[1] = 0
+        elif site == '2128': #Bordeaux
+            DatasetSelected[0] = 2
+            DatasetSelected[1] = 1 #Baseline
+        elif site == '3128': #Exeter
+            DatasetSelected[0] = 3
+            DatasetSelected[1] = 0
+        elif site == '4128': #Leeds
+            DatasetSelected[0] = 6
+            DatasetSelected[1] = 0
+        elif site == '5128': #Turku
+            DatasetSelected[0] = 4
+            DatasetSelected[1] = 3 #GE
+        # elif site == '2178': #Sheffield
+        #     DatasetSelected[0] = 7
+        #     DatasetSelected[1] = 0
+
 
     with xnat.connect(url, user=username, password=password) as session:
         xnatProjects = [project.secondary_id for project in session.projects.values()]
@@ -38,8 +63,13 @@ def XNAT_download(username,password,path,DatasetSelected):
             dataset = session.projects[projectName]
 
             xnatExperiments = [experiment.label for experiment in session.projects[projectName].subjects[subjectName].experiments.values()]
-            #for x_3 in range(len(xnatExperiments)):
-                #print (str(x_3) +": " + xnatExperiments[x_3])
+            if SpecificDataset!=None:
+                for x_3 in range(len(xnatExperiments)):
+                #print(str(x_3) +": " + xnatExperiments[x_3])
+                    if patient in xnatExperiments[x_3]:
+                        DatasetSelected[2] = x_3
+                        break
+                
             #print("Selected the project:")
             #xnatExperimentsSelected = int(input())
             #xnatExperimentsSelected = 14
@@ -82,9 +112,13 @@ def XNAT_upload(username,password,path):
 #####################################################
 
 
-def main(username, password, path,DatasetSelected):
+def main(username, password, path,DatasetSelected=[0,0,0],SpecificDataset=None):
 
-    experimentName = XNAT_download(username,password,path,DatasetSelected)
+    if SpecificDataset==None:
+        experimentName = XNAT_download(username,password,path,DatasetSelected)
+
+    else:
+        experimentName = XNAT_download(username,password,path,DatasetSelected=[0,0,0],SpecificDataset=SpecificDataset)
 
     return experimentName
 
