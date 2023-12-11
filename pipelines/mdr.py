@@ -102,9 +102,6 @@ def MDRegDTI(series=None,study=None):
         array = np.transpose(array, (0, 1, 2, 4, 3))
         header = np.transpose(header, (0, 2, 1))
 
-    print(array.shape)
-    print(header.shape)
-
     signal_pars = 0
     signal_model = mdreg.models.DTI
     elastix_file = 'BSplines_DTI.txt'
