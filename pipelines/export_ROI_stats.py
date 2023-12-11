@@ -689,6 +689,7 @@ def T2(database,master_table):
 
 def main(folder,ExperimentName):
 
+    start_time = time.time()
     folder.scan()
 
     master_table = pd.DataFrame()
