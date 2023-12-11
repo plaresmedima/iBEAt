@@ -147,8 +147,11 @@ def apply_sbs_rigid_transformation(series_moving:Series, parameters:np.ndarray, 
 def main (map_to_register, Kidney_mask,params=None):
     if params:
         map_coreg = apply_sbs_rigid_transformation(map_to_register, params, Kidney_mask)
+
+        return map_coreg
+
     else:
         params = find_sbs_rigid_transformation(map_to_register, Kidney_mask, tolerance=0.1, metric='mutual information', region=Kidney_mask)
         map_coreg = apply_sbs_rigid_transformation(map_to_register, params, Kidney_mask)
 
-    return map_coreg, params
+        return map_coreg, params
