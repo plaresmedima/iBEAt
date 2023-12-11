@@ -2,8 +2,8 @@
 @author: Joao Periquito 
 iBEAt Analysis MAIN LOCAL Scrpit
 2022
-Download XNAT dataset -> Name Standardization ->    Execute MDR   -> Custom Moddeling (T1, T2...) ->     Biomarker extraction   -> Google Drive Upload
-  pipelines.xnat.py   -> pipelines.rename.py  -> pipelines.mdr.py ->      pipelines.mapping.py    -> pipelines.export_ROI_stats -> scripts.upload.py
+Download XNAT dataset -> Name Standardization ->    Execute MDR   ->  Apply UNETR to kidney segmentation  ->  Custom Moddeling (T1, T2...) ->     Biomarker extraction   -> Google Drive Upload
+  pipelines.xnat.py   -> pipelines.rename.py  -> pipelines.mdr.py ->    piplines.apply_AI_segmentation    ->    pipelines.mapping.py       -> pipelines.export_ROI_stats -> scripts.upload.py
 """
 
 from scripts.subject_all import single_subject
@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     #SELECT YOUR DATASET
     #dataset = [site, study, dataset] see below "EXAMPLE DATASET SELECTION"
-    dataset = [2,1,10]
+    dataset = [2,1,8]
 
     ################################################# EXAMPLE DATASET SELECTION #############################################################
     #DATASET CODE FOR LEEDS
