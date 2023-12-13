@@ -50,8 +50,8 @@ def segment_kidneys(database, weights):
     right.set_array(right_kidney, header, pixels_first=True)
     # right[['WindowCenter','WindowWidth']] = [1.0, 2.0]
 
-    kidneys = [left, right]
-    features = skimage.volume_features(kidneys)
+    #kidneys = [left, right]
+    #features = skimage.volume_features(kidneys)
 
     database.save()
 

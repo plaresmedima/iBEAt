@@ -670,7 +670,7 @@ def main(folder):
                 try:
                     print('Starting T2s')
                     series.log("T2s mapping has started")
-                    #T2s(series, study=study)
+                    T2s(series, study=study)
                 except Exception as e: 
                     series.log("T2* mapping was NOT completed; error: "+str(e))
 
@@ -678,7 +678,7 @@ def main(folder):
                 try:
                     print('Starting DTI')
                     series.log("DTI mapping has started")
-                    #DTI(series, study=study)
+                    DTI(series, study=study)
                 except Exception as e: 
                     series.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
 
@@ -686,7 +686,7 @@ def main(folder):
                 try:
                     print('Starting DCE_MAX')
                     series.log("DCE mapping has started")
-                    #DCE_MAX(series, study=study)
+                    DCE_MAX(series, study=study)
                 except Exception as e: 
                     series.log("DCE-MAX mapping was NOT completed; error: "+str(e))
 
@@ -694,7 +694,7 @@ def main(folder):
                 try:
                     print('Starting MTR')
                     series.log("MTR mapping has started")
-                    #MTR(series, study=study)
+                    MTR(series, study=study)
                 except Exception as e: 
                     series.log("MTR mapping was NOT completed; error: "+str(e))
 
