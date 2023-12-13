@@ -273,7 +273,7 @@ def T1_then_T2(series_T1_T2, series_mask, study=None):
     array_T1, header_T1 = series_T1.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
     array_T2, header_T2 = series_T2.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
 
-    array_T1 = np.squeeze(array_T2[:,:,:,:,0]) 
+    array_T1 = np.squeeze(array_T1[:,:,:,:,0]) 
     array_T2 = np.squeeze(array_T2[:,:,:,:,0])
 
     header_T1 = np.squeeze(header_T1[:,...])
@@ -299,6 +299,7 @@ def T1_then_T2(series_T1_T2, series_mask, study=None):
     T1_map = np.zeros(np.shape(array_T1)[0:3])
     Ref_Eff_map = np.zeros(np.shape(array_T1)[0:3])
     T1_rsquare_map = np.zeros(np.shape(array_T1)[0:3])
+    FA_Eff_map = np.zeros(np.shape(array_T1)[0:3])
 
     #perform T1 mapping slice by slice
     for i in range(np.shape(array_T1)[2]):
@@ -513,6 +514,11 @@ def DTI(series=None, mask=None,export_ROI=False, study = None):
 
         FAmap = fractional_anisotropy(tenfit.evals)
         MDmap = dti.mean_diffusivity(tenfit.evals)
+        Sphericitymap = dti.sphericity(tenfit.evals)
+        Linearitymap = dti.linearity(tenfit.evals)
+        Planaritymap = dti.planarity(tenfit.evals)
+        ADmap = dti.axial_diffusivity(tenfit.evals)
+        RDmap = dti.radial_diffusivity(tenfit.evals) 
 ######FROM DIPY          
 
         MDmap[MDmap>0.005]=0.005
@@ -525,6 +531,27 @@ def DTI(series=None, mask=None,export_ROI=False, study = None):
         MD_map_series = series_DTI.SeriesDescription + "_DTI_" + "MD_Map"
         MD_map_series = study.new_series(SeriesDescription=MD_map_series)
         MD_map_series.set_array(np.squeeze(MDmap),np.squeeze(header[:,0]),pixels_first=True)
+
+        Sphericity_map_series = series_DTI.SeriesDescription + "_DTI_" + "Sphericity_Map"
+        Sphericity_map_series = study.new_series(SeriesDescription=Sphericity_map_series)
+        Sphericity_map_series.set_array(np.squeeze(Sphericitymap),np.squeeze(header[:,0]),pixels_first=True)
+
+        Linearity_map_series = series_DTI.SeriesDescription + "_DTI_" + "Linearity_Map"
+        Linearity_map_series = study.new_series(SeriesDescription=Linearity_map_series)
+        Linearity_map_series.set_array(np.squeeze(Linearitymap),np.squeeze(header[:,0]),pixels_first=True)
+
+        Planarity_map_series = series_DTI.SeriesDescription + "_DTI_" + "Planarity_Map"
+        Planarity_map_series = study.new_series(SeriesDescription=Planarity_map_series)
+        Planarity_map_series.set_array(np.squeeze(Planaritymap),np.squeeze(header[:,0]),pixels_first=True)
+
+        AD_map_series = series_DTI.SeriesDescription + "_DTI_" + "AD_Map"
+        AD_map_series = study.new_series(SeriesDescription=AD_map_series)
+        AD_map_series.set_array(np.squeeze(ADmap),np.squeeze(header[:,0]),pixels_first=True)
+
+        RD_map_series = series_DTI.SeriesDescription + "_DTI_" + "RD_Map"
+        RD_map_series = study.new_series(SeriesDescription=RD_map_series)
+        RD_map_series.set_array(np.squeeze(RDmap),np.squeeze(header[:,0]),pixels_first=True)
+
 
         return_vals = FA_map_series, MD_map_series
 
@@ -671,8 +698,8 @@ def main(folder):
                 except Exception as e: 
                     series.log("MTR mapping was NOT completed; error: "+str(e))
 
-            #elif series.SeriesDescription == 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco':
-            elif series.SeriesDescription == 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T1_T1_Map': #just for debugging
+            elif series.SeriesDescription == 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco':
+            #elif series.SeriesDescription == 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T1_T1_Map': #just for debugging
                 print(series.Manufacturer)
                 if series.Manufacturer != 'SIEMENS': # TODO: Check this, something not right
                     try:

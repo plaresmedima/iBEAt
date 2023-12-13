@@ -4,6 +4,7 @@ import time
 from dbdicom.wrappers import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
 import mapping.UNETR_kidneys_v1 as unetr
+import matplotlib.pyplot as plt
 
 
 export_study = 'Segmentations'
@@ -51,6 +52,7 @@ def segment_kidneys(database, weights):
 
     kidneys = [left, right]
     features = skimage.volume_features(kidneys)
+
     database.save()
 
     database.log("Kidney segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
@@ -58,14 +60,14 @@ def segment_kidneys(database, weights):
 def compute_whole_kidney_canvas(database):
     start_time = time.time()
     database.log('Sequential K-means has started.')
-    # series_desc = [
-    #     'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
-    #     'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
-    # ] 
     series_desc = [
-        'T1w_abdomen_dixon_cor_bh_fat',
-        'T1w_abdomen_dixon_cor_bh_out_phase'
+        'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
+        'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
     ] 
+    # series_desc = [
+    #     'T1w_abdomen_dixon_cor_bh_fat',
+    #     'T1w_abdomen_dixon_cor_bh_out_phase'
+    # ] 
 
     features, study = input_series(database, series_desc, export_study)
     if features is None:

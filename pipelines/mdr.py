@@ -305,7 +305,7 @@ def main(folder):
             if SeqName == "T2star_map_kidneys_cor-oblique_mbh_magnitude":
                 try:
                     print('starting t2s')
-                    MDRegT2star(series, study=study)
+                    #MDRegT2star(series, study=study)
                 except Exception as e: 
                     folder.log("T2* motion correction was NOT completed; error: "+str(e))
 
@@ -326,7 +326,7 @@ def main(folder):
             elif SeqName == "DTI_kidneys_cor-oblique_fb":
                 try:
                     print('starting dti')
-                    MDRegDTI(series, study=study) 
+                    #MDRegDTI(series, study=study) 
                 except Exception as e: 
                     folder.log("DTI motion correction was NOT completed; error: "+str(e))
             
@@ -335,15 +335,16 @@ def main(folder):
                     MT_OFF = series
                     for series in folder.series():
                         if series['SeriesDescription'] == "MT_ON_kidneys_cor-oblique_bh":
-                            MT_ON = series
+                            #MT_ON = series
                             break
-                    MDRegMT([MT_OFF, MT_ON], study=study) 
+                    #MDRegMT([MT_OFF, MT_ON], study=study) 
                 except Exception as e: 
                     folder.log("MT motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "DCE_kidneys_cor-oblique_fb":
                 try:
-                    MDRegDCE(series, study=study)   
+                    print('starting DCE')
+                    #MDRegDCE(series, study=study)   
                 except Exception as e: 
                     folder.log("DCE motion correction was NOT completed; error: "+str(e))
 

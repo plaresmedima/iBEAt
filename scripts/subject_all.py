@@ -18,7 +18,8 @@ from scripts import xnat
 def single_subject(username, password, path, dataset):
     
     #Import data from XNAT
-    ExperimentName = xnat.main(username, password, path, dataset)
+    #ExperimentName = xnat.main(username, password, path, dataset)
+    ExperimentName = "iBE-2128_007_baseline"
     pathScan = path + "//" + ExperimentName
     filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
     
@@ -36,24 +37,24 @@ def single_subject(username, password, path, dataset):
     #Name standardization 
     try:
         print("starting renaming")
-        rename.main(folder)
-        check_rename.main(folder)
+        #rename.main(folder)
+        #check_rename.main(folder)
     except Exception as e:
         folder.log("Renaming was NOT completed; error: " + str(e))
 
     #Apply motion correction using MDR
     try:
         print("starting mdr")
-        mdr.main(folder)
-        check_mdr.main(folder)
+        #mdr.main(folder)
+        #check_mdr.main(folder)
     except Exception as e:
         folder.log("Renaming was NOT completed; error: " + str(e))
 
     #Apply UNETR to segment right/left kidney
     try:
         print("starting kidney segmentation")
-        AI_segmentation.main(folder)
-        check_masks.main(folder)
+        #AI_segmentation.main(folder)
+        #check_masks.main(folder)
     except Exception as e:
         folder.log("Kidney segmentation was NOT completed; error: " + str(e))
 
@@ -68,9 +69,9 @@ def single_subject(username, password, path, dataset):
     #Generate masks using unetr, apply alignment, extract biomarkers to a .csv
     try:
         print('starting parameter extraction')
-        filename_csv = export_ROIs.main(folder,ExperimentName)
+        #filename_csv = export_ROIs.main(folder,ExperimentName)
     except Exception as e:
         folder.log("Parameter extraction was NOT completed; error: " + str(e))
     
     #upload images, logfile and csv to google drive
-    upload.main(pathScan, filename_log, filename_csv)
+    #upload.main(pathScan, filename_log, filename_csv)
