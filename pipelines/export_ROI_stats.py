@@ -5,6 +5,8 @@ import os, sys, time
 import csv
 import datetime
 import pipelines.segment as seg
+import scripts.QC_alignment as export_alignemnt
+
 
 def perfusion(database,master_table):
 
@@ -44,8 +46,9 @@ def perfusion(database,master_table):
         # Apply transformation to rbf image
         moved = vreg.apply_rigid_transformation(rbf, params, target=dixon, description='RBF - ' + kidney[1])
 
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -59,6 +62,291 @@ def perfusion(database,master_table):
     master_table = pd.concat([master_table,rbf_table])
 
     return master_table
+
+def RD(database,master_table):
+
+    export_study = "RD"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_RD_Map',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_RD_Map',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    RD_map = series[1]
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    RD_map_moved = []
+    RD_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(RD_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(RD_map, params, target=dixon, description='RD - ' + kidney[1])
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
+
+        # Organise results
+        moved.move_to(study)
+        RD_map_moved.append(moved)
+        RD_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    RD_map_table = pd.concat(RD_map_stats)
+    master_table = pd.concat([master_table,RD_map_table])
+
+    return master_table
+
+def AD(database,master_table):
+
+    export_study = "AD"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_AD_Map',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_AD_Map',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    AD_map = series[1]
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    AD_map_moved = []
+    AD_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(AD_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(AD_map, params, target=dixon, description='AD - ' + kidney[1])
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
+
+        # Organise results
+        moved.move_to(study)
+        AD_map_moved.append(moved)
+        AD_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    AD_map_table = pd.concat(AD_map_stats)
+    master_table = pd.concat([master_table,AD_map_table])
+
+    return master_table
+
+def planarity(database,master_table):
+
+    export_study = "Planarity"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_Planarity_Map',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_Planarity_Map',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    planarity_map = series[1]
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    planarity_map_moved = []
+    planarity_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(planarity_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(planarity_map, params, target=dixon, description='Planarity - ' + kidney[1])
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
+
+        # Organise results
+        moved.move_to(study)
+        planarity_map_moved.append(moved)
+        planarity_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    planarity_map_table = pd.concat(planarity_map_stats)
+    master_table = pd.concat([master_table,planarity_map_table])
+
+    return master_table
+
+def linearity(database,master_table):
+
+    export_study = "Linearity"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_Linearity_Map',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_Linearity_Map',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    linearity_map = series[1]
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    linearity_map_moved = []
+    linearity_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(linearity_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(linearity_map, params, target=dixon, description='Linearity - ' + kidney[1])
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
+
+        # Organise results
+        moved.move_to(study)
+        linearity_map_moved.append(moved)
+        linearity_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    linearity_map_table = pd.concat(linearity_map_stats)
+    master_table = pd.concat([master_table,linearity_map_table])
+
+    return master_table
+
+def sphericity(database,master_table):
+
+    export_study = "Sphericity"
+
+    # Get input parameters
+    series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_Sphericity_Map',
+        'LK',
+        'RK',
+    ]
+    series, study = input_series(database, series_desc, export_study)
+    if series is None:
+        series_desc = [   
+        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco_DTI_Sphericity_Map',
+        'LK [overlay]',
+        'RK [overlay]',
+    ]
+        series, study = input_series(database, series_desc, export_study)
+        if series is None:
+            return None, None
+    dixon = series[0]
+    sphericity_map = series[1]
+    lk = series[2]
+    rk = series[3]
+
+    # Perform a separate registration for each target region
+    sphericity_map_moved = []
+    sphericity_map_stats = []
+    for kidney in [(lk,'LK'), (rk,'RK')]:
+
+        # Perform coregistration based on m0
+        # Perform coregistration based on m0
+        params = vreg.find_rigid_transformation(sphericity_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
+
+        # Apply transformation to rbf image
+        moved = vreg.apply_rigid_transformation(sphericity_map, params, target=dixon, description='Sphericity - ' + kidney[1])
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
+
+        # Get ROI statistics
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
+
+        # Organise results
+        moved.move_to(study)
+        sphericity_map_moved.append(moved)
+        sphericity_map_stats.append(df)
+
+    # Keep a copy of the kidneys in the export folder for overlay.
+    #lk.copy_to(study)
+    #rk.copy_to(study)
+
+    sphericity_map_table = pd.concat(sphericity_map_stats)
+    master_table = pd.concat([master_table,sphericity_map_table])
+
+    return master_table
+
 
 def fa(database,master_table):
 
@@ -98,9 +386,10 @@ def fa(database,master_table):
 
         # Apply transformation to rbf image
         moved = vreg.apply_rigid_transformation(fa_map, params, target=dixon, description='FA - ' + kidney[1])
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
 
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -154,9 +443,10 @@ def ADC(database,master_table):
         # Apply transformation to rbf image
        # moved = vreg.apply_sbs_passive_rigid_transformation(ADC_map, params)
         moved = vreg.apply_rigid_transformation(ADC_map, params, target=dixon, description='ADC - ' + kidney[1])
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
 
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -209,10 +499,11 @@ def MTR(database,master_table):
         params = vreg.find_sbs_rigid_transformation(MTR_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
         # Apply transformation to rbf image
         moved = vreg.apply_sbs_passive_rigid_transformation(MTR_map, params)
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
         #moved = vreg.apply_rigid_transformation(MTR_map, params, target=dixon, description='MTR - ' + kidney[1])
 
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -266,10 +557,11 @@ def T2s(database,master_table):
 
         # Apply transformation to rbf image
         moved = vreg.apply_sbs_passive_rigid_transformation(T2s_map, params)
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
         #moved = vreg.apply_rigid_transformation(T2s_map, params, target=dixon, description='T2s - ' + kidney[1])
 
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -322,10 +614,11 @@ def T2s_water_fraction(database,master_table):
         params = vreg.find_sbs_rigid_transformation(T2s_water_fraction_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
         # Apply transformation to rbf image
         moved = vreg.apply_sbs_passive_rigid_transformation(T2s_water_fraction_map, params)
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
         #moved = vreg.apply_rigid_transformation(T2s_water_fraction_map, params, target=dixon, description='T2s water fraction - ' + kidney[1])
 
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -381,8 +674,9 @@ def DCE_FP(database,master_table):
         # Apply transformation to rbf image
         #moved = vreg.apply_rigid_transformation(DCE_FP_map, params, target=dixon, description='DCE FP - ' + kidney[1])
         moved = vreg.apply_sbs_passive_rigid_transformation(DCE_FP_map, params)
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -438,10 +732,10 @@ def DCE_TP(database,master_table):
         # Apply transformation to rbf image
         #moved = vreg.apply_rigid_transformation(DCE_TP_map, params, target=dixon, description='DCE TP - ' + kidney[1])
         moved = vreg.apply_sbs_passive_rigid_transformation(DCE_TP_map, params)
-        
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
 
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -498,9 +792,10 @@ def DCE_PS(database,master_table):
         # Apply transformation to rbf image
         #moved = vreg.apply_rigid_transformation(DCE_PS_map, params, target=dixon, description='DCE PS - ' + kidney[1])
         moved = vreg.apply_sbs_passive_rigid_transformation(DCE_PS_map, params)
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
 
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -556,8 +851,9 @@ def DCE_TE(database,master_table):
         # Apply transformation to rbf image
         #moved = vreg.apply_rigid_transformation(DCE_TE_map, params, target=dixon, description='DCE TE - ' + kidney[1])
         moved = vreg.apply_sbs_passive_rigid_transformation(DCE_TE_map, params)
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -612,10 +908,10 @@ def T1(database,master_table):
 
         #moved = vreg.apply_rigid_transformation(T1_map, params, target=dixon, description='T1 - ' + kidney[1])
         moved = vreg.apply_sbs_passive_rigid_transformation(T1_map, params)
-
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
 
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -669,9 +965,10 @@ def T2(database,master_table):
         # Apply transformation to rbf image
         #moved = vreg.apply_rigid_transformation(T2_map, params, target=dixon, description='T2 - ' + kidney[1])
         moved = vreg.apply_sbs_passive_rigid_transformation(T2_map, params)
+        export_alignemnt.main(moved, kidney[0],export_study,database.path())
 
         # Get ROI statistics
-        df = scipy.mask_statistics(kidney[0], moved)
+        df = scipy.mask_statistics(kidney[0], moved, export_study)
 
         # Organise results
         moved.move_to(study)
@@ -687,12 +984,11 @@ def T2(database,master_table):
 
     return master_table
 
-def main(folder,ExperimentName):
+def main(master_table, folder):
 
     start_time = time.time()
     folder.scan()
 
-    master_table = pd.DataFrame()
     try:
         print('ASL export started')
         master_table = perfusion(folder,master_table)
@@ -704,6 +1000,36 @@ def main(folder,ExperimentName):
         master_table = fa(folder,master_table)
     except Exception as e: 
         folder.log("FA export was NOT completed; error: "+str(e))
+
+    try:
+        print('Sphericity export started')
+        master_table = sphericity(folder,master_table)
+    except Exception as e: 
+        folder.log("Sphericity export was NOT completed; error: "+str(e))
+
+    try:
+        print('Linearity export started')
+        master_table = linearity(folder,master_table)
+    except Exception as e: 
+        folder.log("Linearity export was NOT completed; error: "+str(e))
+
+    try:
+        print('Planarity export started')
+        master_table = planarity(folder,master_table)
+    except Exception as e: 
+        folder.log("Planarity export was NOT completed; error: "+str(e))
+
+    try:
+        print('AD export started')
+        master_table = AD(folder,master_table)
+    except Exception as e: 
+        folder.log("AD export was NOT completed; error: "+str(e))
+
+    try:
+        print('RD export started')
+        master_table = RD(folder,master_table)
+    except Exception as e: 
+        folder.log("RD export was NOT completed; error: "+str(e))
 
     try:
         print('ADC export started')
@@ -729,29 +1055,29 @@ def main(folder,ExperimentName):
     except Exception as e: 
         folder.log("T2s water fraction export was NOT completed; error: "+str(e))
 
-    # try:
-    #     print('DCE FP water fraction export started')
-    #     master_table = DCE_FP(folder,master_table)
-    # except Exception as e: 
-    #     folder.log("DCE FP export was NOT completed; error: "+str(e))
+    try:
+        print('DCE FP water fraction export started')
+        master_table = DCE_FP(folder,master_table)
+    except Exception as e: 
+        folder.log("DCE FP export was NOT completed; error: "+str(e))
 
-    # try:
-    #     print('DCE TP water fraction export started')
-    #     master_table = DCE_TP(folder,master_table)
-    # except Exception as e: 
-    #     folder.log("DCE TP export was NOT completed; error: "+str(e))
+    try:
+        print('DCE TP water fraction export started')
+        master_table = DCE_TP(folder,master_table)
+    except Exception as e: 
+        folder.log("DCE TP export was NOT completed; error: "+str(e))
 
-    # try:
-    #     print('DCE PS water fraction export started')
-    #     master_table = DCE_PS(folder,master_table)
-    # except Exception as e: 
-    #     folder.log("DCE PS export was NOT completed; error: "+str(e))
+    try:
+        print('DCE PS water fraction export started')
+        master_table = DCE_PS(folder,master_table)
+    except Exception as e: 
+        folder.log("DCE PS export was NOT completed; error: "+str(e))
 
-    # try:
-    #     print('DCE TE water fraction export started')
-    #     master_table = DCE_TE(folder,master_table)
-    # except Exception as e: 
-    #     folder.log("DCE TE export was NOT completed; error: "+str(e))
+    try:
+        print('DCE TE water fraction export started')
+        master_table = DCE_TE(folder,master_table)
+    except Exception as e: 
+        folder.log("DCE TE export was NOT completed; error: "+str(e))
 
     try:
         print('T1 export started')
@@ -765,10 +1091,7 @@ def main(folder,ExperimentName):
     except Exception as e: 
         folder.log("T2 export was NOT completed; error: "+str(e))
 
-    filename_csv = datetime.datetime.now().strftime('%Y%m%d_%H%M_') + ExperimentName+'.csv'
-    master_table.to_csv(filename_csv, index=False)
-
     folder.save()
     folder.log("Export was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
-    return filename_csv
+    return master_table
