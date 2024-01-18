@@ -50,8 +50,8 @@ def segment_kidneys(database, weights):
     right.set_array(right_kidney, header, pixels_first=True)
     # right[['WindowCenter','WindowWidth']] = [1.0, 2.0]
 
-    #kidneys = [left, right]
-    #features = skimage.volume_features(kidneys)
+    # kidneys = [left, right]
+    # features = skimage.volume_features(kidneys)
 
     database.save()
 
@@ -79,12 +79,14 @@ def compute_whole_kidney_canvas(database):
     return clusters
 
 
-def export_whole_kidney_canvas(folder, path):
+def export_whole_kidney_canvas(folder):
     start_time = time.time()
     folder.log("Export segmentation results has started")
 
-    resultsFolder = 'segmentation_results'
-    resultsPath = path + '_' + resultsFolder
+    resultsFolder = 'segmentation_canvas'
+
+    path = folder.path()
+    resultsPath = os.path.join(path,resultsFolder)
 
     os.mkdir(resultsPath)
 
@@ -109,6 +111,40 @@ def export_whole_kidney_canvas(folder, path):
         series.export_as_dicom(resultsPath)
 
     folder.log("Export segmentation results was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
+def export_masks(folder):
+    start_time = time.time()
+    folder.log("Export segmentation results has started")
+
+    path = folder.path()
+
+    resultsFolder = 'masks'
+    resultsPath = os.path.join(path,resultsFolder)
+
+    os.mkdir(resultsPath)
+
+    lk_mask        = 'LK' 
+    rk_mask        = 'RK'
+    fat_desc        = 'T1w_abdomen_dixon_cor_bh_fat_post_contrast' 
+    out_desc        = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
+    in_desc         = 'T1w_abdomen_dixon_cor_bh_in_phase_post_contrast'
+    water_desc      = 'T1w_abdomen_dixon_cor_bh_water_post_contrast'
+
+
+    LK             = folder.series(SeriesDescription=lk_mask)
+    RK             = folder.series(SeriesDescription=rk_mask)
+    fat            = folder.series(SeriesDescription=fat_desc)
+    out_ph         = folder.series(SeriesDescription=out_desc)
+    in_ph          = folder.series(SeriesDescription=in_desc)
+    water          = folder.series(SeriesDescription=water_desc)
+
+    exportToFolder = LK + RK + fat + out_ph + in_ph + water
+    
+    for series in exportToFolder:
+        print(series.SeriesDescription)    
+        series.export_as_dicom(resultsPath)
+
+    folder.log("Export maks results was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
 
 def compute_renal_sinus_fat(database):

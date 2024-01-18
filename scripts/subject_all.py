@@ -9,6 +9,7 @@ import pipelines.mapping as map
 import pipelines.export_ROI_stats as export_ROIs
 import pipelines.apply_AI_segmentation as AI_segmentation
 import pipelines.volumetrics as volumetrics
+import pipelines.DCE_analysis as DCE_analysis
 
 import scripts.upload as upload
 import scripts.QC_rename as check_rename
@@ -20,12 +21,19 @@ from scripts import xnat
 def single_subject(username, password, path, dataset):
     
     #Import data from XNAT
-    ExperimentName = xnat.main(username, password, path, dataset)
-    pathScan = path + "//" + ExperimentName
+    if isinstance(dataset,str) and '_' in dataset:
+        ExperimentName = xnat.main(username, password, path, SpecificDataset=dataset)
+        pathScan = path + "//" + ExperimentName
+    elif len(dataset)==3:
+        ExperimentName = xnat.main(username, password, path, dataset)
+        pathScan = path + "//" + ExperimentName
+    elif dataset == 'load':
+        ExperimentName = os.path.basename(path)
+        pathScan = path
+    
     filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
     
     row_headers = ['PatientID', 'SeriesDescription', 'Region of Interest', 'Parameter', 'Value', 'Unit']
-
     master_table = pd.DataFrame(columns=row_headers)
 
     #Available CPU cores
@@ -67,7 +75,6 @@ def single_subject(username, password, path, dataset):
     try:
         print("starting volumetrics")
         master_table = volumetrics.main(master_table,folder)
-        master_table.to_csv(pathScan + ".csv", index=False)
     except Exception as e:
         folder.log("Volumetrics was NOT completed; error: " + str(e))
 
@@ -79,6 +86,14 @@ def single_subject(username, password, path, dataset):
     except Exception as e:
         folder.log("Modelling was NOT completed; error: " + str(e))
 
+    #Custom DCE
+    try:
+        print("staring DCE Analysis")
+        DCE_analysis.main(folder,master_table)
+    except Exception as e:
+        folder.log("DCE Analysis was NOT completed; error: " + str(e))
+
+
     #Generate masks using unetr, apply alignment, extract biomarkers to a .csv
     try:
         print('starting parameter extraction')
@@ -88,8 +103,8 @@ def single_subject(username, password, path, dataset):
 
 
     master_table['Biomarker'] = master_table['SeriesDescription'] + '-' + master_table['Parameter']
-    filename_csv = path + "//" + datetime.datetime.now().strftime('%Y%m%d_%H%M_') + ExperimentName+'.csv'
+    filename_csv = os.path.join(pathScan, datetime.datetime.now().strftime('%Y%m%d_%H%M_') + ExperimentName+'.csv')   
     master_table.to_csv(filename_csv, index=False)
     
     #upload images, logfile and csv to google drive
-    upload.main(pathScan, filename_log, filename_csv)
+    upload.main(pathScan, filename_log,filename_csv)
