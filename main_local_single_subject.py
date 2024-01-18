@@ -12,6 +12,12 @@ import scripts.select_folder_to_save as select_save_folder
 
 if __name__ == '__main__':
 
+    #SELECT ONE OPTION TO CHOOSE A DATASET
+
+    #dataset = [2,1,8]    #entry in xnat
+    #dataset = '2128_007' #specific dataset
+    dataset = 'load'      #load a previously downloaded dataset
+
     path = select_save_folder.main()
     
     #XNAT Credentials
@@ -19,7 +25,6 @@ if __name__ == '__main__':
 
     #SELECT YOUR DATASET
     #dataset = [site, study, dataset] see below "EXAMPLE DATASET SELECTION"
-    dataset = [2,1,8]
 
     ################################################# EXAMPLE DATASET SELECTION #############################################################
     #DATASET CODE FOR LEEDS
