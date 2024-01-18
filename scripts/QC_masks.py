@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from dbdicom.wrappers import scipy
+import os
 
 def main(database,backgroud_series = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast',RK_mask = 'RK', LK_mask = 'LK' ):
 
@@ -46,4 +47,5 @@ def main(database,backgroud_series = 'T1w_abdomen_dixon_cor_bh_out_phase_post_co
                 col.axis("off")
             i = i +1 
     fig.suptitle('Kidney Masks', fontsize=14)
-    fig.savefig(database.path() + "\\" + 'Masks' + '.png', dpi=600)
+    fig.savefig(os.path.join(database.path(),'QC', 'Masks' + '.png'), dpi=600)
+

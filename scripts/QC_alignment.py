@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from dbdicom.wrappers import scipy
+import os
 
 def main(background_series,mask_series,label,path_to_save):
 
@@ -9,8 +10,14 @@ def main(background_series,mask_series,label,path_to_save):
     array_background, _       = background_series.array (['SliceLocation','AcquisitionTime'], pixels_first=True)
     array_overlay_mask, _     = overlay_mask.array      (['SliceLocation','AcquisitionTime'], pixels_first=True)
 
-    array_background   = np.squeeze(array_background)
+    array_background  = np.squeeze(array_background)
     array_overlay_mask = np.squeeze(array_overlay_mask)
+
+    if len(array_background.shape) > 3:
+        array_background  = np.squeeze(array_background[...,0])
+
+    # print(array_background.shape)
+    # print(array_overlay_mask.shape)
 
     array_background   = np.transpose(array_background,(1,0,2))
     array_overlay_mask = np.transpose(array_overlay_mask,(1,0,2))
@@ -35,5 +42,6 @@ def main(background_series,mask_series,label,path_to_save):
                 col.set_aspect('equal')
                 col.axis("off")
             i = i +1 
-    fig.suptitle(label + "aligment", fontsize=14)
-    fig.savefig(path_to_save + "\\" + label + '_alignemnt' + '.png', dpi=600)
+    fig.suptitle(label + "alignment", fontsize=14)
+    fig.savefig(os.path.join(path_to_save, label + '_alignment_' + mask_series.SeriesDescription + '.png'), dpi=600)
+    
