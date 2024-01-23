@@ -56,7 +56,7 @@ def main(database):
         return ['background-color: red' if x == 0 else 'background-color: green' for x in val]
 
     iBEAt_column = df.style.apply(color_rule, axis=1, subset=['Checked'])
-    iBEAt_column.to_excel(os.path.join(database.path(),'QC','iBEAt_checklist.xlsx'), engine='openpyxl', index=False)
+    iBEAt_column.to_excel(os.path.join(database.path(),'iBEAt_checklist.xlsx'), engine='openpyxl', index=False)
 
     
 

@@ -304,28 +304,28 @@ def main(folder):
 
             if SeqName == "T2star_map_kidneys_cor-oblique_mbh_magnitude":
                 try:
-                    print('starting t2s')
+                    folder.log('Starting T2* motion correction')
                     MDRegT2star(series, study=study)
                 except Exception as e: 
                     folder.log("T2* motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "T1map_kidneys_cor-oblique_mbh_magnitude":
                 try:
-                    print("starting T1 mapping")
+                    folder.log('Starting T1 motion correction')
                     MDRegT1(series, study)
                 except Exception as e: 
                     folder.log("T1 motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "T2map_kidneys_cor-oblique_mbh_magnitude":
                 try:
-                    print("starting T2 mapping")
+                    folder.log('Starting T2 motion correction')
                     MDRegT2(series, study=study)
                 except Exception as e: 
                     folder.log("T2 motion correction was NOT completed; error: "+str(e))   
 
             elif SeqName == "DTI_kidneys_cor-oblique_fb":
                 try:
-                    print('starting dti')
+                    folder.log('Starting DTI motion correction')
                     MDRegDTI(series, study=study) 
                 except Exception as e: 
                     folder.log("DTI motion correction was NOT completed; error: "+str(e))
@@ -337,13 +337,14 @@ def main(folder):
                         if series['SeriesDescription'] == "MT_ON_kidneys_cor-oblique_bh":
                             MT_ON = series
                             break
+                    folder.log('Starting MT motion correction')
                     MDRegMT([MT_OFF, MT_ON], study=study) 
                 except Exception as e: 
                     folder.log("MT motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "DCE_kidneys_cor-oblique_fb":
                 try:
-                    print('starting DCE')
+                    folder.log('Starting DCE motion correction')
                     MDRegDCE(series, study=study)   
                 except Exception as e: 
                     folder.log("DCE motion correction was NOT completed; error: "+str(e))

@@ -270,6 +270,7 @@ def Siemens_rename(series):
 
 def main(folder):
     start_time = time.time()
+    folder.log("Rename has started!")
 
     DCE_count = 0
     ASL_count = 0

@@ -19,7 +19,7 @@ def main(database, duration = 100):
                 frames.append(frame) 
 
             # Save the frames as a GIF
-            imageio.mimsave(os.path.join(database.path(),'QC',series['SeriesDescription'] + '.gif'), frames, duration=duration)
+            imageio.mimsave(os.path.join(database.path(),series['SeriesDescription'] + '.gif'), frames, duration=duration)
             
 def reshape_to_3d(arr):
     # Calculate the size for the third dimension using np.prod

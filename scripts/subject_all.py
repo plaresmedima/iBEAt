@@ -102,7 +102,7 @@ def single_subject(username, password, path, dataset):
         folder.log("Parameter extraction was NOT completed; error: " + str(e))
 
 
-    master_table['Biomarker'] = master_table['SeriesDescription'] + '-' + master_table['Parameter']
+    #master_table['Biomarker'] = master_table['SeriesDescription'] + '-' + master_table['Parameter']
     filename_csv = os.path.join(pathScan, datetime.datetime.now().strftime('%Y%m%d_%H%M_') + ExperimentName+'.csv')   
     master_table.to_csv(filename_csv, index=False)
     
