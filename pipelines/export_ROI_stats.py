@@ -990,103 +990,103 @@ def main(master_table, folder):
     folder.scan()
 
     try:
-        print('ASL export started')
+        folder.log("ASL export has started")
         master_table = perfusion(folder,master_table)
     except Exception as e: 
         folder.log("ASL export was NOT completed; error: "+str(e))
 
     try:
-        print('FA export started')
+        folder.log("FA export has started")
         master_table = fa(folder,master_table)
     except Exception as e: 
         folder.log("FA export was NOT completed; error: "+str(e))
 
     try:
-        print('Sphericity export started')
+        folder.log("Sphericity export has started")
         master_table = sphericity(folder,master_table)
     except Exception as e: 
         folder.log("Sphericity export was NOT completed; error: "+str(e))
 
     try:
-        print('Linearity export started')
+        folder.log("Linearity export has started")
         master_table = linearity(folder,master_table)
     except Exception as e: 
         folder.log("Linearity export was NOT completed; error: "+str(e))
 
     try:
-        print('Planarity export started')
+        folder.log("Planarity export has started")
         master_table = planarity(folder,master_table)
     except Exception as e: 
         folder.log("Planarity export was NOT completed; error: "+str(e))
 
     try:
-        print('AD export started')
+        folder.log("AD export has started")
         master_table = AD(folder,master_table)
     except Exception as e: 
         folder.log("AD export was NOT completed; error: "+str(e))
 
     try:
-        print('RD export started')
+        folder.log("RD export has started")
         master_table = RD(folder,master_table)
     except Exception as e: 
         folder.log("RD export was NOT completed; error: "+str(e))
 
     try:
-        print('ADC export started')
+        folder.log("ADC export has started")
         master_table = ADC(folder,master_table)
     except Exception as e: 
         folder.log("ADC export was NOT completed; error: "+str(e))
 
     try:
-        print('MTR export started')
+        folder.log("MTR export has started")
         master_table = MTR(folder,master_table)
     except Exception as e: 
         folder.log("MTR export was NOT completed; error: "+str(e))
 
     try:
-        print('T2s export started')
+        folder.log("T2s export has started")
         master_table = T2s(folder,master_table)
     except Exception as e: 
         folder.log("T2s export was NOT completed; error: "+str(e))
 
     try:
-        print('T2s water fraction export started')
+        folder.log("T2s water fraction export has started")
         master_table = T2s_water_fraction(folder,master_table)
     except Exception as e: 
         folder.log("T2s water fraction export was NOT completed; error: "+str(e))
 
     try:
-        print('DCE FP water fraction export started')
+        folder.log("DCE FP export has started")
         master_table = DCE_FP(folder,master_table)
     except Exception as e: 
         folder.log("DCE FP export was NOT completed; error: "+str(e))
 
     try:
-        print('DCE TP water fraction export started')
+        folder.log("DCE TP export has started")
         master_table = DCE_TP(folder,master_table)
     except Exception as e: 
         folder.log("DCE TP export was NOT completed; error: "+str(e))
 
     try:
-        print('DCE PS water fraction export started')
+        folder.log("DCE PS export has started")
         master_table = DCE_PS(folder,master_table)
     except Exception as e: 
         folder.log("DCE PS export was NOT completed; error: "+str(e))
 
     try:
-        print('DCE TE water fraction export started')
+        folder.log("DCE TE export has started")
         master_table = DCE_TE(folder,master_table)
     except Exception as e: 
         folder.log("DCE TE export was NOT completed; error: "+str(e))
 
     try:
-        print('T1 export started')
+        folder.log("T1 export has started")
         master_table = T1(folder,master_table)
     except Exception as e: 
         folder.log("T1 export was NOT completed; error: "+str(e))
 
     try:
-        print('T2 export started')
+        folder.log("T2 export has started")
         master_table = T2(folder,master_table)
     except Exception as e: 
         folder.log("T2 export was NOT completed; error: "+str(e))
