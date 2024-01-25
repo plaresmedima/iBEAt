@@ -643,6 +643,7 @@ def main(folder):
                     print('Starting T2s')
                     folder.log("T2s mapping has started")
                     T2s(series, study=study)
+                    folder.log("T2s mapping was completed")
                 except Exception as e: 
                     folder.log("T2* mapping was NOT completed; error: "+str(e))
 
@@ -651,6 +652,7 @@ def main(folder):
                     print('Starting DTI')
                     folder.log("DTI mapping has started")
                     DTI(series, study=study)
+                    folder.log("DTI mapping was completed")
                 except Exception as e: 
                     folder.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
 
@@ -659,6 +661,7 @@ def main(folder):
                     print('Starting DCE_MAX')
                     folder.log("DCE mapping has started")
                     DCE_MAX(series, study=study)
+                    folder.log("DCE mapping was completed")
                 except Exception as e: 
                     folder.log("DCE-MAX mapping was NOT completed; error: "+str(e))
 
@@ -667,6 +670,7 @@ def main(folder):
                     print('Starting MTR')
                     folder.log("MTR mapping has started")
                     MTR(series, study=study)
+                    folder.log("MTR mapping was completed")
                 except Exception as e: 
                     folder.log("MTR mapping was NOT completed; error: "+str(e))
 
@@ -675,7 +679,9 @@ def main(folder):
                 print(series.Manufacturer)
                 if series.Manufacturer != 'SIEMENS': # TODO: Check this, something not right
                     try:
-                        T1_Philips(series, study=study)  
+                        folder.log("T1 mapping has started")
+                        T1_Philips(series, study=study)
+                        folder.log("T1 mapping was completed")
                     except Exception as e: 
                         folder.log("T1 mapping was NOT completed; error: "+str(e))
                 else:
@@ -692,6 +698,7 @@ def main(folder):
                                         Kidney_mask.append(series)
                                     folder.log("T1, T2 mapping has started")
                                     T1_then_T2([T1,T2],Kidney_mask, study=study)
+                                    folder.log("T1 T2 mapping was completed")
                             break
 
     folder.save()
