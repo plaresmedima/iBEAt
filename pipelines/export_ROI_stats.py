@@ -29,7 +29,7 @@ def perfusion(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     rbf = series[1]
     lk = series[2]
@@ -59,6 +59,8 @@ def perfusion(database,master_table):
     #lk.copy_to(study)
     #rk.copy_to(study)
     rbf_table = pd.concat(rbf_stats)
+
+
     master_table = pd.concat([master_table,rbf_table])
 
     return master_table
@@ -84,7 +86,7 @@ def RD(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     RD_map = series[1]
     lk = series[2]
@@ -140,7 +142,7 @@ def AD(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     AD_map = series[1]
     lk = series[2]
@@ -197,7 +199,7 @@ def planarity(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     planarity_map = series[1]
     lk = series[2]
@@ -254,7 +256,7 @@ def linearity(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     linearity_map = series[1]
     lk = series[2]
@@ -311,7 +313,7 @@ def sphericity(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     sphericity_map = series[1]
     lk = series[2]
@@ -369,7 +371,7 @@ def fa(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     fa_map = series[1]
     lk = series[2]
@@ -426,7 +428,7 @@ def ADC(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     ADC_map = series[1]
     lk = series[2]
@@ -483,7 +485,7 @@ def MTR(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     MTR_map = series[1]
     lk = series[2]
@@ -540,7 +542,7 @@ def T2s(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     T2s_map = series[1]
     lk = series[2]
@@ -598,7 +600,7 @@ def T2s_water_fraction(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     T2s_water_fraction_map = series[1]
     lk = series[2]
@@ -655,7 +657,7 @@ def DCE_FP(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     DCE_FP_map = series[1]
     DCE_FP_map = DCE_FP_map.subseries(InPlanePhaseEncodingDirection='ROW')
@@ -713,7 +715,7 @@ def DCE_TP(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     DCE_TP_map = series[1]
     DCE_TP_map = DCE_TP_map.subseries(InPlanePhaseEncodingDirection='ROW')
@@ -772,7 +774,7 @@ def DCE_PS(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     DCE_PS_map = series[1]
     DCE_PS_map = DCE_PS_map.subseries(InPlanePhaseEncodingDirection='ROW')
@@ -832,7 +834,7 @@ def DCE_TE(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     DCE_TE_map = series[1]
     DCE_TE_map = DCE_TE_map.subseries(InPlanePhaseEncodingDirection='ROW')
@@ -890,7 +892,7 @@ def T1(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     T1_map = series[1]
     lk = series[2]
@@ -948,7 +950,7 @@ def T2(database,master_table):
     ]
         series, study = input_series(database, series_desc, export_study)
         if series is None:
-            return None, None
+            return master_table
     dixon = series[0]
     T2_map = series[1]
     lk = series[2]
@@ -991,7 +993,7 @@ def main(master_table, folder):
 
     try:
         folder.log("ASL export has started")
-        master_table = perfusion(folder,master_table)
+        #master_table = perfusion(folder,master_table)
     except Exception as e: 
         folder.log("ASL export was NOT completed; error: "+str(e))
 
