@@ -3,6 +3,8 @@ import numpy as np
 from scipy.special import gamma
 from scipy.interpolate import CubicSpline
 from scipy.stats import rv_histogram
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 

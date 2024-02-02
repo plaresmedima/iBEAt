@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 
 def main(input_array, array_mask):

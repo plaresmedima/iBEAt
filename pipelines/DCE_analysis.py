@@ -1,7 +1,6 @@
 import time
 import numpy as np
 from dbdicom.wrappers import scipy
-import matplotlib.pyplot as plt
 from dbdicom.wrappers import vreg, scipy
 import scripts.QC_alignment as export_alignemnt
 from pipelines.kidney_dce import fit as fit_DCE
