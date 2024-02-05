@@ -12,11 +12,13 @@ import mdreg.models.DCE_2CFM
 
 import utilities.autoaif
 
+import matplotlib.pyplot as plt
+
 elastix_pars = os.path.join(os.path.join(os.path.dirname(os.path.dirname(__file__)),'utilities'), 'elastix')
 
-def MDRegT1(series, study):
+def MDRegT1(folder, series, study):
     start_time = time.time()
-    series.log("T1 motion correction has started")
+    folder.log("T1 motion correction has started")
     if series.Manufacturer == 'SIEMENS':
         sort_by = 'InversionTime'
 
@@ -31,12 +33,12 @@ def MDRegT1(series, study):
     number_slices = array.shape[2]
     
     vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by=sort_by, study=study)
-    series.log("T1 motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    folder.log("T1 motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return vals
 
-def MDRegT2star(series=None,study=None):
+def MDRegT2star(folder, series=None,study=None):
     start_time = time.time()
-    series.log("T2* motion correction has started")
+    folder.log("T2* motion correction has started")
 
     array, header = series.array(['SliceLocation', 'EchoTime'], pixels_first=True)
 
@@ -46,14 +48,14 @@ def MDRegT2star(series=None,study=None):
     number_slices = array.shape[2]
 
     vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='EchoTime',study=study)
-    series.log("T2* motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    folder.log("T2* motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return vals
 
 
-def MDRegT2(series=None, study=None):
+def MDRegT2(folder, series=None, study=None):
     """Perform MDR on all slices using a T2 mono-exp model"""
     start_time = time.time()
-    series.log("T2 motion correction has started")
+    folder.log("T2 motion correction has started")
     
     #series = zoom(series, 0.5)
 
@@ -69,14 +71,14 @@ def MDRegT2(series=None, study=None):
     number_slices = array.shape[2]
     
     vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None', study=study)
-    series.log("T2 motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    folder.log("T2 motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return vals
 
 
-def MDRegIVIM(series=None,study=None):
+def MDRegIVIM(folder, series=None,study=None):
     """Perform MDR on all slices using a DWI mono-exp model"""
     start_time = time.time()
-    series.log("IVIM motion correction has started")
+    folder.log("IVIM motion correction has started")
 
     #series = zoom(series, 0.5)
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
@@ -87,13 +89,13 @@ def MDRegIVIM(series=None,study=None):
 
     number_slices = array.shape[2]
     vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
-    series.log("IVIM motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    folder.log("IVIM motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return vals
 
-def MDRegDTI(series=None,study=None):
+def MDRegDTI(folder, series=None,study=None):
     """Perform MDR on all slices using a DTI model"""
     start_time = time.time()
-    series.log("DTI motion correction has started")
+    folder.log("DTI motion correction has started")
 
     if series.Manufacturer == 'SIEMENS':
         array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
@@ -108,13 +110,13 @@ def MDRegDTI(series=None,study=None):
     number_slices = array.shape[2]
 
     vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DTI',study=study)
-    series.log("DTI motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    folder.log("DTI motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return vals
 
-def MDRegMT(series=None,study=None):
+def MDRegMT(folder, series=None,study=None):
     """Perform MDR on all slices using a MT model"""
     start_time = time.time()
-    series[0].log("MT motion correction has started")
+    folder.log("MT motion correction has started")
 
     mt_off =series[0]
     mt_on =series[1]
@@ -135,13 +137,13 @@ def MDRegMT(series=None,study=None):
 
     number_slices = array.shape[2]
     vals = _mdr(mt_on, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='None',study=study)
-    series[0].log("MT motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    folder.log("MT motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return vals
 
-def MDRegDCE(series=None, study=None):
+def MDRegDCE(folder, series=None, study=None):
     """Perform MDR on all slices using a DCE linear model"""
     start_time = time.time()
-    series.log("DCE motion correction has started")
+    folder.log("DCE motion correction has started")
 
     #series = zoom(series, 0.5)
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
@@ -152,7 +154,7 @@ def MDRegDCE(series=None, study=None):
 
     number_slices = array.shape[2]
     vals = _mdr(series, number_slices, array, header, signal_model, elastix_file, signal_pars, sort_by='DCE', study=study)
-    series.log("DCE motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    folder.log("DCE motion correction was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return vals
 
 
@@ -232,15 +234,17 @@ def _mdr(series, number_slices, array, header, signal_model, elastix_file, signa
 
                         for i_2 in range(header.shape[1]):
                             tempTime = str(header[slice,i_2,0]['AcquisitionTime'])
-                            beforepoint = tempTime.split(".")[0]
-                            afterpoint = tempTime.split(".")[1]
-                            tempH = int(beforepoint[0:2])
-                            tempM = int(beforepoint[2:4])
-                            tempS = int(beforepoint[4:])
-                            tempRest = float("0." + afterpoint)
-                            time[i_2] = tempH*3600+tempM*60+tempS+tempRest
+                            # beforepoint = tempTime.split(".")[0]
+                            # afterpoint = tempTime.split(".")[1]
+                            # tempH = int(beforepoint[0:2])
+                            # tempM = int(beforepoint[2:4])
+                            # tempS = int(beforepoint[4:])
+                            # tempRest = float("0." + afterpoint)
+                            #time[i_2] = tempH*3600+tempM*60+tempS+tempRest
+                            time[i_2] = float(tempTime)
+
                         time -=time[0]
-               
+
                         baseline = 15
                         hematocrit = 0.45
                         signal_pars = [aif, time, baseline, hematocrit]
@@ -304,29 +308,33 @@ def main(folder):
 
             if SeqName == "T2star_map_kidneys_cor-oblique_mbh_magnitude":
                 try:
-                    folder.log('Starting T2* motion correction')
-                    MDRegT2star(series, study=study)
+                    print('Starting T2* motion correction')
+                    MDRegT2star(folder, series, study=study)
+                    print('T2* motion correction was completed')
                 except Exception as e: 
                     folder.log("T2* motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "T1map_kidneys_cor-oblique_mbh_magnitude":
                 try:
-                    folder.log('Starting T1 motion correction')
-                    MDRegT1(series, study)
+                    print('Starting T1 motion correction')
+                    MDRegT1(folder, series, study)
+                    print('T1 motion correction was completed')
                 except Exception as e: 
                     folder.log("T1 motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "T2map_kidneys_cor-oblique_mbh_magnitude":
                 try:
-                    folder.log('Starting T2 motion correction')
-                    MDRegT2(series, study=study)
+                    print('Starting T2 motion correction')
+                    MDRegT2(folder, series, study=study)
+                    print('T2 motion correction was completed')
                 except Exception as e: 
                     folder.log("T2 motion correction was NOT completed; error: "+str(e))   
 
             elif SeqName == "DTI_kidneys_cor-oblique_fb":
                 try:
-                    folder.log('Starting DTI motion correction')
-                    MDRegDTI(series, study=study) 
+                    print('Starting DTI motion correction')
+                    MDRegDTI(folder, series, study=study)
+                    print('DTI motion correction was completed')
                 except Exception as e: 
                     folder.log("DTI motion correction was NOT completed; error: "+str(e))
             
@@ -337,15 +345,17 @@ def main(folder):
                         if series['SeriesDescription'] == "MT_ON_kidneys_cor-oblique_bh":
                             MT_ON = series
                             break
-                    folder.log('Starting MT motion correction')
-                    MDRegMT([MT_OFF, MT_ON], study=study) 
+                    print('Starting MT motion correction')
+                    MDRegMT(folder, [MT_OFF, MT_ON], study=study) 
+                    print('MTR motion correction was completed')
                 except Exception as e: 
                     folder.log("MT motion correction was NOT completed; error: "+str(e))
 
             elif SeqName == "DCE_kidneys_cor-oblique_fb":
                 try:
-                    folder.log('Starting DCE motion correction')
-                    MDRegDCE(series, study=study)   
+                    print('Starting DCE motion correction')
+                    MDRegDCE(folder, series, study=study)
+                    print('DCE motion correction was completed') 
                 except Exception as e: 
                     folder.log("DCE motion correction was NOT completed; error: "+str(e))
 
