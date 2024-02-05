@@ -123,6 +123,7 @@ def main(folder,master_table):
         export_aorta = True,
         )
     
+    return master_table
 
 def get_T1_kidney(T1_moco_series,kidney_mask_series,folder):
     
