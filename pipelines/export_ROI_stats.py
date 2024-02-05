@@ -878,7 +878,7 @@ def T1(database,master_table):
     # Get input parameters
     series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_par_T1',
+        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T1_T1_Map_v2',
         'LK',
         'RK',
     ]
@@ -886,7 +886,7 @@ def T1(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_par_T1',
+        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T1_T1_Map_v2',
         'LK [overlay]',
         'RK [overlay]',
     ]
@@ -936,7 +936,7 @@ def T2(database,master_table):
     # Get input parameters
     series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_par_T2',
+        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2_T2_Map_v2',
         'LK',
         'RK',
     ]
@@ -944,7 +944,7 @@ def T2(database,master_table):
     if series is None:
         series_desc = [   
         'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_par_T2',
+        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2_T2_Map_v2',
         'LK [overlay]',
         'RK [overlay]',
     ]
