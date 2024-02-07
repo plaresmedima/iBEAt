@@ -592,13 +592,14 @@ def DCE_MAX(series=None, mask=None,export_ROI=False, study=None):
             elif len (header.shape==3):
                 tempTime = str(header[slice,i_2,0]['AcquisitionTime'])
 
-            beforepoint = tempTime.split(".")[0]
-            afterpoint = tempTime.split(".")[1]
-            tempH = int(beforepoint[0:2])
-            tempM = int(beforepoint[2:4])
-            tempS = int(beforepoint[4:])
-            tempRest = float("0." + afterpoint)
-            timeDCE[i_2] = tempH*3600+tempM*60+tempS+tempRest
+            time[i_2] = float(tempTime)
+            # beforepoint = tempTime.split(".")[0]
+            # afterpoint = tempTime.split(".")[1]
+            # tempH = int(beforepoint[0:2])
+            # tempM = int(beforepoint[2:4])
+            # tempS = int(beforepoint[4:])
+            # tempRest = float("0." + afterpoint)
+            # timeDCE[i_2] = tempH*3600+tempM*60+tempS+tempRest
         timeDCE -=timeDCE[0]
 
         array_DCE_temp = np.squeeze(pixel_array_DCE[:,:,slice,:])
