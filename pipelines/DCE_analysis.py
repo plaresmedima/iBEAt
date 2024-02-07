@@ -4,6 +4,8 @@ from dbdicom.wrappers import scipy
 from dbdicom.wrappers import vreg, scipy
 import scripts.QC_alignment as export_alignemnt
 from pipelines.kidney_dce import fit as fit_DCE
+import pandas as pd
+import os
 
 def main(folder,master_table):
 
@@ -40,6 +42,8 @@ def main(folder,master_table):
     #plt.show()
     # print(np.mean(signal_rk))
 
+
+
     T1_lk = get_T1_kidney(T1_moco_series,LK_mask_series,folder)
     T1_rk = get_T1_kidney(T1_moco_series,RK_mask_series,folder)
 
@@ -49,16 +53,16 @@ def main(folder,master_table):
     R1_lk = 1/T1_lk
     R1_rk = 1/T1_rk
 
-    # _, header = DCE_moco_series[0].array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
-    # header = np.squeeze(header)
+    _, header = DCE_moco_series[0].array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
+    header = np.squeeze(header)
     #TR = float(header[0,0]['Repetition Time'])
-    # TR     = float(header[0,0]['RepetitionTime'])/1000
-    # FA     = float(header[0,0]['FlipAngle'])
-    # Weight = float(header[0,0]['PatientWeight'])
+    #TR     = float(header[0,0]['RepetitionTime'])/1000
+    FA     = float(header[0,0]['FlipAngle'])
+    Weight = float(header[0,0]['PatientWeight'])
 
     TR = 2.2/1000
-    FA = 10
-    Weight = 80
+    # FA = 10
+    # Weight = 80
 
     # # Internal time resolution & acquisition time
     # dt = 1.0                # sec
@@ -78,6 +82,26 @@ def main(folder,master_table):
 
     # # Physiological parameters
     # Hct = 0.45
+
+    DCE_data = [
+    {"time": time_aorta, "aorta": signal_aorta, "lk": signal_lk, "rk": signal_rk}
+    ]
+
+    DCE_data_csv = pd.DataFrame(DCE_data)
+    DCE_data_csv.to_csv(os.path.join(folder.path(), 'DCE_Data' +'.csv'),index=False)
+
+    lines = [
+
+    "RK_T1 (s): " + str(T1_rk),
+    "LK_T1 (s): " + str(T1_lk),
+    "Weight: " + header[0,0]['PatientWeight'],
+
+    ]
+    txt_path = os.path.join(folder.path(), 'DCE_Data' +'.txt')
+
+    with open(txt_path, "w") as file:
+        for line in lines:
+            file.write(line + "\n")
 
     fit_DCE(
         2.2/1000,  #sec
