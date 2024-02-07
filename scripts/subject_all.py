@@ -66,17 +66,10 @@ def single_subject(username, password, path, dataset):
     #Apply UNETR to segment right/left kidney
     try:
         print("starting kidney segmentation")
-        AI_segmentation.main(folder)
+        master_table = AI_segmentation.main(master_table,folder)
         check_masks.main(folder)
     except Exception as e:
         folder.log("Kidney segmentation was NOT completed; error: " + str(e))
-
-    #Save volume metrics in a data frame
-    try:
-        print("starting volumetrics")
-        master_table = volumetrics.main(master_table,folder)
-    except Exception as e:
-        folder.log("Volumetrics was NOT completed; error: " + str(e))
 
     #Custom modelling
     try:
@@ -102,7 +95,7 @@ def single_subject(username, password, path, dataset):
         folder.log("Parameter extraction was NOT completed; error: " + str(e))
 
 
-    #master_table['Biomarker'] = master_table['SeriesDescription'] + '-' + master_table['Parameter']
+    master_table['Biomarker'] = master_table['SeriesDescription'] + '-' + master_table['Parameter']
     filename_csv = os.path.join(pathScan, datetime.datetime.now().strftime('%Y%m%d_%H%M_') + ExperimentName+'.csv')   
     master_table.to_csv(filename_csv, index=False)
     
