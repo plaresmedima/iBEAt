@@ -263,7 +263,7 @@ def MTR(database,master_table):
         #params = vreg.find_rigid_transformation(MTR_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
         params = vreg.find_sbs_rigid_transformation(MT_ref, dixon, tolerance=0.1)
         # Apply transformation to rbf image
-        moved = vreg.apply_sbs_passive_rigid_transformation(MTR_map, params,description='MTR - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(MTR_map, params)
         export_alignemnt.main(moved, kidney[0],export_study,database.path())
         #moved = vreg.apply_rigid_transformation(MTR_map, params, target=dixon, description='MTR - ' + kidney[1])
 

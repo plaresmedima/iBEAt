@@ -82,19 +82,15 @@ def main(folder,master_table):
 
     # # Physiological parameters
     # Hct = 0.45
-
-    DCE_data = [
-    {"time": time_aorta, "aorta": signal_aorta, "lk": signal_lk, "rk": signal_rk}
-    ]
-
-    DCE_data_csv = pd.DataFrame(DCE_data)
+    
+    DCE_data_csv = pd.DataFrame({"time": np.array(time_aorta), "aorta": np.array(signal_aorta), "lk": np.array(signal_lk), "rk": np.array(signal_rk)})
     DCE_data_csv.to_csv(os.path.join(folder.path(), 'DCE_Data' +'.csv'),index=False)
 
     lines = [
 
     "RK_T1 (s): " + str(T1_rk),
     "LK_T1 (s): " + str(T1_lk),
-    "Weight: " + header[0,0]['PatientWeight'],
+    "Weight: " + str(header[0,0]['PatientWeight']),
 
     ]
     txt_path = os.path.join(folder.path(), 'DCE_Data' +'.txt')
