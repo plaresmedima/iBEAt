@@ -84,7 +84,7 @@ def main(folder,master_table):
     # Hct = 0.45
 
     DCE_data = [
-    {"time": time_aorta, "aorta": signal_aorta, "lk": signal_lk, "rk": signal_rk}
+    {"time": time_aorta.tolist(), "aorta": signal_aorta.tolist(), "lk": signal_lk.tolist(), "rk": signal_rk.tolist}
     ]
 
     DCE_data_csv = pd.DataFrame(DCE_data)
@@ -94,7 +94,7 @@ def main(folder,master_table):
 
     "RK_T1 (s): " + str(T1_rk),
     "LK_T1 (s): " + str(T1_lk),
-    "Weight: " + header[0,0]['PatientWeight'],
+    "Weight: " + str(header[0,0]['PatientWeight']),
 
     ]
     txt_path = os.path.join(folder.path(), 'DCE_Data' +'.txt')
