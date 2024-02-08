@@ -82,12 +82,8 @@ def main(folder,master_table):
 
     # # Physiological parameters
     # Hct = 0.45
-
-    DCE_data = [
-    {"time": time_aorta.tolist(), "aorta": signal_aorta.tolist(), "lk": signal_lk.tolist(), "rk": signal_rk.tolist}
-    ]
-
-    DCE_data_csv = pd.DataFrame(DCE_data)
+    
+    DCE_data_csv = pd.DataFrame({"time": np.array(time_aorta), "aorta": np.array(signal_aorta), "lk": np.array(signal_lk), "rk": np.array(signal_rk)})
     DCE_data_csv.to_csv(os.path.join(folder.path(), 'DCE_Data' +'.csv'),index=False)
 
     lines = [
