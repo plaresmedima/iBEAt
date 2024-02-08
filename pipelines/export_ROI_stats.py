@@ -263,7 +263,7 @@ def MTR(database,master_table):
         #params = vreg.find_rigid_transformation(MTR_map, dixon, tolerance=0.1, region=kidney[0], margin=0)
         params = vreg.find_sbs_rigid_transformation(MT_ref, dixon, tolerance=0.1, region=kidney[0], margin=0)
         # Apply transformation to rbf image
-        moved = vreg.apply_sbs_passive_rigid_transformation(MTR_map, params,description='MTR - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(MTR_map, params)
         export_alignemnt.main(moved, kidney[0],export_study,database.path())
         #moved = vreg.apply_rigid_transformation(MTR_map, params, target=dixon, description='MTR - ' + kidney[1])
 
@@ -329,7 +329,7 @@ def T2s(database,master_table):
         params = vreg.find_sbs_rigid_transformation(T2s_ref, dixon, tolerance=0.1, region=kidney[0], margin=0)
 
         # Apply transformation to rbf image
-        moved = vreg.apply_sbs_passive_rigid_transformation(T2s_map, params,description='T2s - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(T2s_map, params)
         export_alignemnt.main(moved, kidney[0],export_study,database.path())
         #moved = vreg.apply_rigid_transformation(T2s_map, params, target=dixon, description='T2s - ' + kidney[1])
 
@@ -342,7 +342,7 @@ def T2s(database,master_table):
         T2s_map_stats.append(df)
 
         # Apply transformation to rbf image
-        moved = vreg.apply_sbs_passive_rigid_transformation(T2s_fw, params,description='T2s_fw - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(T2s_fw, params)
         #moved = vreg.apply_rigid_transformation(T2s_map, params, target=dixon, description='T2s - ' + kidney[1])
 
         # Get ROI statistics
@@ -462,7 +462,7 @@ def T1(database,master_table):
         # Apply transformation to rbf image
 
         #moved = vreg.apply_rigid_transformation(T1_map, params, target=dixon, description='T1 - ' + kidney[1])
-        moved = vreg.apply_sbs_passive_rigid_transformation(T1_map, params, paramsdescription='T1 - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(T1_map, params)
         export_alignemnt.main(moved, kidney[0],export_study,database.path())
 
         # Get ROI statistics
@@ -522,7 +522,7 @@ def T2(database,master_table):
 
         # Apply transformation to rbf image
         #moved = vreg.apply_rigid_transformation(T2_map, params, target=dixon, description='T2 - ' + kidney[1])
-        moved = vreg.apply_sbs_passive_rigid_transformation(T2_map, params, paramsdescription='T2 - ' + kidney[1])
+        moved = vreg.apply_sbs_passive_rigid_transformation(T2_map, params)
         export_alignemnt.main(moved, kidney[0],export_study,database.path())
 
         # Get ROI statistics
