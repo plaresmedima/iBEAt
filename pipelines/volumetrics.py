@@ -1,5 +1,6 @@
 import pandas as pd
 from dbdicom.wrappers import skimage, scipy, dipy
+import time
 
 
 def kidney_volumetrics(master_table, folder):
@@ -56,8 +57,26 @@ def sinus_fat_volumetrics(master_table,folder):
 
 def main(master_table, folder):
 
-    master_table = kidney_volumetrics(master_table, folder)
-    
-    master_table = sinus_fat_volumetrics(master_table,folder)
+    start_time = time.time()
+    folder.scan()
+
+    folder.log("Volumetrics has started!")
+
+    try:
+        folder.log("Kidney volumetrics has started")
+        master_table = kidney_volumetrics(master_table, folder)
+        folder.log("Kidney volumetrics was completed")
+    except Exception as e:
+        folder.log("Kidney volumetrics was NOT completed; error: "+str(e))
+
+    try:
+        folder.log("Sinus fat volumetrics has started")
+        master_table = sinus_fat_volumetrics(master_table,folder)
+        folder.log("Sinus fat volumetrics was completed")
+    except Exception as e:
+        folder.log("Sinus fat volumetrics was NOT completed; error: "+str(e))
+
+    folder.save()
+    folder.log("Volumetrics was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
     return master_table
