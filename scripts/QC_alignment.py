@@ -15,6 +15,9 @@ def main(background_series,mask_series,label,path_to_save):
     array_background  = np.squeeze(array_background)
     array_overlay_mask = np.squeeze(array_overlay_mask)
 
+    print(array_background)
+    print(overlay_mask)
+
     if len(array_background.shape) > 3:
         array_background  = np.squeeze(array_background[...,0])
 
@@ -37,7 +40,7 @@ def main(background_series,mask_series,label,path_to_save):
                 col.axis("off")
             else:  
             
-                col.imshow(array_background[:,:,i], 'gray', interpolation='none',vmin=0,vmax=np.mean(array_background)+np.std(array_background))
+                col.imshow(array_background[:,:,i], 'gray', interpolation='none',vmin=0,vmax=np.median(array_background)+np.std(array_background))
                 col.imshow(array_overlay_mask[:,:,i], 'jet' , interpolation='none', alpha=0.2)
                 col.set_xticklabels([])
                 col.set_yticklabels([])
@@ -46,4 +49,5 @@ def main(background_series,mask_series,label,path_to_save):
             i = i +1 
     fig.suptitle(label + "alignment", fontsize=14)
     fig.savefig(os.path.join(path_to_save, label + '_alignment_' + mask_series.SeriesDescription + '.png'), dpi=600)
+    print('Done')
     
