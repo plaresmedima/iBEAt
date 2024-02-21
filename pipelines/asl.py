@@ -1,5 +1,5 @@
 import pandas as pd
-from dbdicom.wrappers import vreg, scipy
+from dbdicom.extensions import vreg, scipy
 from dbdicom.pipelines import input_series
 
 export_study = "ASL"

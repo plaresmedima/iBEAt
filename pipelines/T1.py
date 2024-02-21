@@ -1,7 +1,7 @@
 from dbdicom.pipelines import input_series
 from pipelines.mdr import MDRegT1
 #from pipelines.mapping import T1
-from dbdicom.wrappers import vreg
+from dbdicom.extensions import vreg
 
 export_study = "T1"
 magn_series = "T1map_kidneys_cor-oblique_mbh_magnitude"

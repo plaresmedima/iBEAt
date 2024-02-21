@@ -1,7 +1,7 @@
 import os
 import time
 
-from dbdicom.wrappers import skimage, scipy, dipy, sklearn
+from dbdicom.extensions import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
 import mapping.UNETR_kidneys_v1 as unetr
 

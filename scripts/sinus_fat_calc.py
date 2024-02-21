@@ -7,7 +7,7 @@ import os
 import time
 import datetime
 import dbdicom as db
-from dbdicom.wrappers import skimage, scipy, dipy
+from dbdicom.extensions import skimage, scipy, dipy
 import csv
 import pandas as pd
 
