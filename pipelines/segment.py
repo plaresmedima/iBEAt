@@ -1,9 +1,14 @@
 import os
 import os.path
 
+import numpy as np
+import cv2
+from skimage.segmentation import flood
+
 from dbdicom.extensions import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
-import mapping.UNETR_kidneys_v1 as unetr
+import models.UNETR_kidneys_v1 as unetr
+
 
 
 export_study = 'Segmentations'
@@ -97,4 +102,97 @@ def compute_whole_kidney_canvas(database):
     for c in clusters:
         c.move_to(study)
     return clusters
+
+
+
+
+#### THIS NEEDS CLEANING UP
+
+class Point(object):
+    def __init__(self,x,y):
+        self.x = x
+        self.y = y
+
+    def getX(self):
+        return self.x
+    def getY(self):
+        return self.y
+
+def getGrayDiff(img,currentPoint,tmpPoint):
+    return abs(int(img[currentPoint.x,currentPoint.y]) - int(img[tmpPoint.x,tmpPoint.y]))
+
+def selectConnects(p):
+ if p != 0:
+  connects = [Point(-1, -1), Point(0, -1), Point(1, -1), Point(1, 0), Point(1, 1), \
+     Point(0, 1), Point(-1, 1), Point(-1, 0)]
+ else:
+  connects = [ Point(0, -1), Point(1, 0),Point(0, 1), Point(-1, 0)]
+ return connects
+
+def regionGrow(img,seeds,thresh,p = 1):
+ height, weight = img.shape
+ seedMark = np.zeros(img.shape)
+ seedList = []
+ for seed in seeds:
+  seedList.append(seed)
+ label = 1
+ connects = selectConnects(p)
+ while(len(seedList)>0):
+  currentPoint = seedList.pop(0)
+
+  seedMark[currentPoint.x,currentPoint.y] = label
+  for i in range(8):
+   tmpX = currentPoint.x + connects[i].x
+   tmpY = currentPoint.y + connects[i].y
+   if tmpX < 0 or tmpY < 0 or tmpX >= height or tmpY >= weight:
+    continue
+   grayDiff = getGrayDiff(img,currentPoint,Point(tmpX,tmpY))
+   if grayDiff < thresh and seedMark[tmpX,tmpY] == 0:
+    seedMark[tmpX,tmpY] = label
+    seedList.append(Point(tmpX,tmpY))
+ return seedMark
+
+
+def aorta_on_dce(folder):
+
+    desc = "DCE_aorta_axial_fb"
+    series, study = input_series(folder, desc, export_study)
+    if series is None:
+        raise RuntimeError('Cannot create DCE-AIF mask: series ' + desc + ' does not exist. ')
+
+    axial, header = series.array(['AcquisitionTime'], pixels_first=True, first_volume=True)
+
+    cutRatio=0.25             #create a window around the center of the image where the aorta is
+    filter_kernel=(15,15)     #gaussian kernel for smoothing the image to destroy any noisy single high intensity filter
+    threshold = 2     #threshold for the region growing algorithm
+
+    # Calculate max signal enhancement over a window around the center
+    cy, cx = int(axial.shape[0]/2), int(axial.shape[1]/2)
+    y0, y1 = int(cy-cy*cutRatio), int(cy+cy*cutRatio)
+    x0, x1 = int(cx-cx*cutRatio), int(cx+cx*cutRatio)
+
+    axwin = np.zeros(axial.shape)
+    axwin[y0:y1, x0:x1,:] = axial[y0:y1, x0:x1,:]
+    axenh = np.max(axwin,axis=2) - np.min(axwin,axis=2)
+
+    # Get 3 seed points with maximal enhhancement values
+    axenh_blur = cv2.GaussianBlur(axenh, filter_kernel,cv2.BORDER_DEFAULT)
+    _, _, _, p1 = cv2.minMaxLoc(axenh_blur)
+    axenh_blur[p1[1],p1[0]] = 0
+    _, _, _, p2 = cv2.minMaxLoc(axenh_blur)
+    axenh_blur[p2[1],p2[0]] = 0
+    _, _, _, p3 = cv2.minMaxLoc(axenh_blur)
+
+    seeds = [Point(p1[1],p1[0]), Point(p2[1],p2[0]), Point(p3[1],p3[0])]
+    max_iteration = 20
+    for i in range(max_iteration):
+        aif_mask = regionGrow(axenh,seeds,threshold)
+        if len(aif_mask[aif_mask==1]) >= 25:
+            break
+        threshold += 1
+
+    aif_mask_series = study.new_series(SeriesDescription='DCE-AIF')
+    aif_mask_series.set_array(aif_mask, header[0], pixels_first=True)
+
+    return aif_mask_series
 

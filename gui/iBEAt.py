@@ -1,10 +1,6 @@
-from wezel.gui import Menu
-from . import contrasts
-from . import steps
-from . import mdr
-from . import mapping
 
 import wezel
+from wezel.gui import Menu
 from wezel.plugins import (
     pyvista,
     scipy,
@@ -13,35 +9,22 @@ from wezel.plugins import (
     segment,
     align,
 )
-import gui
+from gui import buttons, about
 
 
 def launch():
 
     # Build iBEAt menu
     ibeat_menu = Menu('iBEAt')
-    ibeat_menu.add(steps.action_rename)
-    ibeat_menu.add(steps.menu_segment)
+    ibeat_menu.add(buttons.action_rename)
+    ibeat_menu.add(buttons.action_harmonize_seqs)
+    ibeat_menu.add(buttons.menu_segment)
+    ibeat_menu.add(buttons.menu_mdreg)
+    ibeat_menu.add(buttons.menu_map)
+    ibeat_menu.add(buttons.menu_align)
+    ibeat_menu.add(buttons.menu_measure)
     ibeat_menu.add_separator()
-    ibeat_menu.add(contrasts.asl_perfusion)
-    ibeat_menu.add(contrasts.menu_T1)
-    ibeat_menu.add_separator()
-    ibeat_menu.add(mdr.action_T2star)
-    ibeat_menu.add(mdr.action_T1)
-    ibeat_menu.add(mdr.action_T2)
-    ibeat_menu.add(mdr.action_DTI)
-    ibeat_menu.add(mdr.action_MT)
-    ibeat_menu.add(mdr.action_DCE)
-    ibeat_menu.add_separator()
-    ibeat_menu.add(mapping.action_T2star)
-    ibeat_menu.add(mapping.action_T1)
-    ibeat_menu.add(mapping.action_DTI)
-    ibeat_menu.add(mapping.action_MT)
-    ibeat_menu.add(mapping.action_DCE)
-    ibeat_menu.add_separator()
-    ibeat_menu.add(steps.action_mdr)
-    ibeat_menu.add(steps.action_mapping)
-    ibeat_menu.add(steps.action_upload)
+    ibeat_menu.add(buttons.action_upload)
 
     # Build iBEAt wezel project
     wzl = wezel.app(project='iBEAt')
@@ -62,8 +45,8 @@ def launch():
     wzl.add_action(pyvista.action_show_mask_surfaces_with_reference, menu='View', position=8)
 
     # Extend about menu
-    wzl.add_action(gui.about.ibeat, menu='About')
-    wzl.add_action(gui.about.beat_dkd, menu='About')
+    wzl.add_action(about.ibeat, menu='About')
+    wzl.add_action(about.beat_dkd, menu='About')
 
     # Launch wezel
     wzl.show()

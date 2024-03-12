@@ -1,7 +1,9 @@
 import os
 import pandas as pd
+import numpy as np
 
-from dbdicom.extensions import skimage
+from dbdicom.extensions import skimage, vreg
+
 
 def _master_table_file(folder):
     # Get filename and create folder if needed.
@@ -12,12 +14,10 @@ def _master_table_file(folder):
 
 
 def _load_master_table(folder):
-
     # Read master table
     filename_csv = _master_table_file(folder)
     if os.path.isfile(filename_csv):
         return pd.read_csv(filename_csv)
-    
     # If the master table does not exist, create it
     row_headers = ['PatientID', 'SeriesDescription', 'Region of Interest', 'Parameter', 'Value', 'Unit', 'Biomarker']
     master_table = pd.DataFrame(columns=row_headers)
@@ -54,3 +54,90 @@ def sinus_fat_volumetrics(folder):
     features['Region of Interest'] = 'Renal Sinus Fat'
     _update_master_table(folder, features)
     return features
+
+
+def t1_maps(folder):
+    seq = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    pars = ['T1']
+    units = ['']
+    return features(folder, seq, pars, units)
+
+def t2_maps(folder):
+    seq = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    pars = ['T2']
+    units = ['']
+    return features(folder, seq, pars, units)
+
+def t2star_maps(folder):
+    seq = 'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    pars = [ 'T2s','fw']
+    units = ['','']
+    return features(folder, seq, pars, units)
+
+def mt_maps(folder):
+    seq = 'MT_kidneys_cor-oblique_bh_mdr_moco'
+    pars = ['MTR']
+    units = ['']
+    return features(folder, seq, pars, units)
+
+def ivim_maps(folder):
+    seq = 'IVIM_kidneys_cor-oblique_fb_mdr_moco'
+    pars = ['MD','Df','ff']
+    units = ['','','']
+    return features(folder, seq, pars, units)
+
+def dti_maps(folder):
+    seq = 'DTI_kidneys_cor-oblique_fb_mdr_moco'
+    pars = ['MD','RD','AD','Planarity','Linearity','Sphericity','FA']
+    units = ['','','','','','','']
+    return features(folder, seq, pars, units)
+
+def dce_maps(folder):
+    seq = 'DCE_kidneys_cor-oblique_fb_mdr_moco'
+    pars = ['AVD', 'RPF', 'MTT']
+    units = ['mL/100mL', 'mL/min/100mL', 'sec']
+    return features(folder, seq, pars, units)
+
+# Needs to be brought in line with the others - same format
+def asl_maps(folder):
+    for ROI in ['LK','RK']:
+        kidney  = folder.series(SeriesDescription=ROI)
+        rbf = folder.series(SeriesDescription='RBF - ' + ROI)
+        features = vreg.mask_statistics(kidney, rbf)
+        features['Biomarker'] = features['SeriesDescription'] + '-' + features['Parameter']
+        features['Region of Interest'] = 'Kidney'
+        _update_master_table(folder, features)
+    return features
+
+
+def features(folder, seq, pars, units):
+    for p, par in enumerate(pars):
+        vals = []
+        for ROI in ['LK','RK']: 
+            folder.message('Exporting metrics for parameter ' + par)
+            desc = seq + '_' + par + '_map_' + ROI + '_align'
+            kidney = folder.series(SeriesDescription=ROI)[0]
+            series = folder.series(SeriesDescription=desc)[0]
+            kidney_vals = vreg.mask_values(kidney, series)
+            vals.append(kidney_vals)
+
+            # update master table
+            features = vreg.mask_data_statistics(kidney_vals, kidney, series)
+            features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
+            features['Unit'] = units[p]
+            features['SeriesDescription'] = ROI
+            features['Region of Interest'] = 'Kidney'
+            _update_master_table(folder, features)
+
+        ROI = 'BK' 
+        vals = np.concatenate(vals)
+        features = vreg.mask_data_statistics(vals, kidney, series)
+        features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
+        features['Unit'] = units[p]
+        features['SeriesDescription'] = ROI
+        features['Region of Interest'] = 'Kidney'
+        _update_master_table(folder, features)
+
+    return features
+
+

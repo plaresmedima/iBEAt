@@ -3,8 +3,10 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import imageio
 
 from dbdicom.extensions import vreg
+from pipelines.DCE_analysis import load_aif
 
 
 def kidney_masks_as_dicom(folder):
@@ -89,6 +91,35 @@ def kidney_masks_as_png(database,backgroud_series = 'T1w_abdomen_dixon_cor_bh_ou
     fig.savefig(os.path.join(results_path, 'Masks.png'), dpi=600)
 
 
+def aif_as_png(folder):
+
+    folder.message('Exporting AIF as png..')
+    results_path = folder.path() + '_QC'
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    #dce = folder.series(SeriesDescription="DCE_kidneys_cor-oblique_fb")
+    dce = folder.series(SeriesDescription="DCE_aorta_axial_fb")
+    aif = folder.series(SeriesDescription='DCE-AIF')
+
+    if dce==[]:
+        raise RuntimeError('No DCE data found: cannot export AIF')
+    if aif==[]:
+        raise RuntimeError('No AIF data found: cannot export AIF')
+
+    time, aif = load_aif(dce[0], aif[0])
+    time = time/60
+
+    fig, ax = plt.subplots(1,1,figsize=(5,5))
+    ax.plot(time, aif, 'b-', label='Aorta', linewidth=3.0)
+    ax.plot(time, 0*time, color='gray')
+    ax.set(xlabel='Time (min)', ylabel='DCE signal (a.u.)')
+    ax.legend()
+
+    plt.savefig(os.path.join(results_path, 'aif.png'), dpi=600)
+    plt.close()
+    
+
 def whole_kidney_canvas(folder):
 
     folder.message('Exporting whole kidney canvas as dicom..')
@@ -115,7 +146,118 @@ def whole_kidney_canvas(folder):
     for series in exportToFolder:   
         series.export_as_dicom(results_path)
 
+
+
+def mapping(database):
+
+    results_path = database.path() + '_QC'
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    for series in database.series():
+        desc = series['SeriesDescription']
+        if desc[-4:] == '_map':
+
+            array, _ = series.array(['SliceLocation'], pixels_first=True, first_volume=True)
+            
+            # Create frames for gif movie
+            frames = []
+            for z in range(array.shape[2]):
+                series.progress(z+1, array.shape[2], 'Exporting '+desc+' as gif..')
+                smin = np.amin(array[:,:,z])
+                smax = np.amax(array[:,:,z])
+                frame = 255*(array[:,:,z]-smin)/(smax-smin)
+                frame = frame.astype(np.uint8)
+                frames.append(frame.T)
+
+            # Save the frames as a GIF
+            imageio.mimsave(os.path.join(results_path, 'map_'+ desc + '.gif'), frames, duration=100)
+
+
+
+def mdreg(database):
+
+    results_path = database.path() + '_QC'
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    for series in database.series():
+        desc = series['SeriesDescription']
+        if desc[-9:] == '_mdr_moco':
+
+            # Get data
+            array, _ = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
+            array = np.reshape(array, (array.shape[0], array.shape[1], -1))
+
+            # Create frames for gif movie
+            frames = []
+            for z in range(array.shape[2]):
+                series.progress(z+1, array.shape[2], 'Exporting '+desc+' as gif..')
+                smin = np.amin(array[:,:,z])
+                smax = np.amax(array[:,:,z])
+                frame = 255*(array[:,:,z]-smin)/(smax-smin)
+                frame = frame.astype(np.uint8)
+                frames.append(frame.T)
+
+            # Save frames as .gif
+            # Faster speed for the big series
+            if desc == "IVIM_kidneys_cor-oblique_fb_mdr_moco":
+                duration=25
+            elif desc == "DTI_kidneys_cor-oblique_fb_mdr_moco":
+                duration=25
+            elif desc == "DCE_kidneys_cor-oblique_fb_mdr_moco":
+                duration=20
+            else:
+                duration=100
+
+            imageio.mimsave(os.path.join(results_path, 'mdr_'+desc + '.gif'), frames, duration=duration)
     
+
+def alignment(database):
+
+    database.message('Exporting alignments as png..')
+    results_path = database.path() + '_QC'
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    lk = database.series(SeriesDescription='LK')
+    rk = database.series(SeriesDescription='RK')
+
+    for s, background_series in enumerate(database.series(StudyDescription='Alignment')):
+
+        desc = background_series.instance().SeriesDescription
+        if desc[-2:] == 'LK':
+            overlay_mask  = vreg.map_to(lk, background_series)
+        else:
+            overlay_mask  = vreg.map_to(rk, background_series)
+
+        array_background, _ = background_series.array(['SliceLocation'], pixels_first=True, first_volume=True)
+        array_overlay_mask, _ = overlay_mask.array(['SliceLocation'], pixels_first=True, first_volume=True)
+
+        array_background  = np.transpose(array_background,(1,0,2))
+        array_overlay_mask = np.transpose(array_overlay_mask,(1,0,2))
+
+        num_row_cols = int(np.ceil(np.sqrt(array_overlay_mask.shape[2])))
+        fig, ax = plt.subplots(nrows=num_row_cols, ncols=num_row_cols, gridspec_kw = {'wspace':0, 'hspace':0}, figsize=(num_row_cols,num_row_cols))
+        i=0
+        for row in ax:
+            for col in row:
+                if i>=array_overlay_mask.shape[2]:
+                    col.set_xticklabels([])
+                    col.set_yticklabels([])
+                    col.set_aspect('equal')
+                    col.axis("off")
+                else:  
+                
+                    col.imshow(array_background[:,:,i], 'gray', interpolation='none',vmin=0,vmax=np.median(array_background)+np.std(array_background))
+                    col.imshow(array_overlay_mask[:,:,i], 'jet' , interpolation='none', alpha=0.2)
+                    col.set_xticklabels([])
+                    col.set_yticklabels([])
+                    col.set_aspect('equal')
+                    col.axis("off")
+                i = i +1 
+        fig.suptitle(desc, fontsize=14)
+        fig.savefig(os.path.join(results_path, desc + '.png'), dpi=600)
 
 
 

@@ -1,9 +1,7 @@
 import time
 import numpy as np
-from dbdicom.wrappers import scipy
-from dbdicom.wrappers import vreg, scipy
-import scripts.QC_alignment as export_alignemnt
-from pipelines.kidney_dce import fit as fit_DCE
+from dbdicom.extensions import vreg, scipy
+from models.kidney_dce import fit as fit_DCE
 import pandas as pd
 import os
 
@@ -151,7 +149,7 @@ def get_T1_kidney(T1_moco_series,kidney_mask_series,folder):
     
     overlay_mask  = scipy.map_to(kidney_mask_series[0], T1_moco_series)
 
-    export_alignemnt.main(T1_moco_series, overlay_mask,'DCE_T1_alignment_TEST',folder.path())
+    #export_alignemnt.main(T1_moco_series, overlay_mask,'DCE_T1_alignment_TEST',folder.path())
 
     array_T1_moco, _ = T1_moco_series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
     array_T1_moco    = np.squeeze(array_T1_moco)
@@ -209,7 +207,7 @@ def get_signal_kidney(DCE_moco_series,kidney_mask_series,folder):
     
     overlay_mask  = scipy.map_to(kidney_mask_series[0], DCE_kidneys)
 
-    export_alignemnt.main(DCE_kidneys, overlay_mask,'DCE_alignment_TEST',folder.path())
+    #export_alignemnt.main(DCE_kidneys, overlay_mask,'DCE_alignment_TEST',folder.path())
 
     array_DCE_moco, _ = DCE_kidneys.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True)
     array_DCE_moco    = np.squeeze(array_DCE_moco)
@@ -230,6 +228,25 @@ def get_signal_kidney(DCE_moco_series,kidney_mask_series,folder):
     signal_kidney= np.array(aif)
 
     return signal_kidney
+
+
+def load_aif(dce, aif):
+    # Taken from MDR
+    # should be the same as get_signal_aorta (CHECK and remove one of the two!!)
+    array, header = dce.array(['AcquisitionTime'], pixels_first=True, first_volume=True)
+    aif_mask, _ = aif.array(pixels_first=True, first_volume=True)
+    dce.message('Loading AIF curve..')
+    time = np.array([header[k]['AcquisitionTime'] for k in range(header.shape[0])])
+    time -= time[0]
+    loc = aif_mask != 0
+    aif = np.array([np.mean(array[:,:,k][loc]) for k in range(array.shape[2])])
+
+    return time, aif
+
+
+
+
+    
 
 
 

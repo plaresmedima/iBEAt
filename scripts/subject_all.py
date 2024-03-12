@@ -2,14 +2,9 @@ import os
 import datetime
 import dbdicom as db
 
-import pipelines.mdr as mdr
-import pipelines.mapping as map
-import pipelines.export_ROI_stats as export_ROIs
 import pipelines.DCE_analysis as DCE_analysis
 
 import scripts.upload as upload
-import scripts.QC_mdr as check_mdr
-import scripts.QC_mapping as check_maps
 from scripts import xnat, steps
 
 
@@ -35,67 +30,88 @@ def single_subject(username, password, path, dataset):
     except: 
         UsedCores = int(os.cpu_count())
 
-    folder = db.database(path=pathScan)
-    folder.set_log(filename_log)
-    folder.log("Analysis of " + pathScan.split('//')[-1] + " has started!")
-    folder.log("CPU cores: " + str(UsedCores))
+    database = db.database(path=pathScan)
+    database.set_log(filename_log)
+    database.log("Analysis of " + pathScan.split('//')[-1] + " has started!")
+    database.log("CPU cores: " + str(UsedCores))
     
 
-    ## Harmonize series descriptions
+    ## HARMONIZATION
 
-    steps.rename_all_series(folder)
+    steps.rename_all_series(database)
+    steps.harmonize_all_series(database)
+
+    ## SEGMENTATION
+
+    steps.fetch_dl_models() # TODO
+    steps.fetch_kidney_masks(database) # TODO
+    steps.segment_kidneys(database, unetr)
+    steps.segment_renal_sinus_fat(database)
+    steps.segment_aorta_on_dce(database)
+    steps.compute_whole_kidney_canvas(database)
+    steps.export_segmentations(database) # TODO: all in one database
+
+    ## MODEL-DRIVEN MOTION CORRECTION
+
+    steps.mdreg_t1(database)
+    steps.mdreg_t2(database)
+    steps.mdreg_t2star(database)
+    steps.mdreg_mt(database)
+    steps.mdreg_ivim(database)
+    steps.mdreg_dti(database)
+    steps.mdreg_dce(database)
+    steps.export_mdreg(database)
+
+    # MAPPING
+
+    steps.map_T1(database)
+    steps.map_T2(database)
+    steps.map_T1T2(database)
+    steps.map_T2star(database)
+    steps.map_MT(database)
+    steps.map_IVIM(database)
+    steps.map_DTI(database)
+    steps.map_DCE(database)
+    steps.export_mapping(database)
+
+    # ALIGNMENT
+
+    steps.align_T1(database)
+    steps.align_T2(database)
+    steps.align_T2star(database)
+    steps.align_MT(database)
+    steps.align_IVIM(database)
+    steps.align_DTI(database)
+    steps.align_DCE(database)
+    steps.align_ASL(database)
+    steps.export_alignment(database)
+
+    # MEASUREMENT
+
+    steps.measure_kidney_volumetrics(database)
+    steps.measure_sinus_fat_volumetrics(database)
+    steps.measure_t1_maps(database)
+    steps.measure_t2_maps(database)
+    steps.measure_t2star_maps(database)
+    steps.measure_mt_maps(database)
+    steps.measure_ivim_maps(database)
+    steps.measure_dti_maps(database)
+    steps.measure_asl_maps(database)
+    steps.measure_dce_maps(database)
 
 
-    ## Segmentation steps
+    # Cortex-Medulla # TODO
 
-    # Calculate kidney and renal sinus fat masks
-    steps.fetch_kidney_masks(folder) # Dummy placeholder for now!!
-    steps.segment_kidneys(folder, unetr)
-    steps.segment_renal_sinus_fat(folder)
-
-    # Export kidney masks and canvas for manual editing offline
-    steps.compute_whole_kidney_canvas(folder)
-    steps.export_kidney_segmentations(folder)
-    
-    # Generate biomarker measurements
-    steps.measure_kidney_volumetrics(folder)
-    steps.measure_sinus_fat_volumetrics(folder)
-
-    #Apply motion correction using MDR
-    try:
-        print("starting mdr")
-        mdr.main(folder)
-        check_mdr.main(folder)
-    except Exception as e:
-        folder.log("Renaming was NOT completed; error: " + str(e))
-
-    #Custom modelling
-    try:
-        print("staring mapping")
-        map.main(folder)
-        check_maps.main(folder)
-    except Exception as e:
-        folder.log("Modelling was NOT completed; error: " + str(e))
-
-    #Custom DCE
+    # ROI analysis
     try:
         print("staring DCE Analysis")
-        DCE_analysis.main(folder,master_table)
+        DCE_analysis.main(database)
     except Exception as e:
-        folder.log("DCE Analysis was NOT completed; error: " + str(e))
+        database.log("DCE Analysis was NOT completed; error: " + str(e))
 
-
-    #Generate masks using unetr, apply alignment, extract biomarkers to a .csv
-    try:
-        print('starting parameter extraction')
-        master_table = export_ROIs.main(master_table, folder)
-    except Exception as e:
-        folder.log("Parameter extraction was NOT completed; error: " + str(e))
-
-
-
-    
+    # PC # TODO
+        
     #upload images, logfile and csv to google drive
     #upload.main(pathScan, filename_log, filename_csv)
-    filename_csv = os.path.join(folder.path() + '_output', 'biomarkers.csv')
+    filename_csv = os.path.join(database.path() + '_output', 'biomarkers.csv')
     upload.main(pathScan, filename_log, filename_csv)
