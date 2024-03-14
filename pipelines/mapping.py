@@ -3,7 +3,7 @@ import numpy as np
 
 from dbdicom.pipelines import input_series
 
-from pipelines.DCE_analysis import load_aif
+from pipelines.roi_fit import load_aif
 
 import models
 from models import (
@@ -41,13 +41,8 @@ def T1map(folder):
             raise RuntimeError('Cannot perform T1 mapping: series ' + desc + 'does not exist. ')
 
     # Load data - note each slice can have different TIs
-    if series.Manufacturer == 'SIEMENS':
-        sort_by = 'InversionTime'
-    else:
-        sort_by = (0x2005, 0x1572)
-
-    array, header = series.array(['SliceLocation', sort_by], pixels_first=True, first_volume=True)
-    TI = [np.array([hdr[sort_by] for hdr in header[z,:]]) for z in range(array.shape[2])] 
+    array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
+    TI = [np.array([hdr['InversionTime'] for hdr in header[z,:]]) for z in range(array.shape[2])] 
 
     # Calculate fit slice by slice
     fit = np.empty(array.shape)
@@ -290,41 +285,41 @@ def ivim(folder):
 def DCE(folder):
 
     # Find appropriate series
-    desc = ["DCE_kidneys_cor-oblique_fb_mdr_moco", "DCE_aorta_axial_fb", 'DCE-AIF']
+    desc = "DCE_kidneys_cor-oblique_fb_mdr_moco"
     series, study = input_series(folder, desc, export_study)
     if series is None:
-        desc = ["DCE_kidneys_cor-oblique_fb", "DCE_aorta_axial_fb", "DCE-AIF"]
+        desc = "DCE_kidneys_cor-oblique_fb"
         series, study = input_series(folder, desc, export_study)
         if series is None:
             raise RuntimeError('Cannot perform mapping on DCE: series ' + desc + ' does not exist. ')
 
     # Extract data
-    array, header = series[0].array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
-    time, aif = load_aif(series[1], series[2])
-
+    time, aif = load_aif(folder)
+    array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
+    
     # Calculate maps
-    series[0].message('Calculating descriptive parameters..')
+    series.message('Calculating descriptive parameters..')
     MAX, AUC, ATT = DCE_descriptive.fit(array, aif, time[1]-time[0], baseline=15)
-    series[0].message('Performing linear fit..')
+    series.message('Performing linear fit..')
     fit, par = DCE_2CM.fit(array, aif, time, baseline=15)
-    series[0].message('Deconvolving..')
+    series.message('Deconvolving..')
     RPF, AVD, MTT = DCE_deconv.fit(array, aif, time[1]-time[0], baseline=15, regpar=0.1)
     
     # Save maps as DICOM
-    fit_series = study.new_series(SeriesDescription=desc[0] + "_fit")
+    fit_series = study.new_series(SeriesDescription=desc + "_fit")
     fit_series.set_array(fit, header, pixels_first=True)
     
-    MAX_series = study.new_series(SeriesDescription=desc[0] + "_MAX_map")
-    AUC_series = study.new_series(SeriesDescription=desc[0] + "_AUC_map")
-    ATT_series = study.new_series(SeriesDescription=desc[0] + "_ATT_map")
-    RPF_series = study.new_series(SeriesDescription=desc[0] + "_RPF_map")
-    AVD_series = study.new_series(SeriesDescription=desc[0] + "_AVD_map")
-    MTT_series = study.new_series(SeriesDescription=desc[0] + "_MTT_map")
-    FP_series = study.new_series(SeriesDescription=desc[0] + "_FP_map")
-    TP_series = study.new_series(SeriesDescription=desc[0] + "_TP_map")
-    VP_series = study.new_series(SeriesDescription=desc[0] + "_VP_map")
-    FT_series = study.new_series(SeriesDescription=desc[0] + "_FT_map")
-    TT_series = study.new_series(SeriesDescription=desc[0] + "_TT_map")
+    MAX_series = study.new_series(SeriesDescription=desc + "_MAX_map")
+    AUC_series = study.new_series(SeriesDescription=desc + "_AUC_map")
+    ATT_series = study.new_series(SeriesDescription=desc + "_ATT_map")
+    RPF_series = study.new_series(SeriesDescription=desc + "_RPF_map")
+    AVD_series = study.new_series(SeriesDescription=desc + "_AVD_map")
+    MTT_series = study.new_series(SeriesDescription=desc + "_MTT_map")
+    FP_series = study.new_series(SeriesDescription=desc + "_FP_map")
+    TP_series = study.new_series(SeriesDescription=desc + "_TP_map")
+    VP_series = study.new_series(SeriesDescription=desc + "_VP_map")
+    FT_series = study.new_series(SeriesDescription=desc + "_FT_map")
+    TT_series = study.new_series(SeriesDescription=desc + "_TT_map")
 
     MAX_series.set_array(MAX, header[:,0], pixels_first=True)
     AUC_series.set_array(AUC, header[:,0], pixels_first=True)

@@ -23,6 +23,7 @@ def launch():
     ibeat_menu.add(buttons.menu_map)
     ibeat_menu.add(buttons.menu_align)
     ibeat_menu.add(buttons.menu_measure)
+    ibeat_menu.add(buttons.menu_roifit)
     ibeat_menu.add_separator()
     ibeat_menu.add(buttons.action_upload)
 

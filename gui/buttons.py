@@ -14,6 +14,7 @@ from pipelines import (
     export, 
     mapping,
     align,
+    roi_fit,
 )
 import scripts.upload as upload
 
@@ -432,7 +433,7 @@ action_align_DCE = Action("Align DCE..", on_clicked=align_DCE, is_clickable=_if_
 action_align_ASL = Action("Align ASL..", on_clicked=align_ASL, is_clickable=_if_a_database_is_open)
 action_align_export = Action("Exporting alignments as gif..", on_clicked=export_alignment, is_clickable=_if_a_database_is_open)
 
-menu_align = Menu('Between-sequence alignment..')
+menu_align = Menu('Align scans..')
 menu_align.add(action_align_T1)
 menu_align.add(action_align_T2)
 menu_align.add(action_align_T2star)
@@ -557,9 +558,35 @@ menu_measure.add_separator()
 menu_measure.add(action_all_measurements)
 
 
+# ROI FITS
+
+
+
+def roi_fit_T1(app):
+    database = app.database()
+    fig = roi_fit.T1(database)
+    # Launch plot display
+    app.refresh()
+
+
+def roi_fit_all(app):
+    roi_fit_T1(app)
+
+
+action_roi_fit_all = Action("ALL ROI fits..", on_clicked=roi_fit_all, is_clickable=_if_a_database_is_open)
+action_roi_fit_t1 = Action("ROI fit T1..", on_clicked=roi_fit_T1, is_clickable=_if_a_database_is_open)
+
+
+menu_roifit = Menu('ROI analysis..')
+menu_roifit.add(action_roi_fit_t1)
+menu_roifit.add_separator()
+menu_roifit.add(action_roi_fit_all)
+
+
+
+
+
 # OTHER STEPS
-
-
 
 
 def _upload(app):

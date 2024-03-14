@@ -12,26 +12,35 @@ def _master_table_file(folder):
         os.mkdir(results_path)
     return os.path.join(results_path, 'biomarkers.csv')
 
-
 def _load_master_table(folder):
     # Read master table
     filename_csv = _master_table_file(folder)
     if os.path.isfile(filename_csv):
         return pd.read_csv(filename_csv)
     # If the master table does not exist, create it
-    row_headers = ['PatientID', 'SeriesDescription', 'Region of Interest', 'Parameter', 'Value', 'Unit', 'Biomarker']
+    row_headers = ['PatientID', 'SeriesDescription', 'Region of Interest', 'Parameter', 'Value', 'Unit', 'Biomarker', 'StudyDescription']
     master_table = pd.DataFrame(columns=row_headers)
     master_table.to_csv(filename_csv, index=False)
     return master_table
 
+def read_master_table(folder, biomarker):
+    table = _load_master_table(folder)
+    table = table[table.Biomarker == biomarker]
+    if table.empty:
+        raise ValueError('Biomarker ' + biomarker +' has not yet been calculated.')
+    return table.Value.values[0]
 
 def _update_master_table(folder, table):
     master_table = _load_master_table(folder)
-    # This needs modifying: if the values are already in the table, then update instead of adding
     master_table = pd.concat([master_table, table], ignore_index=True)
     master_table = master_table.drop_duplicates(subset='Biomarker', keep='last', ignore_index=True)
     filename_csv = _master_table_file(folder)
     master_table.to_csv(filename_csv, index=False)
+
+def add_rows(folder, rows):
+    row_headers = ['PatientID', 'SeriesDescription', 'Region of Interest', 'Parameter', 'Value', 'Unit', 'Biomarker', 'StudyDescription']
+    table = pd.DataFrame(data=rows, columns=row_headers)
+    _update_master_table(folder, table)
 
 
 def kidney_volumetrics(folder):
@@ -58,14 +67,14 @@ def sinus_fat_volumetrics(folder):
 
 def t1_maps(folder):
     seq = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
-    pars = ['T1']
-    units = ['']
+    pars = ['T1', 'FA']
+    units = ['msec', 'deg']
     return features(folder, seq, pars, units)
 
 def t2_maps(folder):
     seq = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
     pars = ['T2']
-    units = ['']
+    units = ['msec']
     return features(folder, seq, pars, units)
 
 def t2star_maps(folder):

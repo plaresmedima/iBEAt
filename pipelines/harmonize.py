@@ -1,6 +1,10 @@
 import numpy as np
 import dbdicom
 
+# Note from older code:
+# For T1-mapping, Siemens uses the field 'InversionTime' 
+# but Philips uses (0x2005, 0x1572). Need to include a 
+# harmonization step for Philips.
 
 def magnetization_transfer(database):
     # Merge MT ON and MT OFF sequences and remove the originals
@@ -59,6 +63,15 @@ def dti(database):
         series.set_values((bvals,bvecs), ('DiffusionBValue', 'DiffusionGradientOrientation'))
 
 
+def t2(database):
+    desc = "T2map_kidneys_cor-oblique_mbh_magnitude"
+    series = database.series(SeriesDescription=desc)[0]
+
+    if series.instance().Manufacturer=='SIEMENS':
+        TE = [[0,30,40,50,60,70,80,90,100,110,120]]*5
+        series.set_values(np.array(TE), 'InversionTime',  dims=('SliceLocation', 'InstanceNumber'))
+
+
 def dce(database):
     desc = "DCE_kidneys_cor-oblique_fb"
     series = database.series(SeriesDescription=desc)[0]
@@ -85,9 +98,10 @@ def dce(database):
 
 def all_series(database):
 
-    magnetization_transfer(database)
-    ivim(database)
-    dti(database)
-    dce(database)
+    # magnetization_transfer(database)
+    # ivim(database)
+    # dti(database)
+    # dce(database)
+    t2(database)
 
 

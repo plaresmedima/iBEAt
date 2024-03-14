@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import imageio
 
 from dbdicom.extensions import vreg
-from pipelines.DCE_analysis import load_aif
+from pipelines.roi_fit import load_aif
 
 
 def kidney_masks_as_dicom(folder):
@@ -98,16 +98,7 @@ def aif_as_png(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    #dce = folder.series(SeriesDescription="DCE_kidneys_cor-oblique_fb")
-    dce = folder.series(SeriesDescription="DCE_aorta_axial_fb")
-    aif = folder.series(SeriesDescription='DCE-AIF')
-
-    if dce==[]:
-        raise RuntimeError('No DCE data found: cannot export AIF')
-    if aif==[]:
-        raise RuntimeError('No AIF data found: cannot export AIF')
-
-    time, aif = load_aif(dce[0], aif[0])
+    time, aif = load_aif(folder)
     time = time/60
 
     fig, ax = plt.subplots(1,1,figsize=(5,5))

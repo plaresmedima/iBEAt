@@ -2,7 +2,6 @@ import os
 import datetime
 import dbdicom as db
 
-import pipelines.DCE_analysis as DCE_analysis
 
 import scripts.upload as upload
 from scripts import xnat, steps
@@ -102,12 +101,12 @@ def single_subject(username, password, path, dataset):
 
     # Cortex-Medulla # TODO
 
+
+
     # ROI analysis
-    try:
-        print("staring DCE Analysis")
-        DCE_analysis.main(database)
-    except Exception as e:
-        database.log("DCE Analysis was NOT completed; error: " + str(e))
+
+    steps.roi_fit_T1(database)
+
 
     # PC # TODO
         

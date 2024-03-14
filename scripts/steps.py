@@ -9,6 +9,7 @@ from pipelines import (
     mapping, 
     harmonize, 
     align,
+    roi_fit,
 )
 
 
@@ -530,3 +531,14 @@ def measure_asl_maps(database):
 
         
 
+## ROI analysis
+        
+
+def roi_fit_T1(database):
+    start_time = time.time()
+    database.log("ROI analysis for T1 has started")
+    try:
+        roi_fit.T1(database)
+        database.log("ROI analysis for T1 was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for T1 was NOT completed; error: "+str(e))

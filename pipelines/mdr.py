@@ -15,7 +15,7 @@ from models import (
     DTI_dipy,
     DWI_linear,
 )
-from pipelines.DCE_analysis import load_aif
+from pipelines.roi_fit import load_aif
 
 
 export_study = 'MDR results'
@@ -28,13 +28,8 @@ def T1(folder):
     if series is None:
         raise RuntimeError('Cannot perform MDR on T1: series ' + desc + 'does not exist. ')
 
-    if series.Manufacturer == 'SIEMENS':
-        sort_by = 'InversionTime'
-    else:
-        sort_by = (0x2005, 0x1572)
-
-    array, header = series.array(['SliceLocation', sort_by], pixels_first=True, first_volume=True)
-    signal_pars = [{'xdata': np.array([hdr[sort_by] for hdr in header[z,:]])} for z in range(array.shape[2])]
+    array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
+    signal_pars = [{'xdata': np.array([hdr['InversionTime'] for hdr in header[z,:]])} for z in range(array.shape[2])]
 
     series.message('Loading elastix parameters..')
     signal_model = T1_look_locker_spoiled.fit
@@ -51,16 +46,11 @@ def T2(folder):
     if series is None:
         raise RuntimeError('Cannot perform MDR on T2: series ' + desc + 'does not exist. ')
 
-    if series.Manufacturer == 'SIEMENS':
-        array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
-        signal_pars = np.array([0,30,40,50,60,70,80,90,100,110,120])
-    else:
-        array, header = series.array(['SliceLocation', 'EchoTime'], pixels_first=True, first_volume=True)
-        signal_pars = np.array(series.EchoTime)
-
-    signal_pars = [{'xdata':signal_pars} for _ in range(array.shape[2])]
+    array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
+    TE = series.values('InversionTime',  dims=('SliceLocation', 'InversionTime'))
 
     series.message('Loading elastix parameters..')
+    signal_pars = [{'xdata':TE[z,:]} for z in range(TE.shape[1])]
     signal_model = T2_mono_exp.fit
     elastix_parameters = default_elastix_parameters()
     downsample = 2
@@ -86,7 +76,7 @@ def T2star(folder):
     return _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
 
 
-def MT(folder):
+def MT(folder): # Note this is a 3D sequence - do not coreg slice by slice - needs 3D registration
 
     desc = 'MT_kidneys_cor-oblique_bh'
     series, study = input_series(folder, desc, export_study)
@@ -112,9 +102,9 @@ def DTI(folder):
         raise RuntimeError('Cannot perform MDR on DTI: series ' + desc + 'does not exist. ')
 
     dims = ['SliceLocation', 'InstanceNumber']
+    bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=dims)
     array, header = series.array(dims, pixels_first=True, first_volume=True)
-    bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=dims, mesh=True)
-
+    
     signal_pars = [{'bvals':bvals[z,:], 'bvecs':np.stack(bvecs[z,:]), 'fit_method':'WLS'} for z in range(array.shape[2])]
     signal_model = DTI_dipy.fit
 
@@ -145,20 +135,20 @@ def IVIM(folder, series=None,study=None):
 
 def DCE(folder):
 
-    desc = ["DCE_kidneys_cor-oblique_fb", "DCE_aorta_axial_fb", "DCE-AIF"]
+    desc = "DCE_kidneys_cor-oblique_fb"
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot perform MDR on DCE: not all series are there.')
     
-    array, header = series[0].array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
-    time, aif = load_aif(series[1], series[2])
-
+    time, aif = load_aif(folder)
+    array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
+    
     signal_pars = [{'aif':aif, 'time':time, 'baseline':15} for _ in range(array.shape[2])]
     signal_model = DCE_2CM.fit
     elastix_parameters = default_elastix_parameters()
     downsample = 2
 
-    return _mdr(series[0], array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
+    return _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
 
 
 
