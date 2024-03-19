@@ -122,7 +122,6 @@ def t2(database):
     desc = [ 
         'LK',
         'RK',  
-        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
         'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
         'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2_map',
     ]
@@ -134,7 +133,6 @@ def t2star(database):
     desc = [ 
         'LK',
         'RK',  
-        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
         'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
         'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2s_map',
         'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_fw_map',
@@ -147,7 +145,6 @@ def ivim(database):
     desc = [ 
         'LK',
         'RK',  
-        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
         'IVIM_kidneys_cor-oblique_fb_mdr_moco_S0_map',
         'IVIM_kidneys_cor-oblique_fb_mdr_moco_MD_map',
         'IVIM_kidneys_cor-oblique_fb_mdr_moco_Df_map',
@@ -161,7 +158,6 @@ def dti(database):
     desc = [ 
         'LK',
         'RK',  
-        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
         'DTI_kidneys_cor-oblique_fb_mdr_moco_MD_map',
         'DTI_kidneys_cor-oblique_fb_mdr_moco_RD_map',
         'DTI_kidneys_cor-oblique_fb_mdr_moco_AD_map',
@@ -194,7 +190,6 @@ def mt(database):
     desc = [ 
         'LK',
         'RK',  
-        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
         'MT_kidneys_cor-oblique_bh_mdr_moco_AVR',
         'MT_kidneys_cor-oblique_bh_mdr_moco_MTR',
     ]

@@ -6,7 +6,7 @@ import dbdicom
 # but Philips uses (0x2005, 0x1572). Need to include a 
 # harmonization step for Philips.
 
-def magnetization_transfer(database):
+def mt(database):
     # Merge MT ON and MT OFF sequences and remove the originals
 
     # Find the series
@@ -93,15 +93,32 @@ def dce(database):
             split_series[1].SeriesDescription = "DCE_aorta_axial_fb"
         series.remove()
         	
-
+def pc(database):
+    desc = [
+        'PC_RenalArtery_Right_EcgTrig_fb_120_phase',
+        'PC_RenalArtery_Left_EcgTrig_fb_120_phase',
+    ]   
+    for d in desc:
+        series = database.series(SeriesDescription=d) 
+        if series == []:
+            pass
+        series = series[-1] # selected the last if there are multiple
+        if series.instance().Manufacturer=='SIEMENS':
+            venc = 120 # cm/sec # read from DICOM header?
+            phase = series.pixel_values(dims='TriggerTime')
+            velocity = phase * venc/4096 # cm/sec
+            vel = series.copy(SeriesDescription=d[:-5] + 'velocity')
+            vel.set_pixel_values(velocity, dims='TriggerTime')
 
 
 def all_series(database):
 
-    # magnetization_transfer(database)
-    # ivim(database)
-    # dti(database)
-    # dce(database)
+    pc(database)
     t2(database)
+    mt(database)
+    dti(database)
+    ivim(database)
+    dce(database)
+    
 
 

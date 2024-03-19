@@ -38,8 +38,13 @@ def single_subject(username, password, path, dataset):
     ## HARMONIZATION
 
     steps.rename_all_series(database)
-    steps.harmonize_all_series(database)
-
+    steps.harmonize_pc(database)
+    steps.harmonize_t2(database)
+    steps.harmonize_mt(database)
+    steps.harmonize_dti(database)
+    steps.harmonize_ivim(database)
+    steps.harmonize_dce(database)
+    
     ## SEGMENTATION
 
     steps.fetch_dl_models() # TODO
@@ -47,10 +52,11 @@ def single_subject(username, password, path, dataset):
     steps.segment_kidneys(database, unetr)
     steps.segment_renal_sinus_fat(database)
     steps.segment_aorta_on_dce(database)
+    steps.segment_renal_artery(database)
     steps.compute_whole_kidney_canvas(database)
     steps.export_segmentations(database) # TODO: all in one database
 
-    ## MODEL-DRIVEN MOTION CORRECTION
+    ## MOTION CORRECTION
 
     steps.mdreg_t1(database)
     steps.mdreg_t2(database)
@@ -98,17 +104,16 @@ def single_subject(username, password, path, dataset):
     steps.measure_asl_maps(database)
     steps.measure_dce_maps(database)
 
-
     # Cortex-Medulla # TODO
-
-
 
     # ROI analysis
 
     steps.roi_fit_T1(database)
+    steps.roi_fit_T2(database)
+    steps.roi_fit_T2star(database)
+    steps.roi_fit_PC(database)
+    steps.roi_fit_DCE(database)
 
-
-    # PC # TODO
         
     #upload images, logfile and csv to google drive
     #upload.main(pathScan, filename_log, filename_csv)

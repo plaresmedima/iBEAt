@@ -17,7 +17,7 @@ def launch():
     # Build iBEAt menu
     ibeat_menu = Menu('iBEAt')
     ibeat_menu.add(buttons.action_rename)
-    ibeat_menu.add(buttons.action_harmonize_seqs)
+    ibeat_menu.add(buttons.menu_harmonize)
     ibeat_menu.add(buttons.menu_segment)
     ibeat_menu.add(buttons.menu_mdreg)
     ibeat_menu.add(buttons.menu_map)

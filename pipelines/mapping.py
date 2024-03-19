@@ -79,20 +79,16 @@ def T2map(folder):
         if series is None:
             raise RuntimeError('Cannot perform T2 mapping: series ' + desc + 'does not exist. ')
 
-    # Load data
-    if series.Manufacturer == 'SIEMENS':
-        array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
-        echo_time = np.array([0,30,40,50,60,70,80,90,100,110,120])
-    else:
-        array, header = series.array(['SliceLocation', 'EchoTime'], pixels_first=True, first_volume=True)
-        echo_time = np.array(series.EchoTime)
+    # Load data 
+    array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
+    TI = series.values('InversionTime', dims=('SliceLocation', 'InversionTime'))
 
     # Calculate fit slice by slice
     fit = np.empty(array.shape)
     par = np.empty(array.shape[:3] + (3,) )
     for z in range(array.shape[2]):
         series.progress(z+1, array.shape[2], 'Fitting T2 model')
-        fit[:,:,z,:], par[:,:,z,:] = T2_mono_exp.fit(array[:,:,z,:], echo_time, xtol=1e-3, bounds=True)
+        fit[:,:,z,:], par[:,:,z,:] = T2_mono_exp.fit(array[:,:,z,:], TI[z,:], xtol=1e-3, bounds=True)
 
     # Derive error map
     ref = np.linalg.norm(array, axis=-1)

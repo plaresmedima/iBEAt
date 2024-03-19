@@ -72,7 +72,7 @@ def t1_maps(folder):
     return features(folder, seq, pars, units)
 
 def t2_maps(folder):
-    seq = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    seq = 'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
     pars = ['T2']
     units = ['msec']
     return features(folder, seq, pars, units)

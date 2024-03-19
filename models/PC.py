@@ -9,6 +9,7 @@ from skimage.filters import sato
 from skimage import morphology
 from scipy import ndimage as ndi
 from skimage.measure import regionprops
+from utilities.improc import region_grow_range
 
 
 def normalize(arr):
@@ -161,9 +162,8 @@ def find_closest_mask(phase_mask_velocity, sato_mask_velocity):
     return closest_mask
 
 
-def get_curve(phase_path, mask):
-    arr = np.load(os.path.join(common_path, phase_path))
-    arr = np.transpose(arr, (1, 0, 2))
+def get_curve(arr, mask, pixel_spacing=0.607, venc=120):
+    # arr = phase array
     blood_velocity_all = []
     blood_flow_rate_all = []
 
@@ -173,14 +173,13 @@ def get_curve(phase_path, mask):
         blood_velocity = []
         blood_flow_rate = []
         PC_labels, label_counts = np.unique(mask, return_counts=True)
-        for label, count in zip(np.unique(mask), label_counts):
+        for label, pixel_number in zip(np.unique(mask), label_counts):
             if label != 0:
                 pixel_values = phase_time_mask[mask == label]
                 mean_pixel_value = np.mean(pixel_values)
-                velocity_mean = abs((mean_pixel_value / 4096) * 120)  # velocity encode for Siemens
+                velocity_mean = abs((mean_pixel_value / 4096) * venc)  # velocity encode for Siemens cm/sec
                 blood_velocity.append(velocity_mean)
-                pixel_number = count
-                lumen_area = pixel_number * 0.607 * 0.607
+                lumen_area = pixel_number * pixel_spacing**2 # mm2
                 rbf = abs(velocity_mean * (lumen_area / 100) * 60)  # in ml/min
                 blood_flow_rate.append(rbf)
         blood_velocity_all.append(blood_velocity)
@@ -190,18 +189,28 @@ def get_curve(phase_path, mask):
     return vel, flow
 
 
-def create_mask_left(magnitude_path, velocity_path, phase_path, sigmas, sigma_canny):
-    arr_magnitude = np.load(os.path.join(common_path, magnitude_path))
-    arr_velocity = np.load(os.path.join(common_path, velocity_path))
-    arr_phase = np.load(os.path.join(common_path, phase_path))
+def create_mask_left(arr_velocity, arr_phase, sigmas_sato=range(1, 6, 1), sigma_canny=3.0):
 
-    arr_velocity_20_576_400, arr_velocity_20_576_400_mean, _ = transpose_data(arr_velocity)
-    arr_phase_20_576_400, arr_phase_20_576_400_mean, _ = transpose_data(arr_phase)
+    # (396, 576, 20)
 
-    arr_velocity_576_20_400 = np.transpose(arr_velocity_20_576_400, (1, 2, 0))
-    arr_velocity_sato = run_sato(arr_velocity_576_20_400, sigmas)
+    arr_velocity_20_576_400, _, _ = transpose_data(arr_velocity)
+    _, arr_phase_20_576_400_mean, _ = transpose_data(arr_phase)
+
+    # (20, 576, 396), (576, 396)
+
+    arr_velocity_576_20_400 = np.transpose(arr_velocity_20_576_400, (1, 2, 0)) 
+    
+    # (576, 396, 20)
+
+    arr_velocity_sato = run_sato(arr_velocity_576_20_400, sigmas_sato)
     arr_velocity_sato_20_576_400 = np.transpose(arr_velocity_sato, (2, 0, 1))
+
+    # (20, 576, 396)
+
     arr_sato_velocity_mean = np.mean(arr_velocity_sato_20_576_400, axis=0)
+
+    # (576, 396)
+
     arr_sato_velocity_mean_screen = screen(arr_sato_velocity_mean)
 
     arr_sato_velocity_mean_screen_nor = normalize(arr_sato_velocity_mean_screen)
@@ -214,21 +223,31 @@ def create_mask_left(magnitude_path, velocity_path, phase_path, sigmas, sigma_ca
     sato_mask_velocity = process_masks_by_sato(arr_sato_velocity_mean, holes_label_velocity_new)
     mask = find_closest_mask(phase_mask_velocity, sato_mask_velocity)
 
-    return mask
+    return mask.T
 
 
-def create_mask_right(magnitude_path, velocity_path, phase_path, sigmas, sigma_canny):
-    arr_magnitude = np.load(os.path.join(common_path, magnitude_path))
-    arr_velocity = np.load(os.path.join(common_path, velocity_path))
-    arr_phase = np.load(os.path.join(common_path, phase_path))
+def create_mask_right(arr_velocity, arr_phase, sigmas_sato=range(1, 6, 1), sigma_canny=3.0):
 
-    arr_velocity_20_576_400, arr_velocity_20_576_400_mean, _ = transpose_data(arr_velocity)
-    arr_phase_20_576_400, arr_phase_20_576_400_mean, _ = transpose_data(arr_phase)
+    # (396, 576, 20)
 
-    arr_velocity_576_20_400 = np.transpose(arr_velocity_20_576_400, (1, 2, 0))
-    arr_velocity_sato = run_sato(arr_velocity_576_20_400, sigmas)
+    arr_velocity_20_576_400, _, _ = transpose_data(arr_velocity)
+    _, arr_phase_20_576_400_mean, _ = transpose_data(arr_phase)
+
+    # (20, 576, 396), (576, 396)
+
+    arr_velocity_576_20_400 = np.transpose(arr_velocity_20_576_400, (1, 2, 0)) 
+    
+    # (576, 396, 20)
+
+    arr_velocity_sato = run_sato(arr_velocity_576_20_400, sigmas_sato)
     arr_velocity_sato_20_576_400 = np.transpose(arr_velocity_sato, (2, 0, 1))
+
+    # (20, 576, 396)
+
     arr_sato_velocity_mean = np.mean(arr_velocity_sato_20_576_400, axis=0)
+
+    # (576, 396)
+
     arr_sato_velocity_mean_screen = screen(arr_sato_velocity_mean)
 
     arr_sato_velocity_mean_screen_nor = normalize(arr_sato_velocity_mean_screen)
@@ -241,37 +260,99 @@ def create_mask_right(magnitude_path, velocity_path, phase_path, sigmas, sigma_c
     sato_mask_velocity = process_masks_by_sato(arr_sato_velocity_mean, holes_label_velocity_new)
     mask = find_closest_mask(phase_mask_velocity, sato_mask_velocity)
 
-    return mask
+    return mask.T
 
 
-# This is the path for patient iBE-3128-007
-common_path = "PATH//iBE_3128//iBE-3128-007"
+def params(time, vel, flow):
+    v_mean = np.mean(vel)
+    psv = np.amax(vel) # peak systolic velocity
+    edv = np.amin(vel) # end diastolic velocity
+    ri = (psv-edv)/psv # resistive index
+    pi = (psv-edv)/v_mean # pulsatility index
+    f_mean = np.mean(flow)
+    psf = np.amax(flow) # peak systolic flow
+    edf = np.amin(flow) # end diastolic flow
+    pif = (psf-edf)/f_mean
+    return (
+        v_mean,
+        psv,
+        edv,
+        ri,
+        pi,
+        f_mean,
+        psf,
+        edf,
+        pif,
+    )
 
-# Define sigma values for ridge operator
-sigmas_to_sato = [(1, 6, 1)]
+def pars():
+    return (
+        'Mean velocity',
+        'Peak systolic velocity',
+        'End diastolic velocity',
+        'Resistive index',
+        'Pulsatility index',
+        'Mean blood flow',
+        'Peak systolic flow',
+        'End diastolic flow',
+        'Flow pulsatility index',
+    )
 
-# Define sigma values for Canny edge detector
-sigmas_to_canny = [3.0]
+def units():
+    return (
+        'cm/sec',
+        'cm/sec',
+        'cm/sec',
+        '',
+        '',
+        'mL/min',
+        'mL/min',
+        'mL/min',
+        '',
+    )
 
-# Function 1 for left
-mask = create_mask_left('PC_RenalArtery_Left_EcgTrig_fb_120.npy',
-                        'PC_RenalArtery_Left_EcgTrig_fb_120_MAG.npy',
-                        'PC_RenalArtery_Left_EcgTrig_fb_120_P.npy',
-                        sigmas_to_sato,
-                        sigmas_to_canny)
 
-# Function 2
-vel_left, rbf_left = get_curve('PC_RenalArtery_Left_EcgTrig_fb_120_P.npy', mask)
+def curve(vel, mask, pixel_spacing=0.607):
+    nt = vel.shape[-1]
+    velocity = np.zeros(nt)
+    flow = np.zeros(nt)
+    for t in range (nt):
+        vt = vel[:,:,t][mask>0.5]
+        velocity[t] = np.amax(vt) # cm/sec
+        flow[t] = np.sum(vt) * pixel_spacing**2 * 60/100 # mL/min
+    return velocity, flow
 
-# Function 1 for right
-mask = create_mask_right('PC_RenalArtery_Right_EcgTrig_fb_120.npy',
-                         'PC_RenalArtery_Right_EcgTrig_fb_120_MAG.npy',
-                         'PC_RenalArtery_Right_EcgTrig_fb_120_P.npy',
-                         sigmas_to_sato,
-                         sigmas_to_canny)
 
-# Function 2
-vel_right, rbf_right = get_curve('PC_RenalArtery_Right_EcgTrig_fb_120_P.npy', mask)
+
+def renal_artery_mask(magn, vel, pixel_spacing=0.607, vel_min=30):
+    width = 5 # cm
+
+    # Find maximum over the cardiac cycle
+    magn = np.amax(magn, axis=-1)
+    vel = np.amax(vel, axis=-1)
+    
+    # Find the pixel with maximum magnitude 
+    # in a square with given width around the center
+    xc, yc = int(magn.shape[0]/2), int(magn.shape[1]/2)
+    width = int(width*10/pixel_spacing)
+    magn_max = -1
+    for x in range(xc-width, xc+width):
+        for y in range(yc-width, yc+width):
+            if magn[x,y] > magn_max:
+                magn_max = magn[x,y]
+                p_max = [x,y]
+
+    # Grow region from pixel with maximum magnitude
+    # select pixels with max velocity > vel_min cm/sec
+    # return mask array
+    return region_grow_range(vel, [p_max], vel_min, 10*vel[p_max[0], p_max[1]])
+
+
+
+
+
+
+
 
 
 

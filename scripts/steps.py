@@ -30,18 +30,65 @@ def rename_all_series(database):
         database.log("Renaming was NOT completed; error: " + str(e))  
 
 
-def harmonize_all_series(database):
+def harmonize_pc(database):
     start_time = time.time()
-    database.log("Harmonizing series has started!")
+    database.log("Harmonizing PC series has started!")
     try:
-        harmonize.all_series(database)
-        database.log("Harmonizing series was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        harmonize.pc(database)
+        database.log("Harmonizing PC series was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e:
-        database.log("Harmonizing series was NOT completed; error: " + str(e)) 
+        database.log("Harmonizing PC series was NOT completed; error: " + str(e)) 
 
+def harmonize_t2(database):
+    start_time = time.time()
+    database.log("Harmonizing T2 series has started!")
+    try:
+        harmonize.t2(database)
+        database.log("Harmonizing T2 series was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing T2 series was NOT completed; error: " + str(e)) 
 
+def harmonize_mt(database):
+    start_time = time.time()
+    database.log("Harmonizing MT series has started!")
+    try:
+        harmonize.mt(database)
+        database.log("Harmonizing MT series was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing MT series was NOT completed; error: " + str(e)) 
 
+def harmonize_dti(database):
+    start_time = time.time()
+    database.log("Harmonizing DTI series has started!")
+    try:
+        harmonize.dti(database)
+        database.log("Harmonizing DTI series was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing DTI series was NOT completed; error: " + str(e)) 
+
+def harmonize_ivim(database):
+    start_time = time.time()
+    database.log("Harmonizing IVIM series has started!")
+    try:
+        harmonize.ivim(database)
+        database.log("Harmonizing IVIM series was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing IVIM series was NOT completed; error: " + str(e)) 
+
+def harmonize_dce(database):
+    start_time = time.time()
+    database.log("Harmonizing DCE series has started!")
+    try:
+        harmonize.dce(database)
+        database.log("Harmonizing DCE series was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing DCE series was NOT completed; error: " + str(e)) 
 
 
 ## SEGMENTATION
@@ -104,6 +151,17 @@ def segment_aorta_on_dce(database):
         database.save()
     except Exception as e:
         database.log("Aorta segmentation was NOT completed; error: "+str(e))
+
+
+def segment_renal_artery(database):
+    start_time = time.time()
+    database.log("Renal artery segmentation has started")
+    try:
+        segment.renal_artery(database)
+        database.log("Renal artery segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Renal artery segmentation was NOT completed; error: "+str(e))
 
 
 def compute_whole_kidney_canvas(database):
@@ -542,3 +600,39 @@ def roi_fit_T1(database):
         database.log("ROI analysis for T1 was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("ROI analysis for T1 was NOT completed; error: "+str(e))
+
+def roi_fit_T2(database):
+    start_time = time.time()
+    database.log("ROI analysis for T2 has started")
+    try:
+        roi_fit.T2(database)
+        database.log("ROI analysis for T2 was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for T2 was NOT completed; error: "+str(e))
+
+def roi_fit_T2star(database):
+    start_time = time.time()
+    database.log("ROI analysis for T2* has started")
+    try:
+        roi_fit.T2(database)
+        database.log("ROI analysis for T2* was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for T2* was NOT completed; error: "+str(e))
+
+def roi_fit_PC(database):
+    start_time = time.time()
+    database.log("ROI analysis for PC has started")
+    try:
+        roi_fit.PC_roi(database)
+        database.log("ROI analysis for PC was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for PC was NOT completed; error: "+str(e))
+
+def roi_fit_DCE(database):
+    start_time = time.time()
+    database.log("ROI analysis for DCE has started")
+    try:
+        roi_fit.dce(database)
+        database.log("ROI analysis for DCE was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for DCE was NOT completed; error: "+str(e))

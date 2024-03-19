@@ -1,6 +1,6 @@
 import datetime
 from wezel.gui import Action, Menu
-from wezel.displays import TableDisplay
+from wezel.displays import TableDisplay, MatplotLibDisplay
 from wezel.plugins.pyvista import SurfaceDisplay
 
 
@@ -41,15 +41,63 @@ def rename_all_series(app):
     rename.check(folder)
     app.refresh()
 
-def harmonize_sequence_parameters(app):
+def harmonize_pc(app):
     folder = app.database()
-    harmonize.all_series(folder)
+    harmonize.pc(folder)
     app.refresh()
 
+def harmonize_t2(app):
+    folder = app.database()
+    harmonize.t2(folder)
+    app.refresh()
+
+def harmonize_mt(app):
+    folder = app.database()
+    harmonize.mt(folder)
+    app.refresh()
+
+def harmonize_dti(app):
+    folder = app.database()
+    harmonize.dti(folder)
+    app.refresh()
+
+def harmonize_ivim(app):
+    folder = app.database()
+    harmonize.ivim(folder)
+    app.refresh()
+
+def harmonize_dce(app):
+    folder = app.database()
+    harmonize.dce(folder)
+    app.refresh()
+
+def harmonize_all(app):
+    harmonize_pc(app) 
+    harmonize_t2(app)
+    harmonize_mt(app)
+    harmonize_dti(app)
+    harmonize_ivim(app)
+    harmonize_dce(app)
+
 action_rename = Action("Rename series..", on_clicked=rename_all_series, is_clickable=_if_a_database_is_open)
-action_harmonize_seqs = Action("Harmonize series..", on_clicked=harmonize_sequence_parameters, is_clickable=_if_a_database_is_open)
+action_harmonize_pc = Action("Harmonize PC..", on_clicked=harmonize_pc, is_clickable=_if_a_database_is_open)
+action_harmonize_t2 = Action("Harmonize T2..", on_clicked=harmonize_t2, is_clickable=_if_a_database_is_open)
+action_harmonize_mt = Action("Harmonize MT..", on_clicked=harmonize_mt, is_clickable=_if_a_database_is_open)
+action_harmonize_dti = Action("Harmonize DTI..", on_clicked=harmonize_dti, is_clickable=_if_a_database_is_open)
+action_harmonize_ivim = Action("Harmonize IVIM..", on_clicked=harmonize_ivim, is_clickable=_if_a_database_is_open)
+action_harmonize_dce = Action("Harmonize DCE..", on_clicked=harmonize_dce, is_clickable=_if_a_database_is_open)
+action_harmonize_all = Action("Harmonize all..", on_clicked=harmonize_all, is_clickable=_if_a_database_is_open)
 
 
+menu_harmonize = Menu('Harmonize..')
+menu_harmonize.add(action_harmonize_pc)
+menu_harmonize.add(action_harmonize_t2)
+menu_harmonize.add(action_harmonize_mt)
+menu_harmonize.add(action_harmonize_dti)
+menu_harmonize.add(action_harmonize_ivim)
+menu_harmonize.add(action_harmonize_dce)
+menu_harmonize.add_separator()
+menu_harmonize.add(action_harmonize_all)
 
 
 ## SEGMENTATION
@@ -86,6 +134,13 @@ def segment_aorta_on_dce(app):
     app.display(aorta_mask)
     app.refresh()
 
+def segment_renal_artery(app):
+    database = app.database()
+    ra_masks = segment.renal_artery(database)
+    for mask in ra_masks:
+        app.display(mask)
+    app.refresh()
+
 def whole_kidney_canvas(app):
     folder = app.database()
     clusters = segment.compute_whole_kidney_canvas(folder)
@@ -110,6 +165,7 @@ def all_segmentation_steps(app):
     segment_kidneys(app)
     segment_renal_sinus_fat(app)
     segment_aorta_on_dce(app)
+    segment_renal_artery(app)
     whole_kidney_canvas(app)
     export_segmentations(app)
 
@@ -120,6 +176,7 @@ action_fetch_kidney_masks = Action("Fetch kidney masks..", on_clicked=fetch_kidn
 action_segment_kidneys = Action("Auto-segment kidneys...", on_clicked=segment_kidneys, is_clickable=_if_a_database_is_open)
 action_renal_sinus_fat = Action("Segment renal sinus fat..", on_clicked=segment_renal_sinus_fat, is_clickable=_if_a_database_is_open)
 action_aorta_on_dce = Action("Segment aorta on DCE..", on_clicked=segment_aorta_on_dce, is_clickable=_if_a_database_is_open)
+action_renal_artery = Action("Segment renal artery on PC..", on_clicked=segment_renal_artery, is_clickable=_if_a_database_is_open)
 action_whole_kidney_canvas = Action("Calculate segmentation canvas..", on_clicked=whole_kidney_canvas, is_clickable=_if_a_database_is_open)
 action_export_kidney_segmentations = Action("Export segmentations..", on_clicked=export_segmentations, is_clickable=_if_a_database_is_open)
 
@@ -129,6 +186,7 @@ menu_segment.add(action_fetch_kidney_masks)
 menu_segment.add(action_segment_kidneys)
 menu_segment.add(action_renal_sinus_fat)
 menu_segment.add(action_aorta_on_dce)
+menu_segment.add(action_renal_artery)
 menu_segment.add_separator()
 menu_segment.add(action_whole_kidney_canvas)
 menu_segment.add_separator()
@@ -564,25 +622,64 @@ menu_measure.add(action_all_measurements)
 
 def roi_fit_T1(app):
     database = app.database()
-    fig = roi_fit.T1(database)
-    # Launch plot display
+    figs = roi_fit.T1(database)
+    for fig in figs:
+        app.addWidget(MatplotLibDisplay(fig), 'T1 ROI analysis')
+    app.refresh()
+
+def roi_fit_T2(app):
+    database = app.database()
+    figs = roi_fit.T2(database)
+    for fig in figs:
+        app.addWidget(MatplotLibDisplay(fig), 'T2 ROI analysis')
+    app.refresh()
+
+def roi_fit_T2star(app):
+    database = app.database()
+    figs = roi_fit.T2star(database)
+    for fig in figs:
+        app.addWidget(MatplotLibDisplay(fig), 'T2* ROI analysis')
+    app.refresh()
+
+def roi_fit_PC(app):
+    database = app.database()
+    figs = roi_fit.PC_roi(database)
+    for fig in figs:
+        app.addWidget(MatplotLibDisplay(fig), 'PC analysis')
+    app.refresh()
+
+def roi_fit_DCE(app):
+    database = app.database()
+    figs = roi_fit.dce(database)
+    for fig in figs:
+        app.addWidget(MatplotLibDisplay(fig), 'DCE ROI analysis')
     app.refresh()
 
 
 def roi_fit_all(app):
     roi_fit_T1(app)
+    roi_fit_T2(app)
+    roi_fit_T2star(app)
+    roi_fit_PC(app)
+    roi_fit_DCE(app)
 
 
 action_roi_fit_all = Action("ALL ROI fits..", on_clicked=roi_fit_all, is_clickable=_if_a_database_is_open)
 action_roi_fit_t1 = Action("ROI fit T1..", on_clicked=roi_fit_T1, is_clickable=_if_a_database_is_open)
+action_roi_fit_t2 = Action("ROI fit T2..", on_clicked=roi_fit_T2, is_clickable=_if_a_database_is_open)
+action_roi_fit_t2star = Action("ROI fit T2*..", on_clicked=roi_fit_T2star, is_clickable=_if_a_database_is_open)
+action_roi_fit_pc = Action("ROI fit PC..", on_clicked=roi_fit_PC, is_clickable=_if_a_database_is_open)
+action_roi_fit_dce = Action("ROI fit DCE..", on_clicked=roi_fit_DCE, is_clickable=_if_a_database_is_open)
 
 
 menu_roifit = Menu('ROI analysis..')
 menu_roifit.add(action_roi_fit_t1)
+menu_roifit.add(action_roi_fit_t2)
+menu_roifit.add(action_roi_fit_t2star)
+menu_roifit.add(action_roi_fit_pc)
+menu_roifit.add(action_roi_fit_dce)
 menu_roifit.add_separator()
 menu_roifit.add(action_roi_fit_all)
-
-
 
 
 

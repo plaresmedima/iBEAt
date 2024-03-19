@@ -12,11 +12,11 @@
 # Install requirements
 # pip install -r requirements.txt
 
-# Install editable versions of requirements under development
+# Install editable versions of requirements under development, such as:
 # pip install -e C:\Users\steve\Dropbox\Software\QIB-Sheffield\dbdicom
 # pip install -e C:\Users\steve\Dropbox\Software\QIB-Sheffield\wezel
 # pip install -e C:\Users\steve\Dropbox\Software\QIB-Sheffield\mdreg
-# pip install -e C:\Users\steve\Dropbox\Software\QIB-Sheffield\iBEAt\MONAI
+# pip install -e C:\Users\steve\Dropbox\Software\dcmri
 
 # to build an executable:
 # -----------------------
