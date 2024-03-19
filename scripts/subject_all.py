@@ -1,40 +1,27 @@
 import os
 import datetime
 import dbdicom as db
-import pandas as pd
 
-import pipelines.rename as rename
-import pipelines.mdr as mdr
-import pipelines.mapping as map
-import pipelines.export_ROI_stats as export_ROIs
-import pipelines.apply_AI_segmentation as AI_segmentation
-import pipelines.volumetrics as volumetrics
-import pipelines.DCE_analysis as DCE_analysis
 
 import scripts.upload as upload
-import scripts.QC_rename as check_rename
-import scripts.QC_mdr as check_mdr
-import scripts.QC_masks as check_masks
-import scripts.QC_mapping as check_maps
-from scripts import xnat
+from scripts import xnat, steps
+
 
 def single_subject(username, password, path, dataset):
     
     #Import data from XNAT
     if isinstance(dataset,str) and '_' in dataset:
         ExperimentName = xnat.main(username, password, path, SpecificDataset=dataset)
-        pathScan = path + "//" + ExperimentName
     elif len(dataset)==3:
         ExperimentName = xnat.main(username, password, path, dataset)
-        pathScan = path + "//" + ExperimentName
     elif dataset == 'load':
         ExperimentName = os.path.basename(path)
-        pathScan = path
     
+    pathScan = os.path.join(path, ExperimentName)
     filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
     
-    row_headers = ['PatientID', 'SeriesDescription', 'Region of Interest', 'Parameter', 'Value', 'Unit']
-    master_table = pd.DataFrame(columns=row_headers)
+    # THIS NEEDS ANOTHER APPROACH!!!
+    unetr = 'C:\\Users\\steve\\Dropbox\\Data\\dl_models\\UNETR_kidneys_v1.pth'
 
     #Available CPU cores
     try: 
@@ -42,62 +29,93 @@ def single_subject(username, password, path, dataset):
     except: 
         UsedCores = int(os.cpu_count())
 
-    folder = db.database(path=pathScan)
-    folder.set_log(filename_log)
-    folder.log("Analysis of " + pathScan.split('//')[-1] + " has started!")
-    folder.log("CPU cores: " + str(UsedCores))
+    database = db.database(path=pathScan)
+    database.set_log(filename_log)
+    database.log("Analysis of " + pathScan.split('//')[-1] + " has started!")
+    database.log("CPU cores: " + str(UsedCores))
     
-    #Name standardization 
-    try:
-        print("starting renaming")
-        rename.main(folder)
-        check_rename.main(folder)
-    except Exception as e:
-        folder.log("Renaming was NOT completed; error: " + str(e))
 
-    #Apply motion correction using MDR
-    try:
-        print("starting mdr")
-        mdr.main(folder)
-        check_mdr.main(folder)
-    except Exception as e:
-        folder.log("Renaming was NOT completed; error: " + str(e))
+    ## HARMONIZATION
 
-    #Apply UNETR to segment right/left kidney
-    try:
-        print("starting kidney segmentation")
-        master_table = AI_segmentation.main(master_table,folder)
-        check_masks.main(folder)
-    except Exception as e:
-        folder.log("Kidney segmentation was NOT completed; error: " + str(e))
-
-    #Custom modelling
-    try:
-        print("staring mapping")
-        map.main(folder)
-        check_maps.main(folder)
-    except Exception as e:
-        folder.log("Modelling was NOT completed; error: " + str(e))
-
-    #Custom DCE
-    try:
-        print("staring DCE Analysis")
-        DCE_analysis.main(folder,master_table)
-    except Exception as e:
-        folder.log("DCE Analysis was NOT completed; error: " + str(e))
-
-
-    #Generate masks using unetr, apply alignment, extract biomarkers to a .csv
-    try:
-        print('starting parameter extraction')
-        master_table = export_ROIs.main(master_table, folder)
-    except Exception as e:
-        folder.log("Parameter extraction was NOT completed; error: " + str(e))
-
-
-    master_table['Biomarker'] = master_table['SeriesDescription'] + '-' + master_table['Parameter']
-    filename_csv = os.path.join(pathScan, datetime.datetime.now().strftime('%Y%m%d_%H%M_') + ExperimentName+'.csv')   
-    master_table.to_csv(filename_csv, index=False)
+    steps.rename_all_series(database)
+    steps.harmonize_pc(database)
+    steps.harmonize_t2(database)
+    steps.harmonize_mt(database)
+    steps.harmonize_dti(database)
+    steps.harmonize_ivim(database)
+    steps.harmonize_dce(database)
     
+    ## SEGMENTATION
+
+    steps.fetch_dl_models() # TODO
+    steps.fetch_kidney_masks(database) # TODO
+    steps.segment_kidneys(database, unetr)
+    steps.segment_renal_sinus_fat(database)
+    steps.segment_aorta_on_dce(database)
+    steps.segment_renal_artery(database)
+    steps.compute_whole_kidney_canvas(database)
+    steps.export_segmentations(database) # TODO: all in one database
+
+    ## MOTION CORRECTION
+
+    steps.mdreg_t1(database)
+    steps.mdreg_t2(database)
+    steps.mdreg_t2star(database)
+    steps.mdreg_mt(database)
+    steps.mdreg_ivim(database)
+    steps.mdreg_dti(database)
+    steps.mdreg_dce(database)
+    steps.export_mdreg(database)
+
+    # MAPPING
+
+    steps.map_T1(database)
+    steps.map_T2(database)
+    steps.map_T1T2(database)
+    steps.map_T2star(database)
+    steps.map_MT(database)
+    steps.map_IVIM(database)
+    steps.map_DTI(database)
+    steps.map_DCE(database)
+    steps.export_mapping(database)
+
+    # ALIGNMENT
+
+    steps.align_T1(database)
+    steps.align_T2(database)
+    steps.align_T2star(database)
+    steps.align_MT(database)
+    steps.align_IVIM(database)
+    steps.align_DTI(database)
+    steps.align_DCE(database)
+    steps.align_ASL(database)
+    steps.export_alignment(database)
+
+    # MEASUREMENT
+
+    steps.measure_kidney_volumetrics(database)
+    steps.measure_sinus_fat_volumetrics(database)
+    steps.measure_t1_maps(database)
+    steps.measure_t2_maps(database)
+    steps.measure_t2star_maps(database)
+    steps.measure_mt_maps(database)
+    steps.measure_ivim_maps(database)
+    steps.measure_dti_maps(database)
+    steps.measure_asl_maps(database)
+    steps.measure_dce_maps(database)
+
+    # Cortex-Medulla # TODO
+
+    # ROI analysis
+
+    steps.roi_fit_T1(database)
+    steps.roi_fit_T2(database)
+    steps.roi_fit_T2star(database)
+    steps.roi_fit_PC(database)
+    steps.roi_fit_DCE(database)
+
+        
     #upload images, logfile and csv to google drive
-    upload.main(pathScan, filename_log,filename_csv)
+    #upload.main(pathScan, filename_log, filename_csv)
+    filename_csv = os.path.join(database.path() + '_output', 'biomarkers.csv')
+    upload.main(pathScan, filename_log, filename_csv)

@@ -37,4 +37,4 @@ if __name__ == '__main__':
     #########################################################################################################################################
 
     #function responsable for ibeat analysis of a single subject (processed images, logs, and csv results are exported to Google Drive)
-      single_subject(username, password, path, dataset)
+    single_subject(username, password, path, dataset)

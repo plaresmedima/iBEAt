@@ -1,40 +1,40 @@
-import os
-import time
 
-from dbdicom.wrappers import skimage, scipy, dipy, sklearn
+from dbdicom.extensions import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
-import mapping.UNETR_kidneys_v1 as unetr
+from models import DCE_aorta, PC, UNETR_kidneys_v1
+
+
 
 export_study = 'Segmentations'
 
-def segment_kidneys(database, weights):
 
-    start_time = time.time()
-    database.log('Kidney segmentation has started.')
+def kidneys(database, weights):
 
     # Get weights file and check if valid 
     # if not os.path.isfile(weights):
     #     msg = 'The weights file ' + weights + ' has not been found. \n'
-    #     msg += 'Please check that the file with model weights is in the folder, and is named ' + unetr.filename
+    #     msg += 'Please check that the file with model weights is in the folder, and is named ' + UNETR_kidneys_v1.filename
     #     database.dialog.information(msg)
     #     return
 
+    database.message('Segmenting kidneys. This could take a few minutes. Please be patient..')
+
     # Get appropriate series and check if valid
-    series = database.series(SeriesDescription=unetr.trained_on)
-    sery, study = input_series(database, unetr.trained_on, export_study)
+    #series = database.series(SeriesDescription=UNETR_kidneys_v1.trained_on)
+    sery, study = input_series(database, UNETR_kidneys_v1.trained_on, export_study)
     if sery is None:
         return    
 
     # Loop over the series and create the mask
-    desc = sery.instance().SeriesDescription
+    #desc = sery.instance().SeriesDescription
     array, header = sery.array(['SliceLocation'], pixels_first=True, first_volume=True)
 
     # Calculate predictions 
-    masks = unetr.apply(array, weights)
-    left_kidney, right_kidney = unetr.kidney_masks(masks)
+    masks = UNETR_kidneys_v1.apply(array, weights)
+    left_kidney, right_kidney = UNETR_kidneys_v1.kidney_masks(masks)
 
     # Save UNETR output
-    result = study.new_child(SeriesDescription = 'UNETR kidneys v1')
+    result = study.new_child(SeriesDescription = 'BK')
     result.set_array(masks, header, pixels_first=True)
     # result[['WindowCenter','WindowWidth']] = [1.0, 2.0]
 
@@ -48,141 +48,103 @@ def segment_kidneys(database, weights):
     right.set_array(right_kidney, header, pixels_first=True)
     # right[['WindowCenter','WindowWidth']] = [1.0, 2.0]
 
-    # kidneys = [left, right]
-    # features = skimage.volume_features(kidneys)
+    return left, right
 
-    database.save()
 
-    database.log("Kidney segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+def renal_sinus_fat(folder):
+
+    fat = folder.series(SeriesDescription='T1w_abdomen_dixon_cor_bh_fat_post_contrast')
+    lk  = folder.series(SeriesDescription='LK')
+    rk  = folder.series(SeriesDescription='RK')
+
+    kidneys = lk+rk
+    sf_series = []
+
+    if len(kidneys)==[]:
+        msg = 'Cannot perform renal sinus fat segmentation: no kidney masks are available.'
+        raise RuntimeError(msg)
+
+    fat_image_masked, fat_mask = dipy.median_otsu(fat[0], median_radius=1, numpass=1)
+
+    for kidney in kidneys:
+        kidney_hull = skimage.convex_hull_image_3d(kidney)
+        sinus_fat = scipy.image_calculator(fat_mask, kidney_hull, 'series 1 * series 2', integer=True)
+        #sinus_fat_open = skimage.opening_3d(sinus_fat)
+        sinus_fat_largest = scipy.extract_largest_cluster_3d(sinus_fat)
+        sinus_fat_largest.SeriesDescription = kidney.instance().SeriesDescription + 'SF'
+        sf_series.append(sinus_fat_largest)
+        # Cleanup
+        kidney_hull.remove()
+        #sinus.remove()
+        sinus_fat.remove()
+    
+    fat_image_masked.remove()
+    fat_mask.remove()   
+
+    return sf_series
+
 
 def compute_whole_kidney_canvas(database):
-    start_time = time.time()
-    database.log('Sequential K-means has started.')
     series_desc = [
         'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
         'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
     ] 
-    # series_desc = [
-    #     'T1w_abdomen_dixon_cor_bh_fat',
-    #     'T1w_abdomen_dixon_cor_bh_out_phase'
-    # ] 
-
     features, study = input_series(database, series_desc, export_study)
     if features is None:
-        return None
+        return
     clusters = sklearn.sequential_kmeans(features, n_clusters=2, multiple_series=True)
     for c in clusters:
         c.move_to(study)
-    database.log("Sequential kmeans was completed --- %s seconds ---" % (int(time.time() - start_time)))
     return clusters
 
 
-def export_whole_kidney_canvas(folder):
-    start_time = time.time()
-    folder.log("Export segmentation results has started")
+def aorta_on_dce(folder):
 
-    resultsFolder = 'segmentation_canvas'
-
-    path = folder.path()
-    resultsPath = os.path.join(path,resultsFolder)
-
-    os.mkdir(resultsPath)
-
-    fat_desc        = 'T1w_abdomen_dixon_cor_bh_fat_post_contrast' 
-    out_desc        = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
-    in_desc         = 'T1w_abdomen_dixon_cor_bh_in_phase_post_contrast'
-    water_desc      = 'T1w_abdomen_dixon_cor_bh_water_post_contrast'
-    k_means1_desc   = 'KMeans cluster 1'
-    k_means2_desc   = 'KMeans cluster 2'
-
-    fat             = folder.series(SeriesDescription=fat_desc)
-    out_ph          = folder.series(SeriesDescription=out_desc)
-    in_ph           = folder.series(SeriesDescription=in_desc)
-    water           = folder.series(SeriesDescription=water_desc)
-    k_means1        = folder.series(SeriesDescription=k_means1_desc)
-    k_means2        = folder.series(SeriesDescription=k_means2_desc)
-
-    exportToFolder = fat + out_ph + in_ph + water + k_means1 + k_means2
-    
-    for series in exportToFolder:
-        print(series.SeriesDescription)    
-        series.export_as_dicom(resultsPath)
-
-    folder.log("Export segmentation results was completed --- %s seconds ---" % (int(time.time() - start_time)))
-
-def export_masks(folder):
-    start_time = time.time()
-    folder.log("Export segmentation results has started")
-
-    path = folder.path()
-
-    resultsFolder = 'masks'
-    resultsPath = os.path.join(path,resultsFolder)
-
-    os.mkdir(resultsPath)
-
-    lk_mask        = 'LK' 
-    rk_mask        = 'RK'
-    fat_desc        = 'T1w_abdomen_dixon_cor_bh_fat_post_contrast' 
-    out_desc        = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
-    in_desc         = 'T1w_abdomen_dixon_cor_bh_in_phase_post_contrast'
-    water_desc      = 'T1w_abdomen_dixon_cor_bh_water_post_contrast'
-
-
-    LK             = folder.series(SeriesDescription=lk_mask)
-    RK             = folder.series(SeriesDescription=rk_mask)
-    fat            = folder.series(SeriesDescription=fat_desc)
-    out_ph         = folder.series(SeriesDescription=out_desc)
-    in_ph          = folder.series(SeriesDescription=in_desc)
-    water          = folder.series(SeriesDescription=water_desc)
-
-    exportToFolder = LK + RK + fat + out_ph + in_ph + water
-    
-    for series in exportToFolder:
-        print(series.SeriesDescription)    
-        series.export_as_dicom(resultsPath)
-
-    folder.log("Export maks results was completed --- %s seconds ---" % (int(time.time() - start_time)))
-
-
-def compute_renal_sinus_fat(database):
-    start_time = time.time()
-    database.log("Compute renal sinus fat has started")
-    series_desc = [
-        'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
-        'LK', 'RK',
-    ]
-    series, study = input_series(database, series_desc, export_study)
+    desc = "DCE_aorta_axial_fb"
+    series, study = input_series(folder, desc, export_study)
     if series is None:
-        return None, None
-    fat_image = series[0]
-    kidneys = series[1:]
+        raise RuntimeError('Cannot create DCE-AIF mask: series ' + desc + ' does not exist. ')
 
-    sf_series = []
-    fat_image_masked, fat_mask = dipy.median_otsu(fat_image, median_radius=1, numpass=1)
+    axial, header = series.array(['AcquisitionTime'], pixels_first=True, first_volume=True)
 
-    for kidney in kidneys:
+    aif_mask = DCE_aorta.segment(axial)
 
-        # Pipeline calculation
-        kidney_hull = skimage.convex_hull_image_3d(kidney)
-        sinus_fat = scipy.image_calculator(fat_mask, kidney_hull, 'series 1 * series 2', integer=True)
-        sinus_fat_open = skimage.opening_3d(sinus_fat)
-        sinus_fat_largest = scipy.extract_largest_cluster_3d(sinus_fat_open)
-        sinus_fat_largest.SeriesDescription = kidney.instance().SeriesDescription + 'SF'
+    aif_mask_series = study.new_series(SeriesDescription='DCE-AIF')
+    aif_mask_series.set_array(aif_mask, header[0], pixels_first=True)
 
-        # Remove intermediate results and append
-        kidney_hull.remove()
-        sinus_fat.remove()
-        sinus_fat_open.remove()
-        sinus_fat_largest.move_to(study)
-        sf_series.append(sinus_fat_largest)
+    return aif_mask_series
 
-    fat_image_masked.remove()
-    fat_mask.remove()
 
-    # Collect features & display
-    df = skimage.volume_features(sf_series)
+def renal_artery(folder):
 
-    database.log("Renal sinus fat computation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    desc = [
+        'PC_RenalArtery_Right_EcgTrig_fb_120_magnitude',
+        'PC_RenalArtery_Right_EcgTrig_fb_120_velocity',
+        'PC_RenalArtery_Left_EcgTrig_fb_120_magnitude',
+        'PC_RenalArtery_Left_EcgTrig_fb_120_velocity',
+    ]
+    series, study = input_series(folder, desc, export_study)
+    if series is None:
+        raise RuntimeError('Cannot create PC-RA mask: some series are missing.')
+    
+    dims = ['InstanceNumber']
+    dx = series[0].values('PixelSpacing')[0][0]
 
-    return sf_series, df
+    # Calculate right artery mask:
+    mag, mag_hdr_right = series[0].array(dims, pixels_first=True, first_volume=True)
+    vel, vel_hdr_right = series[1].array(dims, pixels_first=True, first_volume=True) 
+    right_mask = PC.renal_artery_mask(mag, -vel, pixel_spacing=dx)
+
+    # Calculate left artery mask:
+    mag, mag_hdr_left = series[2].array(dims, pixels_first=True, first_volume=True)
+    vel, vel_hdr_left = series[3].array(dims, pixels_first=True, first_volume=True)
+    left_mask = PC.renal_artery_mask(mag, vel, pixel_spacing=dx)
+
+    # Save as DICOM
+    right_mask_series = study.new_series(SeriesDescription='PC-RRA')
+    right_mask_series.set_array(right_mask, mag_hdr_right[0], pixels_first=True)
+
+    left_mask_series = study.new_series(SeriesDescription='PC-LRA')
+    left_mask_series.set_array(left_mask, mag_hdr_left[0], pixels_first=True)
+
+    return right_mask_series, left_mask_series

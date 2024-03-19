@@ -17,7 +17,7 @@ import os
 import datetime
 import dbdicom as db
 
-import pipelines.mapping as map
+import models as map
 import pipelines.export_ROI_stats as export_ROIs
 import zipfile
 import shutil
@@ -80,11 +80,6 @@ if __name__ == '__main__':
         folder.set_log(filename_log)
         folder.log("Analysis of " + pathScan.split('//')[-1] + " has started!")
         folder.log("CPU cores: " + str(UsedCores))
-        
-        # try:
-        #     map.main(folder)
-        # except Exception as e:
-        #     folder.log("Modelling was NOT completed; error: " + str(e))
 
         try:
             export_ROIs.main(folder,ExperimentName)

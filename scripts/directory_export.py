@@ -6,7 +6,7 @@ The result is saved in a new directory along with a copy of the out of phase ima
 
 import os
 import dbdicom as db
-from dbdicom.wrappers import scipy
+from dbdicom.extensions import scipy
 
 #source_dir = 'C://Users//UOS//Desktop//13_04_2023_masks_original'
 #source_dir = 'C://Users//md1jdsp//Desktop//test_source'
