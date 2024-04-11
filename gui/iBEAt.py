@@ -8,6 +8,7 @@ from wezel.plugins import (
     transform,
     segment,
     align,
+    dcmri
 )
 from gui import buttons, about
 
@@ -36,6 +37,7 @@ def launch():
     wzl.add_menu(align.menu)
     wzl.add_menu(transform.menu)
     wzl.add_menu(measure.menu)
+    wzl.add_menu(dcmri.menu)
     wzl.add_menu(ibeat_menu)
     wzl.add_menu(wezel.menubar.about.menu)
 

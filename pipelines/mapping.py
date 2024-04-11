@@ -5,21 +5,15 @@ from dbdicom.pipelines import input_series
 
 from pipelines.roi_fit import load_aif
 
-import models
 from models import (
     T1_look_locker_spoiled,
     T2_mono_exp,
     T2star_mono_exp,
     t1_t2_combined, 
     IVIM_nonlinear, 
-    IVIM_semilinear,
     DTI_dipy, 
-    DWI_linear,
-    DWI_nonlinear,
-    DCE_descriptive, 
-    DCE_deconv, 
-    DCE_2CM,
 )
+import dcmri
 
 
 
@@ -295,11 +289,11 @@ def DCE(folder):
     
     # Calculate maps
     series.message('Calculating descriptive parameters..')
-    MAX, AUC, ATT = DCE_descriptive.fit(array, aif, time[1]-time[0], baseline=15)
+    MAX, AUC, ATT = dcmri.pixel_descriptives(array, aif, time[1]-time[0], baseline=15)
     series.message('Performing linear fit..')
-    fit, par = DCE_2CM.fit(array, aif, time, baseline=15)
+    fit, par = dcmri.pixel_2cfm_linfit(array, aif, time, baseline=15)
     series.message('Deconvolving..')
-    RPF, AVD, MTT = DCE_deconv.fit(array, aif, time[1]-time[0], baseline=15, regpar=0.1)
+    RPF, AVD, MTT = dcmri.pixel_deconvolve(array, aif, time[1]-time[0], baseline=15, regpar=0.1)
     
     # Save maps as DICOM
     fit_series = study.new_series(SeriesDescription=desc + "_fit")

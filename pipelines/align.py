@@ -1,9 +1,10 @@
 import numpy as np
-from dbdicom.extensions import vreg
+from dbdicom.extensions import vreg, elastix
 from dbdicom.pipelines import input_series
 from dbdicom.utils import vreg as vr
 from dipy.align.imaffine import MutualInformationMetric, AffineRegistration
 from dipy.align.transforms import TranslationTransform2D
+
 
 export_study = "Alignment"
 
@@ -123,7 +124,8 @@ def t2(database):
         'LK',
         'RK',  
         'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
-        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2_map',
+        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2_map',
+        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco',
     ]
     return _align(database, desc)
 
@@ -136,6 +138,7 @@ def t2star(database):
         'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
         'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2s_map',
         'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_fw_map',
+        'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
     ]
     return _align(database, desc)
 
@@ -149,6 +152,7 @@ def ivim(database):
         'IVIM_kidneys_cor-oblique_fb_mdr_moco_MD_map',
         'IVIM_kidneys_cor-oblique_fb_mdr_moco_Df_map',
         'IVIM_kidneys_cor-oblique_fb_mdr_moco_ff_map',
+        'IVIM_kidneys_cor-oblique_fb_mdr_moco',
     ]
     return _align(database, desc)
 
@@ -165,6 +169,7 @@ def dti(database):
         'DTI_kidneys_cor-oblique_fb_mdr_moco_Linearity_map',
         'DTI_kidneys_cor-oblique_fb_mdr_moco_Sphericity_map',
         'DTI_kidneys_cor-oblique_fb_mdr_moco_FA_map',
+        'DTI_kidneys_cor-oblique_fb_mdr_moco',
     ]
     return _align(database, desc)
 
@@ -225,6 +230,59 @@ def asl(database):
         rbf_moved.append(moved)
 
     return rbf_moved
+
+
+def dixon(database):
+
+    # Get input parameters
+    desc = [   
+        'T1w_abdomen_dixon_cor_bh_out_phase',
+        'T1w_abdomen_dixon_cor_bh_in_phase',
+        'T1w_abdomen_dixon_cor_bh_water',
+        'T1w_abdomen_dixon_cor_bh_fat',
+        'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
+    ]
+    series, study = input_series(database, desc, export_study)
+    if series is None:
+        raise RuntimeError('Cannot perform DIXON alignment: not all required data exist.')
+
+    coregistered, followers = elastix.coregister_3d_to_3d(
+        series[3], series[4],
+        transformation = "AdvancedMeanSquares",
+        metric = "AdvancedMattesMutualInformation",
+        final_grid_spacing = 25.0,
+        apply_to = series[:3],
+    )
+    coregistered.move_to(study)
+    for series in followers:
+        series.move_to(study)
+    return coregistered, followers
+
+
+def fill_gaps(database):
+
+    to_fill = [
+        'DCE_kidneys_cor-oblique_fb_mdr_moco_AVD_map',
+        'DCE_kidneys_cor-oblique_fb_mdr_moco_RPF_map',
+        'DCE_kidneys_cor-oblique_fb_mdr_moco_MTT_map',        
+    ]
+    ref = ['T1w_abdomen_dixon_cor_bh_fat_post_contrast']
+
+    output = []
+    for kidney in ['LK','RK']:
+        desc = ref + [kidney] + [d + '_' + kidney + '_align' for d in to_fill]
+        series, study = input_series(database, desc, export_study)
+        if series is None:
+            raise RuntimeError('Cannot fill gaps between slices on LK: not all required data exist.')
+        for ms_series in series[2:]:
+            output_series = vreg.fill_slice_gaps(ms_series, series[0], slice_thickness=1.0, mask=series[1])
+            output_series.move_to(study)
+            output.append(output_series)
+
+    return output
+
+
+
 
 
 

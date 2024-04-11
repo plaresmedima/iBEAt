@@ -1,4 +1,4 @@
-
+import numpy as np
 from dbdicom.extensions import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
 from models import DCE_aorta, PC, UNETR_kidneys_v1
@@ -148,3 +148,40 @@ def renal_artery(folder):
     left_mask_series.set_array(left_mask, mag_hdr_left[0], pixels_first=True)
 
     return right_mask_series, left_mask_series
+
+
+def cortex_medulla(database):
+
+    features = [
+        'DCE_kidneys_cor-oblique_fb_mdr_moco_AVD_map',
+        'DCE_kidneys_cor-oblique_fb_mdr_moco_RPF_map',
+        'DCE_kidneys_cor-oblique_fb_mdr_moco_MTT_map',  
+    ]
+
+    output = []
+    for kidney in ['LK','RK']:
+        desc = [kidney] + [f + '_' + kidney + '_align_fill' for f in features]
+        series, study = input_series(database, desc, export_study)
+        if series is None:
+            raise ValueError('Cannot separate cortex and medulla for kidney '+kidney+': required sequences are missing.')
+        clusters, cluster_features = sklearn.kmeans(series[1:], series[0], n_clusters=3, multiple_series=True, return_features=True)
+        # Background = cluster with smallest AVD
+        background = np.argmin([c[0] for c in cluster_features])
+        # Cortex = cluster with largest RPF
+        cortex = np.argmax([c[1] for c in cluster_features]) 
+        # Medulla = cluster with largest MTT
+        medulla = np.argmax([c[2] for c in cluster_features])
+        # Check
+        remainder = {0,1,2} - {background, cortex, medulla}
+        if len(remainder) > 0:
+            raise ValueError('Problem separating cortex and medulla: identified clusters do not have the expected values.')
+        clusters[cortex].SeriesDescription = kidney + 'C'
+        clusters[cortex].move_to(study)
+        clusters[medulla].SeriesDescription = kidney + 'M'
+        clusters[medulla].move_to(study)
+        clusters[background].SeriesDescription = kidney + 'B'
+        clusters[background].move_to(study)
+        cm = scipy.image_calculator(clusters[cortex], clusters[medulla], '+')
+        cm.SeriesDescription = kidney + 'CM'
+        output += clusters + [cm]
+    return output

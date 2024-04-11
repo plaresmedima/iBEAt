@@ -46,7 +46,7 @@ from utilities.fit import fit_image
     
     
 def pars():
-    return ['S0', 'T1', 'FA']
+    return ['S0', 'T1', 'FAcorr']
 
 def init(sig):
     return [np.amax(sig), 1500, 12]

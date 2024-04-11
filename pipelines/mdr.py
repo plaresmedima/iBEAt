@@ -6,12 +6,12 @@ from dbdicom.pipelines import input_series
 
 import itk
 import mdreg
+import dcmri
 from mdreg.models import constant
 from models import (
     T1_look_locker_spoiled,
     T2_mono_exp,
     T2star_mono_exp, 
-    DCE_2CM,
     DTI_dipy,
     DWI_linear,
 )
@@ -144,7 +144,7 @@ def DCE(folder):
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
     
     signal_pars = [{'aif':aif, 'time':time, 'baseline':15} for _ in range(array.shape[2])]
-    signal_model = DCE_2CM.fit
+    signal_model = dcmri.pixel_2cfm_linfit
     elastix_parameters = default_elastix_parameters()
     downsample = 2
 

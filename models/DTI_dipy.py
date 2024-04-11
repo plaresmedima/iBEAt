@@ -17,6 +17,9 @@ def pars():
     ]
 
 def fit(array, bvals:np.ndarray=None, bvecs:np.ndarray=None, fit_method="WLS"):
+    # array (x,y,z,t)
+    # bvals (t)
+    # bvecs (t) 
     # https://github.com/dipy/dipy/blob/master/dipy/reconst/dti.py
 
     # Fit DTI model
