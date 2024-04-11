@@ -28,6 +28,8 @@ def rename_all_series(database):
         database.save()
     except Exception as e:
         database.log("Renaming was NOT completed; error: " + str(e))  
+        database.restore()
+        raise RuntimeError('Critical step failed (renaming) - exiting pipeline.')
 
 
 def harmonize_pc(database):
@@ -39,6 +41,7 @@ def harmonize_pc(database):
         database.save()
     except Exception as e:
         database.log("Harmonizing PC series was NOT completed; error: " + str(e)) 
+        database.restore()
 
 def harmonize_t2(database):
     start_time = time.time()
@@ -49,6 +52,7 @@ def harmonize_t2(database):
         database.save()
     except Exception as e:
         database.log("Harmonizing T2 series was NOT completed; error: " + str(e)) 
+        database.restore()
 
 def harmonize_mt(database):
     start_time = time.time()
@@ -59,6 +63,7 @@ def harmonize_mt(database):
         database.save()
     except Exception as e:
         database.log("Harmonizing MT series was NOT completed; error: " + str(e)) 
+        database.restore()
 
 def harmonize_dti(database):
     start_time = time.time()
@@ -69,6 +74,7 @@ def harmonize_dti(database):
         database.save()
     except Exception as e:
         database.log("Harmonizing DTI series was NOT completed; error: " + str(e)) 
+        database.restore()
 
 def harmonize_ivim(database):
     start_time = time.time()
@@ -79,6 +85,7 @@ def harmonize_ivim(database):
         database.save()
     except Exception as e:
         database.log("Harmonizing IVIM series was NOT completed; error: " + str(e)) 
+        database.restore()
 
 def harmonize_dce(database):
     start_time = time.time()
@@ -89,6 +96,7 @@ def harmonize_dce(database):
         database.save()
     except Exception as e:
         database.log("Harmonizing DCE series was NOT completed; error: " + str(e)) 
+        database.restore()
 
 
 ## SEGMENTATION
@@ -104,6 +112,7 @@ def fetch_kidney_masks(database):
         database.save()
     except Exception as e:
         database.log("Fetching kidney masks was NOT completed; error: "+str(e))
+        database.restore()
 
 def fetch_dl_models(database):
     start_time = time.time()
@@ -113,6 +122,7 @@ def fetch_dl_models(database):
         database.log("Fetching deep-learning models was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("Fetching deep-learning models was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def segment_kidneys(database, weights):
@@ -128,7 +138,8 @@ def segment_kidneys(database, weights):
         database.save()
     except Exception as e:
         database.log("Kidney segmentation was NOT completed; error: "+str(e))
-        raise RuntimeError('Critical step failed - ending pipeline.')
+        database.restore()
+        raise RuntimeError('Critical step failed (kidney segmentation) - exiting pipeline.')
 
 
 def segment_renal_sinus_fat(database):
@@ -140,6 +151,7 @@ def segment_renal_sinus_fat(database):
         database.save()
     except Exception as e:
         database.log("Sinus fat segmentation was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def segment_aorta_on_dce(database):
@@ -151,6 +163,7 @@ def segment_aorta_on_dce(database):
         database.save()
     except Exception as e:
         database.log("Aorta segmentation was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def segment_renal_artery(database):
@@ -162,6 +175,7 @@ def segment_renal_artery(database):
         database.save()
     except Exception as e:
         database.log("Renal artery segmentation was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def compute_whole_kidney_canvas(database):
@@ -173,6 +187,7 @@ def compute_whole_kidney_canvas(database):
         database.save()
     except Exception as e: 
         database.log("Computing canvas was NOT computed; error: "+str(e))
+        database.restore()
 
 
 # Set up exports as individual steps
@@ -203,6 +218,7 @@ def mdreg_t1(database):
         database.save()
     except Exception as e:
         database.log("Model-driven registration for T1 was NOT completed; error: "+str(e))
+        database.restore()
 
 def mdreg_t2(database):
     start_time = time.time()
@@ -213,6 +229,7 @@ def mdreg_t2(database):
         database.save()
     except Exception as e:
         database.log("Model-driven registration for T2 was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def mdreg_t2star(database):
@@ -224,6 +241,7 @@ def mdreg_t2star(database):
         database.save()
     except Exception as e:
         database.log("Model-driven registration for T2* was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def mdreg_mt(database):
@@ -235,6 +253,7 @@ def mdreg_mt(database):
         database.save()
     except Exception as e:
         database.log("Model-driven registration for MT was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def mdreg_dti(database):
@@ -246,6 +265,7 @@ def mdreg_dti(database):
         database.save()
     except Exception as e:
         database.log("Model-driven registration for DTI was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def mdreg_ivim(database):
@@ -257,6 +277,7 @@ def mdreg_ivim(database):
         database.save()
     except Exception as e:
         database.log("Model-driven registration for IVIM was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def mdreg_dce(database):
@@ -268,6 +289,7 @@ def mdreg_dce(database):
         database.save()
     except Exception as e:
         database.log("Model-driven registration for DCE was NOT completed; error: "+str(e))
+        database.restore()
 
 def export_mdreg(database):
     start_time = time.time()
@@ -277,6 +299,7 @@ def export_mdreg(database):
         database.log("Exporting MDR results was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("Exporting MDR results was NOT completed; error: "+str(e))
+        database.restore()
 
         
 
@@ -294,6 +317,7 @@ def map_T1(database):
         database.save()
     except Exception as e: 
         database.log("T1 mapping was NOT completed; error: "+str(e))
+        database.restore()
 
 def map_T2(database):
     start_time = time.time()
@@ -305,6 +329,7 @@ def map_T2(database):
         database.save()
     except Exception as e: 
         database.log("T2 mapping was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def map_T1T2(database):
@@ -317,6 +342,7 @@ def map_T1T2(database):
         database.save()
     except Exception as e: 
         database.log("T1 and T2 mapping was NOT completed; error: "+str(e))
+        database.restore()
 
         
 def map_T2star(database):
@@ -329,6 +355,7 @@ def map_T2star(database):
         database.save()
     except Exception as e: 
         database.log("T2* mapping was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def map_MT(database):
@@ -341,6 +368,7 @@ def map_MT(database):
         database.save()
     except Exception as e: 
         database.log("MTR mapping was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def map_DTI(database):
@@ -353,6 +381,7 @@ def map_DTI(database):
         database.save()
     except Exception as e: 
         database.log("DTI-FA & ADC mapping was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def map_IVIM(database):
@@ -365,6 +394,7 @@ def map_IVIM(database):
         database.save()
     except Exception as e: 
         database.log("IVIM mapping was NOT completed; error: "+str(e))
+        database.restore()
 
 
 def map_DCE(database):
@@ -377,6 +407,7 @@ def map_DCE(database):
         database.save()
     except Exception as e: 
         database.log("DCE mapping was NOT completed; error: "+str(e))
+        database.restore()
 
 def export_mapping(database):
     start_time = time.time()
@@ -392,6 +423,19 @@ def export_mapping(database):
 ## ALIGNMENT
         
 
+def align_dixon(database):
+    start_time = time.time()
+    print('Starting DIXON alignment')
+    database.log("DIXON alignment has started")
+    try:
+        align.dixon(database)
+        database.log("DIXON alignment was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("DIXON alignment was NOT completed; error: "+str(e))
+        database.restore()
+        
+
 def align_T1(database):
     start_time = time.time()
     print('Starting T1 alignment')
@@ -402,6 +446,7 @@ def align_T1(database):
         database.save()
     except Exception as e: 
         database.log("T1 alignment was NOT completed; error: "+str(e))
+        database.restore()
 
 def align_T2(database):
     start_time = time.time()
@@ -413,6 +458,7 @@ def align_T2(database):
         database.save()
     except Exception as e: 
         database.log("T2 alignment was NOT completed; error: "+str(e))
+        database.restore()
 
 def align_T2star(database):
     start_time = time.time()
@@ -424,6 +470,7 @@ def align_T2star(database):
         database.save()
     except Exception as e: 
         database.log("T2* alignment was NOT completed; error: "+str(e))
+        database.restore()
 
 def align_MT(database):
     start_time = time.time()
@@ -435,6 +482,7 @@ def align_MT(database):
         database.save()
     except Exception as e: 
         database.log("MT alignment was NOT completed; error: "+str(e))
+        database.restore()
 
 def align_IVIM(database):
     start_time = time.time()
@@ -446,6 +494,7 @@ def align_IVIM(database):
         database.save()
     except Exception as e: 
         database.log("IVIM alignment was NOT completed; error: "+str(e))
+        database.restore()
 
 def align_DTI(database):
     start_time = time.time()
@@ -457,6 +506,7 @@ def align_DTI(database):
         database.save()
     except Exception as e: 
         database.log("DTI alignment was NOT completed; error: "+str(e))
+        database.restore()
 
 def align_DCE(database):
     start_time = time.time()
@@ -468,6 +518,7 @@ def align_DCE(database):
         database.save()
     except Exception as e: 
         database.log("DCE alignment was NOT completed; error: "+str(e))
+        database.restore()
 
 def align_ASL(database):
     start_time = time.time()
@@ -479,6 +530,7 @@ def align_ASL(database):
         database.save()
     except Exception as e: 
         database.log("ASL alignment was NOT completed; error: "+str(e))
+        database.restore()
 
 def export_alignment(database):
     start_time = time.time()
@@ -490,6 +542,9 @@ def export_alignment(database):
         database.save()
     except Exception as e: 
         database.log("Export alignment was NOT completed; error: "+str(e))
+        database.restore()
+
+
 
 
 
@@ -590,6 +645,30 @@ def measure_asl_maps(database):
         
 
 ## ROI analysis
+        
+
+def fill_gaps(database):
+    start_time = time.time()
+    database.log("Filling gaps has started")
+    try:
+        align.fill_gaps(database)
+        database.log("Filling gaps was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Filling gaps was NOT completed; error: "+str(e))
+        database.restore()
+
+
+def cortex_medulla(database):
+    start_time = time.time()
+    database.log("Cortex-medulla segmentation has started")
+    try:
+        segment.cortex_medulla(database)
+        database.log("Cortex-medulla segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Cortex-medulla segmentations was NOT completed; error: "+str(e))
+        database.restore()
         
 
 def roi_fit_T1(database):

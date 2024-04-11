@@ -170,7 +170,7 @@ def all_segmentation_steps(app):
     export_segmentations(app)
 
 
-action_all_segmentation_steps = Action("All segmentation steps..", on_clicked=all_segmentation_steps, is_clickable=_if_a_database_is_open)
+action_all_segmentation_steps = Action("All above segmentation steps..", on_clicked=all_segmentation_steps, is_clickable=_if_a_database_is_open)
 action_fetch_dl_models = Action("Fetch deep learning models..", on_clicked=fetch_dl_models, is_clickable=_never)
 action_fetch_kidney_masks = Action("Fetch kidney masks..", on_clicked=fetch_kidney_masks, is_clickable=_never)
 action_segment_kidneys = Action("Auto-segment kidneys...", on_clicked=segment_kidneys, is_clickable=_if_a_database_is_open)
@@ -400,10 +400,15 @@ menu_map.add_separator()
 menu_map.add(action_map_all)
 
 
-
-
 # ALIGNMENT
 
+
+def align_dixon(app):
+    database = app.database()
+    results = align.dixon(database)
+    for series in results:
+        app.display(series)
+    app.refresh()
 
 def align_T1(app):
     database = app.database()
@@ -470,6 +475,7 @@ def align_all(app):
     answer = app.dialog.question('This is going to take a while. Do you want to continue?')
     if 'Yes' != answer:
         return
+    align_dixon(app)
     align_T1(app)
     align_T2(app)
     align_T2star(app)
@@ -481,6 +487,7 @@ def align_all(app):
     export_alignment(app)
 
 action_align_all = Action("Align all sequences..", on_clicked=align_all, is_clickable=_if_a_database_is_open)
+action_align_dixon = Action("Align DIXON..", on_clicked=align_dixon, is_clickable=_if_a_database_is_open)
 action_align_T1 = Action("Align T1..", on_clicked=align_T1, is_clickable=_if_a_database_is_open)
 action_align_T2 = Action("Align T2..", on_clicked=align_T2, is_clickable=_if_a_database_is_open)
 action_align_T2star = Action("Align T2*..", on_clicked=align_T2star, is_clickable=_if_a_database_is_open)
@@ -492,6 +499,7 @@ action_align_ASL = Action("Align ASL..", on_clicked=align_ASL, is_clickable=_if_
 action_align_export = Action("Exporting alignments as gif..", on_clicked=export_alignment, is_clickable=_if_a_database_is_open)
 
 menu_align = Menu('Align scans..')
+menu_align.add(action_align_dixon)
 menu_align.add(action_align_T1)
 menu_align.add(action_align_T2)
 menu_align.add(action_align_T2star)
@@ -619,6 +627,19 @@ menu_measure.add(action_all_measurements)
 # ROI FITS
 
 
+def fill_gaps(app):
+    database = app.database()
+    results = align.fill_gaps(database)
+    for series in results:
+        app.display(series)
+    app.refresh()
+
+def cortex_medulla(app):
+    folder = app.database()
+    clusters = segment.cortex_medulla(folder)
+    if clusters is not None:
+        app.display(clusters)
+    app.refresh()
 
 def roi_fit_T1(app):
     database = app.database()
@@ -657,13 +678,16 @@ def roi_fit_DCE(app):
 
 
 def roi_fit_all(app):
+    fill_gaps(app)
+    cortex_medulla(app)
     roi_fit_T1(app)
     roi_fit_T2(app)
     roi_fit_T2star(app)
     roi_fit_PC(app)
     roi_fit_DCE(app)
 
-
+action_fill_gaps = Action("Fill slice gaps..", on_clicked=fill_gaps, is_clickable=_if_a_database_is_open)
+action_cortex_medulla = Action("Cortex-medulla separation..", on_clicked=cortex_medulla, is_clickable=_if_a_database_is_open)
 action_roi_fit_all = Action("ALL ROI fits..", on_clicked=roi_fit_all, is_clickable=_if_a_database_is_open)
 action_roi_fit_t1 = Action("ROI fit T1..", on_clicked=roi_fit_T1, is_clickable=_if_a_database_is_open)
 action_roi_fit_t2 = Action("ROI fit T2..", on_clicked=roi_fit_T2, is_clickable=_if_a_database_is_open)
@@ -673,6 +697,9 @@ action_roi_fit_dce = Action("ROI fit DCE..", on_clicked=roi_fit_DCE, is_clickabl
 
 
 menu_roifit = Menu('ROI analysis..')
+menu_roifit.add(action_fill_gaps)
+menu_roifit.add(action_cortex_medulla)
+menu_roifit.add_separator()
 menu_roifit.add(action_roi_fit_t1)
 menu_roifit.add(action_roi_fit_t2)
 menu_roifit.add(action_roi_fit_t2star)

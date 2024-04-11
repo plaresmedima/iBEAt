@@ -81,6 +81,7 @@ def single_subject(username, password, path, dataset):
 
     # ALIGNMENT
 
+    steps.align_dixon(database) # move forward in pipeline
     steps.align_T1(database)
     steps.align_T2(database)
     steps.align_T2star(database)
@@ -104,10 +105,10 @@ def single_subject(username, password, path, dataset):
     steps.measure_asl_maps(database)
     steps.measure_dce_maps(database)
 
-    # Cortex-Medulla # TODO
-
     # ROI analysis
 
+    steps.fill_gaps(database)
+    steps.cortex_medulla(database)
     steps.roi_fit_T1(database)
     steps.roi_fit_T2(database)
     steps.roi_fit_T2star(database)
