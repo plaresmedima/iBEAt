@@ -6,6 +6,7 @@ import dbdicom
 # but Philips uses (0x2005, 0x1572). Need to include a 
 # harmonization step for Philips.
 
+
 def mt(database):
     # Merge MT ON and MT OFF sequences and remove the originals
 
@@ -92,6 +93,7 @@ def dce(database):
             split_series[0].SeriesDescription = desc
             split_series[1].SeriesDescription = "DCE_aorta_axial_fb"
         series.remove()
+
         	
 def pc(database):
     desc = [
@@ -103,6 +105,7 @@ def pc(database):
         if series == []:
             pass
         series = series[-1] # selected the last if there are multiple
+        
         if series.instance().Manufacturer=='SIEMENS':
             venc = 120 # cm/sec # read from DICOM header?
             phase = series.pixel_values(dims='TriggerTime')

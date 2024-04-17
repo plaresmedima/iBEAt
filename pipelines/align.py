@@ -186,8 +186,7 @@ def dce(database):
     return _align(database, desc)
 
 
-# MT is 3D! - needs the same approach as ASL
-
+# TODO: MT is 3D! - needs the same approach as ASL
 def mt(database):
 
     desc = [ 

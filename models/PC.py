@@ -263,6 +263,8 @@ def create_mask_right(arr_velocity, arr_phase, sigmas_sato=range(1, 6, 1), sigma
     return mask.T
 
 
+
+
 def params(time, vel, flow):
     v_mean = np.mean(vel)
     psv = np.amax(vel) # peak systolic velocity

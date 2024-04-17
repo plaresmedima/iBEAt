@@ -53,7 +53,6 @@ def kidney_volumetrics(folder):
     _update_master_table(folder, features)
     return features
     
-
 def sinus_fat_volumetrics(folder):
     left  = folder.series(SeriesDescription='LKSF')
     right = folder.series(SeriesDescription='RKSF')
@@ -67,26 +66,26 @@ def sinus_fat_volumetrics(folder):
 
 def t1_maps(folder):
     seq = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
-    pars = ['T1', 'FA']
+    pars = ['T1', 'T1FAcorr']
     units = ['msec', 'deg']
     return features(folder, seq, pars, units)
 
 def t2_maps(folder):
     seq = 'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
-    pars = ['T2']
-    units = ['msec']
+    pars = ['T2', 'T2FAcorr']
+    units = ['msec', 'deg']
     return features(folder, seq, pars, units)
 
 def t2star_maps(folder):
     seq = 'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
-    pars = [ 'T2s','fw']
-    units = ['','']
+    pars = [ 'T2s','f_fat']
+    units = ['msec','']
     return features(folder, seq, pars, units)
 
 def mt_maps(folder):
     seq = 'MT_kidneys_cor-oblique_bh_mdr_moco'
     pars = ['MTR']
-    units = ['']
+    units = ['%']
     return features(folder, seq, pars, units)
 
 def ivim_maps(folder):

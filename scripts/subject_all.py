@@ -79,7 +79,7 @@ def single_subject(username, password, path, dataset):
 
     # ALIGNMENT
 
-    steps.align_dixon(database) # move forward in pipeline
+    steps.align_dixon(database) 
     steps.align_T1(database)
     steps.align_T2(database)
     steps.align_T2star(database)
