@@ -12,34 +12,39 @@ from pipelines.roi_fit import load_aif
 def kidney_masks_as_dicom(folder):
 
     folder.message('Exporting whole kidney masks as dicom..')
-    results_path = folder.path() + '_masks'
+    results_path = os.path.join(folder.path() + '_output', 'masks')
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    lk_mask        = 'LK' 
-    rk_mask        = 'RK'
-    fat_desc        = 'T1w_abdomen_dixon_cor_bh_fat_post_contrast' 
-    out_desc        = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
-    in_desc         = 'T1w_abdomen_dixon_cor_bh_in_phase_post_contrast'
-    water_desc      = 'T1w_abdomen_dixon_cor_bh_water_post_contrast'
+    fat_desc = 'T1w_abdomen_dixon_cor_bh_fat_post_contrast' 
+    out_desc = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
+    in_desc = 'T1w_abdomen_dixon_cor_bh_in_phase_post_contrast'
+    water_desc = 'T1w_abdomen_dixon_cor_bh_water_post_contrast'
+    k_means1_desc = 'KMeans cluster 1'
+    k_means2_desc = 'KMeans cluster 2'
+    lk_mask = 'LK' 
+    rk_mask = 'RK'
 
-    LK             = folder.series(SeriesDescription=lk_mask)
-    RK             = folder.series(SeriesDescription=rk_mask)
-    fat            = folder.series(SeriesDescription=fat_desc)
-    out_ph         = folder.series(SeriesDescription=out_desc)
-    in_ph          = folder.series(SeriesDescription=in_desc)
-    water          = folder.series(SeriesDescription=water_desc)
+    fat = folder.series(SeriesDescription=fat_desc)
+    out_ph = folder.series(SeriesDescription=out_desc)
+    in_ph = folder.series(SeriesDescription=in_desc)
+    water = folder.series(SeriesDescription=water_desc)
+    k_means1 = folder.series(SeriesDescription=k_means1_desc)
+    k_means2 = folder.series(SeriesDescription=k_means2_desc)
+    LK = folder.series(SeriesDescription=lk_mask)
+    RK = folder.series(SeriesDescription=rk_mask)
 
-    exportToFolder = LK + RK + fat + out_ph + in_ph + water
+    export_to_folder = LK + RK + fat + out_ph + in_ph + water + k_means1 + k_means2
     
-    for series in exportToFolder:
+    for series in export_to_folder:
         series.export_as_dicom(results_path)
+
 
 
 def kidney_masks_as_png(database,backgroud_series = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast',RK_mask = 'RK', LK_mask = 'LK' ):
 
     database.message('Exporting masks as png..')
-    results_path = database.path() + '_QC'
+    results_path = database.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -91,10 +96,11 @@ def kidney_masks_as_png(database,backgroud_series = 'T1w_abdomen_dixon_cor_bh_ou
     fig.savefig(os.path.join(results_path, 'Masks.png'), dpi=600)
 
 
+
 def aif_as_png(folder):
 
     folder.message('Exporting AIF as png..')
-    results_path = folder.path() + '_QC'
+    results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -111,37 +117,9 @@ def aif_as_png(folder):
     plt.close()
     
 
-def whole_kidney_canvas(folder):
-
-    folder.message('Exporting whole kidney canvas as dicom..')
-    results_path = folder.path() + '_segmentation_canvas'
-    if not os.path.exists(results_path):
-        os.mkdir(results_path)
-
-    fat_desc        = 'T1w_abdomen_dixon_cor_bh_fat_post_contrast' 
-    out_desc        = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
-    in_desc         = 'T1w_abdomen_dixon_cor_bh_in_phase_post_contrast'
-    water_desc      = 'T1w_abdomen_dixon_cor_bh_water_post_contrast'
-    k_means1_desc   = 'KMeans cluster 1'
-    k_means2_desc   = 'KMeans cluster 2'
-
-    fat             = folder.series(SeriesDescription=fat_desc)
-    out_ph          = folder.series(SeriesDescription=out_desc)
-    in_ph           = folder.series(SeriesDescription=in_desc)
-    water           = folder.series(SeriesDescription=water_desc)
-    k_means1        = folder.series(SeriesDescription=k_means1_desc)
-    k_means2        = folder.series(SeriesDescription=k_means2_desc)
-
-    exportToFolder = fat + out_ph + in_ph + water + k_means1 + k_means2
-    
-    for series in exportToFolder:   
-        series.export_as_dicom(results_path)
-
-
-
 def mapping(database):
 
-    results_path = database.path() + '_QC'
+    results_path = database.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -168,7 +146,7 @@ def mapping(database):
 
 def mdreg(database):
 
-    results_path = database.path() + '_QC'
+    results_path = database.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -207,7 +185,7 @@ def mdreg(database):
 def alignment(database):
 
     database.message('Exporting alignments as png..')
-    results_path = database.path() + '_QC'
+    results_path = database.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 

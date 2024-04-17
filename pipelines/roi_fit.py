@@ -13,7 +13,7 @@ import models
 
 def PC(folder):
 
-    results_path = folder.path() + '_QC'
+    results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -101,7 +101,7 @@ def PC(folder):
 
 def T1(folder):
 
-    results_path = folder.path() + '_QC'
+    results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -209,7 +209,7 @@ def T1(folder):
 
 def T2(folder):
 
-    results_path = folder.path() + '_QC'
+    results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -323,7 +323,7 @@ def T2(folder):
 
 def T2star(folder):
 
-    results_path = folder.path() + '_QC'
+    results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -420,7 +420,7 @@ def T2star(folder):
 
 def dce(folder):
 
-    results_path = folder.path() + '_QC'
+    results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -637,7 +637,7 @@ def dce(folder):
 
 def dce_cm(folder):
 
-    results_path = folder.path() + '_QC'
+    results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 

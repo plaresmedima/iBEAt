@@ -53,7 +53,7 @@ def single_subject(username, password, path, dataset):
     steps.segment_aorta_on_dce(database)
     steps.segment_renal_artery(database)
     steps.compute_whole_kidney_canvas(database)
-    steps.export_segmentations(database) # TODO: all in one database
+    steps.export_segmentations(database) 
 
     ## MOTION CORRECTION
 
