@@ -312,7 +312,7 @@ def map_T1(database):
     print('Starting T1 mapping')
     database.log("T1 mapping has started")
     try:
-        mapping.T1map(database)
+        mapping.T1(database)
         database.log("T1 mapping was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e: 
@@ -324,24 +324,11 @@ def map_T2(database):
     print('Starting T2 mapping')
     database.log("T2 mapping has started")
     try:
-        mapping.T2map(database)
+        mapping.T2(database)
         database.log("T2 mapping was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e: 
         database.log("T2 mapping was NOT completed; error: "+str(e))
-        database.restore()
-
-
-def map_T1T2(database):
-    start_time = time.time()
-    print('Starting T1 and T2 mapping')
-    database.log("T1 and T2 mapping has started")
-    try:
-        mapping.T1T2(database)
-        database.log("T1 and T2 mapping was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e: 
-        database.log("T1 and T2 mapping was NOT completed; error: "+str(e))
         database.restore()
 
         
@@ -350,7 +337,7 @@ def map_T2star(database):
     print('Starting T2*')
     database.log("T2* mapping has started")
     try:
-        mapping.T2starmap(database)
+        mapping.T2star(database)
         database.log("T2* mapping was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e: 
@@ -389,7 +376,7 @@ def map_IVIM(database):
     print('Starting IVIM')
     database.log("IVIM mapping has started")
     try:
-        mapping.ivim(database)
+        mapping.IVIM(database)
         database.log("IVIM mapping was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e: 
@@ -702,7 +689,7 @@ def roi_fit_PC(database):
     start_time = time.time()
     database.log("ROI analysis for PC has started")
     try:
-        roi_fit.PC_roi(database)
+        roi_fit.PC(database)
         database.log("ROI analysis for PC was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("ROI analysis for PC was NOT completed; error: "+str(e))
@@ -715,3 +702,15 @@ def roi_fit_DCE(database):
         database.log("ROI analysis for DCE was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("ROI analysis for DCE was NOT completed; error: "+str(e))
+
+def roi_fit_DCE_cm(database):
+    start_time = time.time()
+    database.log("ROI analysis for DCE (Cortex-Medulla) has started")
+    try:
+        roi_fit.dce_cm(database)
+        database.log("ROI analysis for DCE (Cortex-Medulla) was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for DCE (Cortex-Medulla) was NOT completed; error: "+str(e))
+
+
+

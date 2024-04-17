@@ -9,7 +9,7 @@ TO RUN THE SCRIPT YOU USE: python main_cluster.py --num n (WHERE n is an integer
 """
 import argparse
 from scripts.subject_all import single_subject
-import scripts.XNAT_credentials as XNAT_cred
+import utilities.XNAT_credentials as XNAT_cred
 
 if __name__ == '__main__':
 

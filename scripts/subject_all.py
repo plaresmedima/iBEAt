@@ -2,9 +2,8 @@ import os
 import datetime
 import dbdicom as db
 
-
-import scripts.upload as upload
-from scripts import xnat, steps
+from utilities import xnat, upload
+from scripts import steps
 
 
 def single_subject(username, password, path, dataset):
@@ -71,7 +70,6 @@ def single_subject(username, password, path, dataset):
 
     steps.map_T1(database)
     steps.map_T2(database)
-    steps.map_T1T2(database)
     steps.map_T2star(database)
     steps.map_MT(database)
     steps.map_IVIM(database)
@@ -94,6 +92,9 @@ def single_subject(username, password, path, dataset):
 
     # MEASUREMENT
 
+    steps.fill_gaps(database)
+    steps.cortex_medulla(database)
+    
     steps.measure_kidney_volumetrics(database)
     steps.measure_sinus_fat_volumetrics(database)
     steps.measure_t1_maps(database)
@@ -107,13 +108,13 @@ def single_subject(username, password, path, dataset):
 
     # ROI analysis
 
-    steps.fill_gaps(database)
-    steps.cortex_medulla(database)
     steps.roi_fit_T1(database)
     steps.roi_fit_T2(database)
     steps.roi_fit_T2star(database)
     steps.roi_fit_PC(database)
     steps.roi_fit_DCE(database)
+    steps.roi_fit_DCE_cm(database)
+    # TODO: IVIM, DTI
 
         
     #upload images, logfile and csv to google drive

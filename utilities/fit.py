@@ -1,6 +1,7 @@
 import os 
 import multiprocessing
 import numpy as np
+from scipy.optimize import curve_fit
 
 try: 
     num_workers = int(len(os.sched_getaffinity(0)))
@@ -8,7 +9,9 @@ except:
     num_workers = int(os.cpu_count())
 
 
-def fit_image(signal, fit_signal, imgs:np.ndarray, xdata=None, xtol=1e-3, bounds=False, parallel=True):
+
+
+def fit_image(signal, fit_signal, imgs:np.ndarray, xdata=None, xtol=1e-3, bounds=False, parallel=True, **kwargs):
     """Fit a single-pixel model pixel-by-pixel to a 2D or 3D image"""
     
     # Reshape to (x,t)
@@ -17,20 +20,20 @@ def fit_image(signal, fit_signal, imgs:np.ndarray, xdata=None, xtol=1e-3, bounds
     
     # Perform the fit pixelwise
     if parallel:
-        args = [(xdata, imgs[x,:], xtol, bounds) for x in range(imgs.shape[0])]
+        args = [(xdata, imgs[x,:], xtol, bounds, kwargs) for x in range(imgs.shape[0])]
         pool = multiprocessing.Pool(processes=num_workers)
         fit_pars = pool.map(fit_signal, args)
         pool.close()
         pool.join()
     else: # for debugging
-        fit_pars = [fit_signal((xdata, imgs[x,:], xtol, bounds)) for x in range(imgs.shape[0])]
+        fit_pars = [fit_signal((xdata, imgs[x,:], xtol, bounds, kwargs)) for x in range(imgs.shape[0])]
 
     # Create output arrays
     npars = len(fit_pars[0])
     fit = np.empty(imgs.shape)
     par = np.empty((imgs.shape[0], npars))
     for x, p in enumerate(fit_pars):
-        fit[x,:] = signal(xdata, *p)
+        fit[x,:] = signal(xdata, *p, **kwargs)
         par[x,:] = p
 
     # Return in original shape
@@ -38,3 +41,43 @@ def fit_image(signal, fit_signal, imgs:np.ndarray, xdata=None, xtol=1e-3, bounds
     par = par.reshape(shape[:-1] + (npars,))
        
     return fit, par
+
+
+
+class Model:
+
+    def pars(self):
+        raise NotImplementedError('No pars method implemented - this is required.')
+    
+    def bnds(self, *args):
+        return (-np.inf, np.inf)
+    
+    def init(self, *args):
+        raise NotImplementedError('No init method implemented - this is required.')
+    
+    def signal(self, *args, **kwargs):
+        raise NotImplementedError('No signal method implemented - this is required.')
+    
+    def fit_signal(self, args):
+        xdata, ydata, xtol, bounds, kwargs = args
+        if bounds==True:
+            bounds = self.bnds(ydata)
+        else:
+            bounds = (-np.inf, np.inf)
+        pars = self.init(ydata)
+        def fit_func(x,*p):
+            return self.signal(x, *p, **kwargs)   
+        try:
+            pars, _ = curve_fit(fit_func, xdata, ydata, p0=pars, xtol=xtol, bounds=bounds)
+        except:
+            pass
+        return pars
+    
+    def fit(self, *args, **kwargs):
+        return fit_image(self.signal, self.fit_signal, *args, **kwargs)
+    
+    def error(self, array, fit):
+        ref = np.linalg.norm(array, axis=-1)
+        err = 100*np.linalg.norm(fit-array, axis=-1)/ref
+        err[ref==0] = 0
+        return err

@@ -16,7 +16,7 @@ from pipelines import (
     align,
     roi_fit,
 )
-import scripts.upload as upload
+import utilities.upload as upload
 
 
 # Needs to be in a central location
@@ -302,28 +302,21 @@ menu_mdreg.add(action_all_mdreg)
 
 def map_T1(app):
     database = app.database()
-    results = mapping.T1map(database)
+    results = mapping.T1(database)
     for series in results:
         app.display(series)
     app.refresh()
 
 def map_T2(app):
     database = app.database()
-    results = mapping.T2map(database)
-    for series in results:
-        app.display(series)
-    app.refresh()
-
-def map_T1T2(app):
-    database = app.database()
-    results = mapping.T1T2(database)
+    results = mapping.T2(database)
     for series in results:
         app.display(series)
     app.refresh()
 
 def map_T2star(app):
     database = app.database()
-    results = mapping.T2starmap(database)
+    results = mapping.T2star(database)
     for series in results:
         app.display(series)
     app.refresh()
@@ -343,7 +336,7 @@ def map_DTI(app):
 
 def map_IVIM(app):
     database = app.database()
-    results = mapping.ivim(database)
+    results = mapping.IVIM(database)
     for series in results:
         app.display(series)
     app.refresh()
@@ -366,7 +359,6 @@ def map_all(app):
         return
     map_T1(app)
     map_T2(app)
-    map_T1T2(app)
     map_T2star(app)
     map_MT(app)
     map_DTI(app)
@@ -377,7 +369,6 @@ def map_all(app):
 action_map_all = Action("Map all parameters..", on_clicked=map_all, is_clickable=_if_a_database_is_open)
 action_map_T1 = Action("T1 mapping..", on_clicked=map_T1, is_clickable=_if_a_database_is_open)
 action_map_T2 = Action("T2 mapping..", on_clicked=map_T2, is_clickable=_if_a_database_is_open)
-action_map_T1T2 = Action("T1&T2 joint mapping..", on_clicked=map_T1T2, is_clickable=_if_a_database_is_open)
 action_map_T2star = Action("T2* mapping..", on_clicked=map_T2star, is_clickable=_if_a_database_is_open)
 action_map_MT = Action("MTR mapping..", on_clicked=map_MT, is_clickable=_if_a_database_is_open)
 action_map_DTI = Action("DTI mapping..", on_clicked=map_DTI, is_clickable=_if_a_database_is_open)
@@ -388,7 +379,6 @@ action_map_export = Action("Exporting maps as gif..", on_clicked=map_export, is_
 menu_map = Menu('Parameter mapping..')
 menu_map.add(action_map_T1)
 menu_map.add(action_map_T2)
-menu_map.add(action_map_T1T2)
 menu_map.add(action_map_T2star)
 menu_map.add(action_map_MT)
 menu_map.add(action_map_DTI)
@@ -533,6 +523,20 @@ def measure_sinus_fat_volumetrics(app):
     app.addWidget(TableDisplay(features), 'Renal sinus fat - Volume features')
     app.refresh()
 
+def fill_gaps(app):
+    database = app.database()
+    results = align.fill_gaps(database)
+    for series in results:
+        app.display(series)
+    app.refresh()
+
+def cortex_medulla(app):
+    folder = app.database()
+    clusters = segment.cortex_medulla(folder)
+    if clusters is not None:
+        app.display(clusters)
+    app.refresh()
+
 def measure_t1_maps(app):
     database = app.database()
     features = measure.t1_maps(database)
@@ -587,6 +591,8 @@ def measure_all(app):
         return
     measure_kidney_volumetrics(app)
     measure_sinus_fat_volumetrics(app)
+    fill_gaps(app)
+    cortex_medulla(app)
     measure_t1_maps(app)
     measure_t2_maps(app)
     measure_t2star_maps(app)
@@ -599,6 +605,8 @@ def measure_all(app):
 action_all_measurements = Action("All measurements..", on_clicked=measure_all, is_clickable=_if_a_database_is_open)
 action_measure_kidney_volumetrics = Action("Measure kidney volumetrics..", on_clicked=measure_kidney_volumetrics, is_clickable=_if_a_database_is_open)
 action_measure_sinus_fat_volumetrics = Action("Measure sinus fat volumetrics..", on_clicked=measure_sinus_fat_volumetrics, is_clickable=_if_a_database_is_open)
+action_fill_gaps = Action("Fill slice gaps..", on_clicked=fill_gaps, is_clickable=_if_a_database_is_open)
+action_cortex_medulla = Action("Cortex-medulla separation..", on_clicked=cortex_medulla, is_clickable=_if_a_database_is_open)
 action_t1_maps = Action("Save T1 pixel values..", on_clicked=measure_t1_maps, is_clickable=_if_a_database_is_open)
 action_t2_maps = Action("Save T2 parameters..", on_clicked=measure_t2_maps, is_clickable=_if_a_database_is_open)
 action_t2star_maps = Action("Save T2* parameters..", on_clicked=measure_t2star_maps, is_clickable=_if_a_database_is_open)
@@ -611,6 +619,9 @@ action_asl_maps = Action("Save ASL parameters..", on_clicked=measure_asl_maps, i
 menu_measure = Menu('Pixel values..')
 menu_measure.add(action_measure_kidney_volumetrics)
 menu_measure.add(action_measure_sinus_fat_volumetrics)
+menu_measure.add_separator()
+menu_measure.add(action_fill_gaps)
+menu_measure.add(action_cortex_medulla)
 menu_measure.add_separator()
 menu_measure.add(action_t1_maps)
 menu_measure.add(action_t2_maps)
@@ -626,20 +637,6 @@ menu_measure.add(action_all_measurements)
 
 # ROI FITS
 
-
-def fill_gaps(app):
-    database = app.database()
-    results = align.fill_gaps(database)
-    for series in results:
-        app.display(series)
-    app.refresh()
-
-def cortex_medulla(app):
-    folder = app.database()
-    clusters = segment.cortex_medulla(folder)
-    if clusters is not None:
-        app.display(clusters)
-    app.refresh()
 
 def roi_fit_T1(app):
     database = app.database()
@@ -664,7 +661,7 @@ def roi_fit_T2star(app):
 
 def roi_fit_PC(app):
     database = app.database()
-    figs = roi_fit.PC_roi(database)
+    figs = roi_fit.PC(database)
     for fig in figs:
         app.addWidget(MatplotLibDisplay(fig), 'PC analysis')
     app.refresh()
@@ -676,35 +673,39 @@ def roi_fit_DCE(app):
         app.addWidget(MatplotLibDisplay(fig), 'DCE ROI analysis')
     app.refresh()
 
+def roi_fit_DCE_cm(app):
+    database = app.database()
+    figs = roi_fit.dce_cm(database)
+    for fig in figs:
+        app.addWidget(MatplotLibDisplay(fig), 'DCE ROI analysis (Cortex-medulla)')
+    app.refresh()
+
 
 def roi_fit_all(app):
-    fill_gaps(app)
-    cortex_medulla(app)
     roi_fit_T1(app)
     roi_fit_T2(app)
     roi_fit_T2star(app)
     roi_fit_PC(app)
     roi_fit_DCE(app)
+    roi_fit_DCE_cm(app)
 
-action_fill_gaps = Action("Fill slice gaps..", on_clicked=fill_gaps, is_clickable=_if_a_database_is_open)
-action_cortex_medulla = Action("Cortex-medulla separation..", on_clicked=cortex_medulla, is_clickable=_if_a_database_is_open)
 action_roi_fit_all = Action("ALL ROI fits..", on_clicked=roi_fit_all, is_clickable=_if_a_database_is_open)
 action_roi_fit_t1 = Action("ROI fit T1..", on_clicked=roi_fit_T1, is_clickable=_if_a_database_is_open)
 action_roi_fit_t2 = Action("ROI fit T2..", on_clicked=roi_fit_T2, is_clickable=_if_a_database_is_open)
 action_roi_fit_t2star = Action("ROI fit T2*..", on_clicked=roi_fit_T2star, is_clickable=_if_a_database_is_open)
 action_roi_fit_pc = Action("ROI fit PC..", on_clicked=roi_fit_PC, is_clickable=_if_a_database_is_open)
 action_roi_fit_dce = Action("ROI fit DCE..", on_clicked=roi_fit_DCE, is_clickable=_if_a_database_is_open)
+action_roi_fit_dce_cm = Action("ROI fit DCE (Cortex-Medulla)..", on_clicked=roi_fit_DCE_cm, is_clickable=_if_a_database_is_open)
 
 
 menu_roifit = Menu('ROI analysis..')
-menu_roifit.add(action_fill_gaps)
-menu_roifit.add(action_cortex_medulla)
-menu_roifit.add_separator()
+
 menu_roifit.add(action_roi_fit_t1)
 menu_roifit.add(action_roi_fit_t2)
 menu_roifit.add(action_roi_fit_t2star)
 menu_roifit.add(action_roi_fit_pc)
 menu_roifit.add(action_roi_fit_dce)
+menu_roifit.add(action_roi_fit_dce_cm)
 menu_roifit.add_separator()
 menu_roifit.add(action_roi_fit_all)
 

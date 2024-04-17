@@ -117,14 +117,13 @@ def t1(database):
     return _align(database, desc)
     
     
-
 def t2(database):
 
     desc = [ 
         'LK',
         'RK',  
-        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
         'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2_map',
+        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
         'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco',
     ]
     return _align(database, desc)
@@ -135,9 +134,8 @@ def t2star(database):
     desc = [ 
         'LK',
         'RK',  
+        'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2star_map',
         'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
-        'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2s_map',
-        'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_fw_map',
         'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
     ]
     return _align(database, desc)

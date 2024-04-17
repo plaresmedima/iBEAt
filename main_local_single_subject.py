@@ -7,8 +7,8 @@ Download XNAT dataset -> Name Standardization ->    Execute MDR   ->  Apply UNET
 """
 
 from scripts.subject_all import single_subject
-import scripts.XNAT_credentials as XNAT_cred
-import scripts.select_folder_to_save as select_save_folder
+import utilities.XNAT_credentials as XNAT_cred
+import utilities.select_folder_to_save as select_save_folder
 
 if __name__ == '__main__':
 
