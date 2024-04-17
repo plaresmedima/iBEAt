@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import imageio
 
 from dbdicom.pipelines import input_series
 
@@ -8,13 +7,8 @@ import itk
 import mdreg
 import dcmri
 from mdreg.models import constant
-from models import (
-    T1_look_locker_spoiled,
-    T2_mono_exp,
-    T2star_mono_exp, 
-    DTI_dipy,
-    DWI_linear,
-)
+
+import models
 from pipelines.roi_fit import load_aif
 
 
@@ -28,15 +22,14 @@ def T1(folder):
     if series is None:
         raise RuntimeError('Cannot perform MDR on T1: series ' + desc + 'does not exist. ')
 
+    TR = 4.6 # Echo Spacing is msec but not in header -> Set as TR in harmonize
     array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
-    signal_pars = [{'xdata': np.array([hdr['InversionTime'] for hdr in header[z,:]])} for z in range(array.shape[2])]
+    signal_pars = [{'xdata': np.array([hdr['InversionTime'] for hdr in header[z,:]]), 'TR':TR} for z in range(array.shape[2])]
 
-    series.message('Loading elastix parameters..')
-    signal_model = T1_look_locker_spoiled.fit
-    elastix_parameters = default_elastix_parameters()
-    downsample = 2
+    series.message('Setting up MDR..')
+    signal_model = models.T1.MonoExp().fit
     
-    return _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
+    return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
 def T2(folder):
@@ -47,15 +40,13 @@ def T2(folder):
         raise RuntimeError('Cannot perform MDR on T2: series ' + desc + 'does not exist. ')
 
     array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
-    TE = series.values('InversionTime',  dims=('SliceLocation', 'InversionTime'))
+    TE = series.values('InversionTime',  dims=('SliceLocation', 'InversionTime')).astype(np.float16)
 
-    series.message('Loading elastix parameters..')
-    signal_pars = [{'xdata':TE[z,:]} for z in range(TE.shape[1])]
-    signal_model = T2_mono_exp.fit
-    elastix_parameters = default_elastix_parameters()
-    downsample = 2
+    series.message('Setting up MDR..')
+    signal_pars = [{'xdata':TE[z,:]} for z in range(TE.shape[0])]
+    signal_model = models.T2.MonoExp().fit
     
-    return _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
+    return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
 def T2star(folder):
@@ -68,12 +59,10 @@ def T2star(folder):
     array, header = series.array(['SliceLocation', 'EchoTime'], pixels_first=True, first_volume=True)
     signal_pars = [{'xdata':np.array([hdr.EchoTime for hdr in header[z,:]])} for z in range(array.shape[2])]
     
-    series.message('Loading elastix parameters..')
-    signal_model = T2star_mono_exp.fit
-    elastix_parameters = default_elastix_parameters()
-    downsample = 2
+    series.message('Setting up MDR..')
+    signal_model = models.T2star.MonoExp().fit
 
-    return _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
+    return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
 def MT(folder): # Note this is a 3D sequence - do not coreg slice by slice - needs 3D registration
@@ -86,12 +75,10 @@ def MT(folder): # Note this is a 3D sequence - do not coreg slice by slice - nee
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
     signal_pars = [{} for _ in range(array.shape[2])]
 
-    series.message('Loading elastix parameters..')
+    series.message('Setting up MDR..')
     signal_model = constant.main
-    elastix_parameters = default_elastix_parameters()
-    downsample = 2
 
-    return _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
+    return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
 def DTI(folder):
@@ -105,14 +92,11 @@ def DTI(folder):
     bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=dims)
     array, header = series.array(dims, pixels_first=True, first_volume=True)
     
+    series.message('Setting up MDR..')
     signal_pars = [{'bvals':bvals[z,:], 'bvecs':np.stack(bvecs[z,:]), 'fit_method':'WLS'} for z in range(array.shape[2])]
-    signal_model = DTI_dipy.fit
+    signal_model = models.DTI.DiPy().fit
 
-    series.message('Loading elastix parameters..')
-    elastix_parameters = default_elastix_parameters()
-    downsample = 2
-
-    return _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
+    return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
 def IVIM(folder, series=None,study=None):
@@ -122,15 +106,14 @@ def IVIM(folder, series=None,study=None):
     if series is None:
         raise RuntimeError('Cannot perform MDR on IVIM: series ' + desc + 'does not exist. ')
 
-    array, header = series.array(['SliceLocation', 'InstanceNumber'], pixels_first=True, first_volume=True)
-    bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=('SliceLocation', 'InstanceNumber'))
+    dims = ['SliceLocation', 'InstanceNumber']
+    bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=dims)
+    array, header = series.array(dims, pixels_first=True, first_volume=True)
 
-    signal_pars = [{'bvals':bvals[z,:], 'bvecs':bvecs[z,:]} for z in range(array.shape[2])]
-    signal_model = DWI_linear.fit
-    elastix_parameters = default_elastix_parameters()
-    downsample = 2
-
-    return _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
+    series.message('Setting up MDR..')
+    signal_pars = [{'bvals':bvals[z,:], 'bvecs':np.stack(bvecs[z,:]), 'fit_method':'WLS'} for z in range(array.shape[2])]
+    signal_model = models.DTI.DiPy().fit
+    return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
 def DCE(folder):
@@ -143,16 +126,37 @@ def DCE(folder):
     time, aif = load_aif(folder)
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
     
+    series.message('Setting up MDR..')
     signal_pars = [{'aif':aif, 'time':time, 'baseline':15} for _ in range(array.shape[2])]
     signal_model = dcmri.pixel_2cfm_linfit
-    elastix_parameters = default_elastix_parameters()
-    downsample = 2
 
-    return _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample)
+    return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
+def default_elastix_parameters():
+    # See here for default bspline settings and explanation of parameters
+    # https://github.com/SuperElastix/ElastixModelZoo/tree/master/models%2Fdefault
+    param_obj = itk.ParameterObject.New()
+    parameter_map_bspline = param_obj.GetDefaultParameterMap('bspline')
+    param_obj.AddParameterMap(parameter_map_bspline) 
+    param_obj.SetParameter("FixedImagePyramid", "FixedRecursiveImagePyramid") # "FixedSmoothingImagePyramid"
+    param_obj.SetParameter("MovingImagePyramid", "MovingRecursiveImagePyramid") # "MovingSmoothingImagePyramid"
+    param_obj.SetParameter("Metric", "AdvancedMeanSquares")
+    param_obj.SetParameter("FinalGridSpacingInPhysicalUnits", "50.0")
+    param_obj.SetParameter("ErodeMask", "false")
+    param_obj.SetParameter("ErodeFixedMask", "false")
+    #param_obj.SetParameter("NumberOfResolutions", "4") 
+    #param_obj.SetParameter("MaximumNumberOfIterations", "500") # down from 500
+    param_obj.SetParameter("MaximumStepLength", "0.1") 
+    #param_obj.SetParameter("NumberOfSpatialSamples", "2048")
+    #param_obj.SetParameter("BSplineInterpolationOrder", "1")
+    #param_obj.SetParameter("FinalBSplineInterpolationOrder", "3")
+    #param_obj.SetParameter("DefaultPixelValue", "0")
+    param_obj.SetParameter("WriteResultImage", "false")
+    return param_obj
 
-def _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, study, downsample):
+
+def _mdr(series, array, header, signal_model, signal_pars, study, downsample=2, elastix_parameters=default_elastix_parameters()):
 
     # Define 3D output arrays
     model_fit = np.zeros(array.shape)
@@ -190,27 +194,6 @@ def _mdr(series, array, header, signal_model, elastix_parameters, signal_pars, s
     return fit, moco
 
 
-def default_elastix_parameters():
-    # See here for default bspline settings and explanation of parameters
-    # https://github.com/SuperElastix/ElastixModelZoo/tree/master/models%2Fdefault
-    param_obj = itk.ParameterObject.New()
-    parameter_map_bspline = param_obj.GetDefaultParameterMap('bspline')
-    param_obj.AddParameterMap(parameter_map_bspline) 
-    param_obj.SetParameter("FixedImagePyramid", "FixedRecursiveImagePyramid") # "FixedSmoothingImagePyramid"
-    param_obj.SetParameter("MovingImagePyramid", "MovingRecursiveImagePyramid") # "MovingSmoothingImagePyramid"
-    param_obj.SetParameter("Metric", "AdvancedMeanSquares")
-    param_obj.SetParameter("FinalGridSpacingInPhysicalUnits", "50.0")
-    param_obj.SetParameter("ErodeMask", "false")
-    param_obj.SetParameter("ErodeFixedMask", "false")
-    #param_obj.SetParameter("NumberOfResolutions", "4") 
-    #param_obj.SetParameter("MaximumNumberOfIterations", "500") # down from 500
-    param_obj.SetParameter("MaximumStepLength", "0.1") 
-    #param_obj.SetParameter("NumberOfSpatialSamples", "2048")
-    #param_obj.SetParameter("BSplineInterpolationOrder", "1")
-    #param_obj.SetParameter("FinalBSplineInterpolationOrder", "3")
-    #param_obj.SetParameter("DefaultPixelValue", "0")
-    param_obj.SetParameter("WriteResultImage", "false")
-    
-    return param_obj
+
 
 

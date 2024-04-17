@@ -18,6 +18,7 @@ def read_user_file():
         password = lines[1].split(":")[1].strip()
 
     return username, password
+
 def main():
     # Check if the file exists
     if os.path.exists("user_XNAT.txt"):

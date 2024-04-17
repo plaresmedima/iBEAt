@@ -1,178 +1,69 @@
 import numpy as np
 
-
 from dbdicom.pipelines import input_series
-
-from pipelines.roi_fit import load_aif
-
-from models import (
-    T1_look_locker_spoiled,
-    T2_mono_exp,
-    T2star_mono_exp,
-    t1_t2_combined, 
-    IVIM_nonlinear, 
-    DTI_dipy, 
-)
 import dcmri
 
-
-
-# from utilities import map_to_dixon_mask
-# from utilities import fill_kidney_holes_interp_v2
+from pipelines.roi_fit import load_aif
+import models
 
 export_study = 'Parameter maps'
 
 
-def T1map(folder):
+def T1(folder):
 
     # Find source DICOM data
-    desc = "T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco"
-    series, study = input_series(folder, desc, export_study)
-    if series is None:
-        desc = "T1map_kidneys_cor-oblique_mbh_magnitude"
-        series, study = input_series(folder, desc, export_study)
-        if series is None:
-            raise RuntimeError('Cannot perform T1 mapping: series ' + desc + 'does not exist. ')
+    series, study, desc = _map_input(folder, "T1map_kidneys_cor-oblique_mbh_magnitude")
+
+    # Model parameters (Siemens)
+    TR = 4.6 # Echo Spacing is msec but not in header -> Set as TR in harmonize
+    FA_cat = [-1, 2, -3, 4, -5] # Catalization module confirmed by Siemens (Peter Schmitt): Magn Reson Med 2003 Jan;49(1):151-7. doi: 10.1002/mrm.10337
+    N_T1 = 66 # Number of k-space lines (hardcoded from Siemens protocol)
+    FA_nom = 12 # Flip angle in degrees (hardcoded from Siemens protocol)
+
+    model = models.T1.Bloch()
+    kwargs = {'TR':TR, 'FA_cat':FA_cat, 'N_T1':N_T1, 'FA':FA_nom}
+    dims = ['SliceLocation', 'AcquisitionTime']
 
     # Load data - note each slice can have different TIs
-    array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
-    TI = [np.array([hdr['InversionTime'] for hdr in header[z,:]]) for z in range(array.shape[2])] 
+    array, header = series.array(dims, pixels_first=True, first_volume=True)
+    TI = series.values('InversionTime', dims=tuple(dims)).astype(np.float32)
 
-    # Calculate fit slice by slice
-    fit = np.empty(array.shape)
-    par = np.empty(array.shape[:3] + (3,) )
-    for z in range(array.shape[2]):
-        series.progress(z+1, array.shape[2], 'Fitting T1 model')
-        fit[:,:,z,:], par[:,:,z,:] = T1_look_locker_spoiled.fit(array[:,:,z,:], TI[z], xtol=1e-3, bounds=True)
-
-    # Derive error map
-    ref = np.linalg.norm(array, axis=-1)
-    err = 100*np.linalg.norm(fit-array, axis=-1)/ref
-    err[ref==0] = 0
-
-    # Save results to DICOM database
-    series = study.new_series(SeriesDescription=desc + "_" + 'fit')
-    series.set_array(fit, header, pixels_first=True)
-    series = study.new_series(SeriesDescription=desc+'_err_map')
-    series.set_array(err, header[:,0], pixels_first=True)
-    for i, p in enumerate(T1_look_locker_spoiled.pars()):
-        series = study.new_series(SeriesDescription=desc+'_' + p + '_map')
-        series.set_array(par[...,i], header[:,0], pixels_first=True)
-
-    return (series,)
+    _map(series, array, header, model, TI, study, desc, **kwargs)
 
 
-def T2map(folder):
+
+def T2(folder):
 
     # Find source DICOM data
-    desc = "T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco"
-    series, study = input_series(folder, desc, export_study)
-    if series is None:
-        desc = "T2map_kidneys_cor-oblique_mbh_magnitude"
-        series, study = input_series(folder, desc, export_study)
-        if series is None:
-            raise RuntimeError('Cannot perform T2 mapping: series ' + desc + 'does not exist. ')
+    series, study, desc = _map_input(folder, "T2map_kidneys_cor-oblique_mbh_magnitude")
 
-    # Load data 
-    array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
-    TI = series.values('InversionTime', dims=('SliceLocation', 'InversionTime'))
+    # Load data
+    model = models.T2.MonoExp()
+    dims = ['SliceLocation', 'AcquisitionTime']
+    array, header = series.array(dims, pixels_first=True, first_volume=True)
+    TI = series.values('InversionTime', dims=tuple(dims)).astype(np.float32)
 
-    # Calculate fit slice by slice
-    fit = np.empty(array.shape)
-    par = np.empty(array.shape[:3] + (3,) )
-    for z in range(array.shape[2]):
-        series.progress(z+1, array.shape[2], 'Fitting T2 model')
-        fit[:,:,z,:], par[:,:,z,:] = T2_mono_exp.fit(array[:,:,z,:], TI[z,:], xtol=1e-3, bounds=True)
-
-    # Derive error map
-    ref = np.linalg.norm(array, axis=-1)
-    err = 100*np.linalg.norm(fit-array, axis=-1)/ref
-    err[ref==0] = 0
-
-    # Save results to DICOM database
-    series = study.new_series(SeriesDescription=desc + "_" + 'fit')
-    series.set_array(fit, header, pixels_first=True)
-    series = study.new_series(SeriesDescription=desc+'_err_map')
-    series.set_array(err, header[:,0], pixels_first=True)
-    for i, p in enumerate(T2_mono_exp.pars()):
-        series = study.new_series(SeriesDescription=desc+'_' + p +'_map')
-        series.set_array(par[...,i], header[:,0], pixels_first=True)
-    return series
+    _map(series, array, header, model, TI, study, desc)
 
 
-def T1T2(folder):
 
-    if folder.Manufacturer != 'SIEMENS': 
-        raise ValueError('Only Siemens implementation available at the moment')
-
-    desc = [
-        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco', 
-        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco']
-    series, study = input_series(folder, desc, export_study)
-    if series is None:
-        raise RuntimeError('Cannot perform T1 and T2 mapping: series ' + str(desc) + 'do not exist. ')
-
-    array_T1, header_T1 = series[0].array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
-    array_T2, header_T2 = series[1].array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
-    TI_slices = [ [hdr['InversionTime'] for hdr in header_T1[z,:]] for z in range(header_T1.shape[0])]
-
-    par = t1_t2_combined.fit((array_T1, array_T2), TI_slices)
-    pnames = t1_t2_combined.pars()
-    maps = []
-    for p in range(len(pnames)):
-        series = study.new_series(SeriesDescription='T1T2_' + pnames[p] + '_map')
-        series.set_array(par[...,p], header_T1[:,0], pixels_first=True)
-        maps.append(series)
-    return maps[0], maps[1]
-
-
-def T2starmap(folder):
+def T2star(folder):
     
     # Find source DICOM data
-    desc = "T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco"
-    series, study = input_series(folder, desc, export_study)
-    if series is None:
-        desc = "T2star_map_kidneys_cor-oblique_mbh_magnitude"
-        series, study = input_series(folder, desc, export_study)
-        if series is None:
-            raise RuntimeError('Cannot perform T2* mapping: series ' + desc + 'does not exist. ')
+    series, study, desc = _map_input(folder, "T2star_map_kidneys_cor-oblique_mbh_magnitude")
 
-    array, header = series.array(['SliceLocation', 'EchoTime'], pixels_first=True, first_volume=True)
-    echo_times = [hdr["EchoTime"] for hdr in (header[0,:])] 
-    
-    # Calculate fit slice by slice
-    fit = np.empty(array.shape)
-    par = np.empty(array.shape[:3] + (3,) )
-    for z in range(array.shape[2]):
-        series.progress(z+1, array.shape[2], 'Fitting T2* model')
-        fit[:,:,z,:], par[:,:,z,:] = T2star_mono_exp.fit(array[:,:,z,:], echo_times, xtol=1e-3, bounds=True)
+    model = models.T2star.BiExp()
+    dims = ['SliceLocation', 'EchoTime']
+    array, header = series.array(dims, pixels_first=True, first_volume=True)
+    echo_times = series.values('EchoTime', dims=tuple(dims)).astype(np.float32)
 
-    # Derive error map
-    ref = np.linalg.norm(array, axis=-1)
-    err = 100*np.linalg.norm(fit-array, axis=-1)/ref
-    err[ref==0] = 0
-
-    # Save results to DICOM database
-    series = study.new_series(SeriesDescription=desc + "_" + 'fit')
-    series.set_array(fit, header, pixels_first=True)
-    series = study.new_series(SeriesDescription=desc+'_err_map')
-    series.set_array(err, header[:,0], pixels_first=True)
-    for i, p in enumerate(T2star_mono_exp.pars()):
-        series = study.new_series(SeriesDescription=desc+'_' + p + '_map')
-        series.set_array(par[...,i], header[:,0], pixels_first=True)
-    return series
+    _map(series, array, header, model, echo_times, study, desc)
 
 
 def MT(folder):
     
     # Find source DICOM data
-    desc = "MT_kidneys_cor-oblique_bh_mdr_moco"
-    series, study = input_series(folder, desc, export_study)
-    if series is None:
-        desc = "MT_kidneys_cor-oblique_bh"
-        series, study = input_series(folder, desc, export_study)
-        if series is None:
-            raise RuntimeError('Cannot perform MT mapping: series ' + desc + 'does not exist. ')
+    series, study, desc = _map_input(folder, "MT_kidneys_cor-oblique_bh")
         
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
 
@@ -189,31 +80,23 @@ def MT(folder):
     avr = study.new_series(SeriesDescription=desc + '_AVR_map')
     avr.set_array(array_avr, header[:,0], pixels_first=True)
     
-    return mtr
+    return (mtr,)
 
 
 def DTI(folder):
 
     # Find appropriate series
-    desc = "DTI_kidneys_cor-oblique_fb_mdr_moco"
-    series, study = input_series(folder, desc, export_study)
-    if series is None:
-        desc = "DTI_kidneys_cor-oblique_fb"
-        series, study = input_series(folder, desc, export_study)
-        if series is None:
-            raise RuntimeError('Cannot perform mapping on DTI: series ' + desc + 'does not exist. ')
+    series, study, desc = _map_input(folder, "DTI_kidneys_cor-oblique_fb")
 
     # Read data
+    model = models.DTI.DiPy()
     array, header = series.array(['SliceLocation', 'InstanceNumber'], pixels_first=True, first_volume=True)
     bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=('SliceLocation', 'InstanceNumber'))
 
     # Compute
     series.message('Fitting DTI model..')
-    fit, pars = DTI_dipy.fit(array, bvals[0,:], np.stack(bvecs[0,:]), fit_method='NLLS')
-    #fit, pars = DTI_dipy.fit(array, bvals[0,:], np.stack(bvecs[0,:]), fit_method='WLS') # for debugging
-    ref = np.linalg.norm(array, axis=-1)
-    err = 100*np.linalg.norm(fit-array, axis=-1)/ref
-    err[ref==0] = 0
+    fit, pars = model.fit(array, bvals[0,:], np.stack(bvecs[0,:]), fit_method='NLLS')
+    err = model.error(array, fit)
 
     # Save as DICOM
     series = study.new_series(SeriesDescription=desc + '_fit')
@@ -221,7 +104,7 @@ def DTI(folder):
     series = study.new_series(SeriesDescription=desc + '_fiterr_map')
     series.set_array(err, header[:,0], pixels_first=True)
     maps = []
-    for i, p in enumerate(DTI_dipy.pars()):
+    for i, p in enumerate(model.pars()):
         series = study.new_series(SeriesDescription=desc + '_' + p +'_map')
         series.set_array(pars[...,i], header[:,0], pixels_first=True)
         maps.append(series)
@@ -229,33 +112,22 @@ def DTI(folder):
     return maps[0], maps[1]
 
 
-def ivim(folder):
+def IVIM(folder):
 
     # Find appropriate series
-    desc = "IVIM_kidneys_cor-oblique_fb_mdr_moco"
-    series, study = input_series(folder, desc, export_study)
-    if series is None:
-        desc = 'IVIM_kidneys_cor-oblique_fb'
-        series, study = input_series(folder, desc, export_study)
-        if series is None:
-            raise RuntimeError('Cannot perform mapping on IVIM: series ' + desc + 'does not exist. ')
+    series, study, desc = _map_input(folder, "IVIM_kidneys_cor-oblique_fb")
 
+    model = models.IVIM.NonLin()
     array, header = series.array(['SliceLocation', 'InstanceNumber'], pixels_first=True, first_volume=True)
     bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=('SliceLocation', 'InstanceNumber'))
 
-    # Calculate fit in one line
-    # fit, par = fit_image(IVIM_nonlinear, array, bvals[0,:], xtol=1e-3, bounds=True)
-
     # Calculate fit slice by slice so progress bar can be shown
     fit = np.empty(array.shape)
-    par = np.empty(array.shape[:3] + (len(IVIM_nonlinear.pars()),) )
+    par = np.empty(array.shape[:3] + (len(model.pars()),) )
     for z in range(array.shape[2]):
         series.progress(z+1, array.shape[2], 'Fitting IVIM model')
-
-        fit[:,:,z,:], par[:,:,z,:] = IVIM_nonlinear.fit(array[:,:,z,:], 
-            bvals[0,:10].astype(np.float32), xtol=1e-3, bounds=True, parallel=True)
-        
-    S0, Df, MD, ff = IVIM_nonlinear.derived(par)
+        fit[:,:,z,:], par[:,:,z,:] = model.fit(array[:,:,z,:], bvals[0,:10].astype(np.float32), xtol=1e-3, bounds=True, parallel=True) 
+    S0, Df, MD, ff = model.derived(par)
 
     # Save as DICOM
     fit_series = study.new_series(SeriesDescription=desc + "_fit")
@@ -274,14 +146,8 @@ def ivim(folder):
 
 def DCE(folder):
 
-    # Find appropriate series
-    desc = "DCE_kidneys_cor-oblique_fb_mdr_moco"
-    series, study = input_series(folder, desc, export_study)
-    if series is None:
-        desc = "DCE_kidneys_cor-oblique_fb"
-        series, study = input_series(folder, desc, export_study)
-        if series is None:
-            raise RuntimeError('Cannot perform mapping on DCE: series ' + desc + ' does not exist. ')
+    # Find appropriate series       
+    series, study, desc = _map_input(folder, "DCE_kidneys_cor-oblique_fb")
 
     # Extract data
     time, aif = load_aif(folder)
@@ -324,6 +190,40 @@ def DCE(folder):
     TT_series.set_array(par[...,3], header[:,0], pixels_first=True)
 
     return RPF_series, AVD_series, MTT_series
+
+
+
+def _map_input(folder, desc):
+    series, study = input_series(folder, desc + '_mdr_moco', export_study)
+    if series is not None:
+        return series, study, desc + '_mdr_moco'
+    series, study = input_series(folder, desc, export_study)
+    if series is None:
+        raise RuntimeError('Cannot perform mapping: series ' + desc + 'does not exist. ')
+    return series, study, desc
+
+
+def _map(series, array, header, model, pars, study, desc, **kwargs):
+
+    # Calculate fit slice by slice
+    fit = np.empty(array.shape)
+    par = np.empty(array.shape[:3] + (len(model.pars()),) )
+    for z in range(array.shape[2]):
+        series.progress(z+1, array.shape[2], 'Fitting model')
+        fit[:,:,z,:], par[:,:,z,:] = model.fit(array[:,:,z,:], pars[z,:], xtol=1e-3, bounds=True, **kwargs)
+    err = model.error(array, fit)
+
+    # Save results to DICOM database
+    series = study.new_series(SeriesDescription=desc + "_" + 'fit')
+    series.set_array(fit, header, pixels_first=True)
+    series = study.new_series(SeriesDescription=desc+'_err_map')
+    series.set_array(err, header[:,0], pixels_first=True)
+    for i, p in enumerate(model.pars()):
+        series = study.new_series(SeriesDescription=desc+'_' + p + '_map')
+        series.set_array(par[...,i], header[:,0], pixels_first=True)
+
+    return (series,)
+
 
 
 

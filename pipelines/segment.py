@@ -23,7 +23,8 @@ def kidneys(database, weights):
     #series = database.series(SeriesDescription=UNETR_kidneys_v1.trained_on)
     sery, study = input_series(database, UNETR_kidneys_v1.trained_on, export_study)
     if sery is None:
-        return    
+        msg = 'Cannot autosegment the kidneys: series ' + UNETR_kidneys_v1.trained_on + ' not found.'
+        raise RuntimeError(msg)
 
     # Loop over the series and create the mask
     #desc = sery.instance().SeriesDescription

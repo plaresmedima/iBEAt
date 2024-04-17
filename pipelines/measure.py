@@ -109,9 +109,9 @@ def dce_maps(folder):
 
 # Needs to be brought in line with the others - same format
 def asl_maps(folder):
-    for ROI in ['LK','RK']:
+    for ROI in ['LK','RK','LKC','RKC','LKM','RKM']:
         kidney  = folder.series(SeriesDescription=ROI)
-        rbf = folder.series(SeriesDescription='RBF - ' + ROI)
+        rbf = folder.series(SeriesDescription='RBF - ' + ROI[:2])
         features = vreg.mask_statistics(kidney, rbf)
         features['Biomarker'] = features['SeriesDescription'] + '-' + features['Parameter']
         features['Region of Interest'] = 'Kidney'
@@ -120,32 +120,37 @@ def asl_maps(folder):
 
 
 def features(folder, seq, pars, units):
+    cnt=0
     for p, par in enumerate(pars):
-        vals = []
-        for ROI in ['LK','RK']: 
-            folder.message('Exporting metrics for parameter ' + par)
-            desc = seq + '_' + par + '_map_' + ROI + '_align'
-            kidney = folder.series(SeriesDescription=ROI)[0]
-            series = folder.series(SeriesDescription=desc)[0]
-            kidney_vals = vreg.mask_values(kidney, series)
-            vals.append(kidney_vals)
+        for subroi in ['','C','M']:
+            vals = []
+            for ROI in ['LK'+subroi,'RK'+subroi]: 
+                folder.progress(cnt+1, len(pars)*9, 'Exporting metrics (' + par + ' on ' + ROI + ')')
+                cnt+=1
+                desc = seq + '_' + par + '_map_' + ROI[:2] + '_align'
+                kidney = folder.series(SeriesDescription=ROI)[0]
+                series = folder.series(SeriesDescription=desc)[0]
+                kidney_vals = vreg.mask_values(kidney, series)
+                vals.append(kidney_vals)
 
-            # update master table
-            features = vreg.mask_data_statistics(kidney_vals, kidney, series)
+                # update master table
+                features = vreg.mask_data_statistics(kidney_vals, kidney, series)
+                features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
+                features['Unit'] = units[p]
+                features['SeriesDescription'] = ROI
+                features['Region of Interest'] = 'Kidney'
+                _update_master_table(folder, features)
+
+            ROI = 'BK' + subroi
+            folder.progress(cnt+1, len(pars)*9, 'Exporting metrics (' + par + ' on ' + ROI + ')')
+            cnt+=1
+            vals = np.concatenate(vals)
+            features = vreg.mask_data_statistics(vals, kidney, series)
             features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
             features['Unit'] = units[p]
             features['SeriesDescription'] = ROI
             features['Region of Interest'] = 'Kidney'
             _update_master_table(folder, features)
-
-        ROI = 'BK' 
-        vals = np.concatenate(vals)
-        features = vreg.mask_data_statistics(vals, kidney, series)
-        features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
-        features['Unit'] = units[p]
-        features['SeriesDescription'] = ROI
-        features['Region of Interest'] = 'Kidney'
-        _update_master_table(folder, features)
 
     return features
 

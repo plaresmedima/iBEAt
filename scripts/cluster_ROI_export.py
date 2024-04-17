@@ -18,7 +18,7 @@ import datetime
 import dbdicom as db
 
 import models as map
-import pipelines.export_ROI_stats as export_ROIs
+#import pipelines.export_ROI_stats as export_ROIs
 import zipfile
 import shutil
 
@@ -81,10 +81,10 @@ if __name__ == '__main__':
         folder.log("Analysis of " + pathScan.split('//')[-1] + " has started!")
         folder.log("CPU cores: " + str(UsedCores))
 
-        try:
-            export_ROIs.main(folder,ExperimentName)
-        except Exception as e:
-            folder.log("Export ROI was NOT completed; error: " + str(e))
+        # try:
+        #     export_ROIs.main(folder,ExperimentName)
+        # except Exception as e:
+        #     folder.log("Export ROI was NOT completed; error: " + str(e))
         
         shutil.rmtree(pathScan)
 
