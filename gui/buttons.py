@@ -152,7 +152,6 @@ def export_segmentations(app):
     database = app.database()
     export.kidney_masks_as_dicom(database)
     export.kidney_masks_as_png(database)
-    export.whole_kidney_canvas(database)
     export.aif_as_png(database)
     app.refresh()
 

@@ -197,7 +197,6 @@ def export_segmentations(database):
     try:
         export.kidney_masks_as_dicom(database)
         export.kidney_masks_as_png(database)
-        export.whole_kidney_canvas(database) # should this be part of the dicom masks export?
         export.aif_as_png(database)
         database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:

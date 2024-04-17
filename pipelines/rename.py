@@ -12,7 +12,7 @@ import pandas as pd
 
 def check(database):
 
-    results_path = database.path() + '_QC'
+    results_path = database.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
