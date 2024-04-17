@@ -44,7 +44,7 @@ def T2(folder):
 
     series.message('Setting up MDR..')
     signal_pars = [{'xdata':TE[z,:]} for z in range(TE.shape[0])]
-    signal_model = models.T2.MonoExp().fit
+    signal_model = models.T2.MonoExpOffset().fit
     
     return _mdr(series, array, header, signal_model, signal_pars, study)
 
@@ -65,7 +65,7 @@ def T2star(folder):
     return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
-def MT(folder): # Note this is a 3D sequence - do not coreg slice by slice - needs 3D registration
+def MT(folder): # TODO: Note this is a 3D sequence - do not coreg slice by slice - needs 3D registration
 
     desc = 'MT_kidneys_cor-oblique_bh'
     series, study = input_series(folder, desc, export_study)

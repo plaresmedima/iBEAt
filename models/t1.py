@@ -2,6 +2,7 @@ import numpy as np
 from utilities.fit import Model
 from models import relaxometry
 
+
 class MonoExp(Model):
 
     def pars(self):
@@ -29,7 +30,7 @@ class MonoExp(Model):
 class Bloch(Model):
 
     def pars(self):
-        return ['S0', 'T1', 'FAcorr']
+        return ['S0', 'T1', 'T1FAcorr']
 
     def init(self, sig):
         return [np.amax(sig), 1200, 12]
