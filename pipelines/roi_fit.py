@@ -8,7 +8,7 @@ from dbdicom.extensions import vreg
 import dcmri
 
 from pipelines import measure
-import models
+import models.PC, models.T1, models.T2, models.T2star
 
 
 def PC(folder):
@@ -480,22 +480,23 @@ def dce(folder):
 
     # Fit AIF and get concentrations (here for debugging)
     time, aif = load_aif(folder)
-    vars = {
-        'dt': 0.5,
-        'weight': weight, 
-        'dose': dose,
-        'rate': 2, # mL/sec (different for Gadovist?)
-        'agent': agent, 
-        'TD': TD, 
-        'R10': 1/dcmri.T1(field_strength=3, tissue='blood', Hct=Hct),
-    }
+
     folder.message('Fitting AIF.. ')
-    pars, _, fit = dcmri.fit_aorta_signal_8b(time, aif, parset='TRISTAN', **vars)
+    aorta = dcmri.AortaSignal8c()
+    aorta.dt = 0.5
+    aorta.weight = weight
+    aorta.dose = dose
+    aorta.rate = 2
+    aorta.agent = agent
+    aorta.TD = TD
+    aorta.R10 = 1/dcmri.T1(field_strength=3, tissue='blood', Hct=Hct)
+    aorta.initialize('TRISTAN').pretrain(time, aif)
+    aorta.train(time, aif, bounds='TRISTAN', xtol=1e-4)
 
     # Export the results
     fig, ax = plt.subplots(1,1,figsize=(5,5))
     ax.plot(time/60, aif, 'ro', label='Signal for aorta', markersize=markersize)
-    ax.plot(time/60, fit, 'b-', label='Fit for aorta', linewidth=linewidth)
+    ax.plot(time/60, aorta.predict(time), 'b-', label='Fit for aorta', linewidth=linewidth)
     ax.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     ax.legend()
     plt.savefig(os.path.join(results_path, 'model fit DCE (Aorta).png'), dpi=600)
@@ -504,35 +505,44 @@ def dce(folder):
     # Update master table
     table['time (s)'] = time
     table['AIF'] = aif
+    pars = aorta.pfree(units='custom')
     measure.add_rows(folder, [
-        [pid, 'Body', 'Body', 'ROI', pars[0], 'sec', 'AO-BAT' + '-ROI', 'ROI fit'],
-        [pid, 'Body', 'Body', 'ROI', pars[1]*60/1000, 'L/min', 'AO-CO' + '-ROI', 'ROI fit'],
-        [pid, 'Body', 'Body', 'ROI', pars[2], 'sec', 'AO-HLMTT' + '-ROI', 'ROI fit'],
-        [pid, 'Body', 'Body', 'ROI', pars[3]*100, '%', 'AO-HLD' + '-ROI', 'ROI fit'],
-        [pid, 'Body', 'Body', 'ROI', pars[4]*100, '%', 'AO-VEF' + '-ROI', 'ROI fit'],
-        [pid, 'Body', 'Body', 'ROI', pars[5], 'sec', 'AO-PMTT' + '-ROI', 'ROI fit'],
-        [pid, 'Body', 'Body', 'ROI', pars[6]/60, 'min', 'AO-EMTT' + '-ROI', 'ROI fit'],
-        [pid, 'Body', 'Body', 'ROI', pars[7]/100, '%', 'AO-BEF' + '-ROI', 'ROI fit'],
+        [pid, 'Body', 'Body', 'ROI', pars[0][2], pars[0][3], 'AO-BAT' + '-ROI', 'ROI fit'],
+        [pid, 'Body', 'Body', 'ROI', pars[1][2], pars[1][3], 'AO-CO' + '-ROI', 'ROI fit'],
+        [pid, 'Body', 'Body', 'ROI', pars[2][2], pars[2][3], 'AO-HLMTT' + '-ROI', 'ROI fit'],
+        [pid, 'Body', 'Body', 'ROI', pars[3][2], pars[3][3], 'AO-HLD' + '-ROI', 'ROI fit'],
+        [pid, 'Body', 'Body', 'ROI', pars[4][2], pars[4][3], 'AO-VEF' + '-ROI', 'ROI fit'],
+        [pid, 'Body', 'Body', 'ROI', pars[5][2], pars[5][3], 'AO-PMTT' + '-ROI', 'ROI fit'],
+        [pid, 'Body', 'Body', 'ROI', pars[6][2], pars[6][3], 'AO-EMTT' + '-ROI', 'ROI fit'],
+        [pid, 'Body', 'Body', 'ROI', pars[7][2], pars[7][3], 'AO-BEF' + '-ROI', 'ROI fit'],
     ])
 
     # variables for kidney fitting
-    CO = pars[1] # mL/sec
-    t, cb = dcmri.aorta_signal_8b(time, *pars, return_conc=True, **vars)
-    vars = {'dt':0.5, 'cb':cb, 'agent':agent, 'TR':TR, 'FA':FA, 'TD':TD, 'Hct':Hct}
+    t_highres = np.arange(0, max(time)+time[1]+aorta.dt, aorta.dt)
+    kid = dcmri.KidneySignal6()
+    kid.dt = 0.5
+    kid.cb = aorta.predict(t_highres, return_conc=True)
+    kid.agent = agent
+    kid.TR = TR
+    kid.TD = TD
+    kid.Hct = Hct
+    kid.CO = aorta.pars[1] # mL/sec
 
     # Fit LK
     folder.message('Fitting LK.. ')
     kidney = 'LK'
     t1_kidney = measure.read_master_table(folder, kidney+'-T1-ROI')
-    vars['R10'] = 1/(t1_kidney/1000)
-    FAcorr = measure.read_master_table(folder, kidney+'-T1FA-ROI')
-    vars['FA'] = FA*FAcorr/12 # Use B1 correction from T1 mapping 
-    pars, _, fit = dcmri.fit_kidney_signal_6(time, dyn_kidneys[0], parset='iBEAt', **vars) 
+    FAcorr = measure.read_master_table(folder, kidney+'-T1FAcorr-ROI')
+    kid.R10 = 1/(t1_kidney/1000)
+    kid.FA = FA*FAcorr/12 # Use B1 correction from T1 mapping 
+    kid.vol = len(vals_kidneys[0][0])*vox # kidney volume mL
+    kid.initialize('iBEAt').pretrain(time, dyn_kidneys[0])
+    kid.train(time, dyn_kidneys[0], bounds='iBEAt', xtol=1e-4) 
 
     # Export the results
     fig, ax = plt.subplots(1,1,figsize=(5,5))
     ax.plot(time/60, dyn_kidneys[0], 'ro', label='Signal for left kidney', markersize=markersize)
-    ax.plot(time/60, fit, 'b-', label='Signal for left kidney', linewidth=linewidth)
+    ax.plot(t_highres/60, kid.predict(t_highres), 'b-', label='Signal for left kidney', linewidth=linewidth)
     ax.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     ax.legend()
     plt.savefig(os.path.join(results_path, 'model fit DCE (LK).png'), dpi=600)
@@ -540,34 +550,36 @@ def dce(folder):
 
     # Update master table
     table[kidney] = dyn_kidneys[0]
-    vol = len(vals_kidneys[0][0])*vox # kidney volume mL
+    pfree, pdep = kid.pfree('custom'), kid.pdep('custom')
     measure.add_rows(folder, [
-        [pid, kidney, 'Kidney', 'ROI', 6000*pars[0]/(1-Hct), 'mL/min/100mL', kidney + '-' + 'RBF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', pars[1], 'sec', kidney + '-' + 'PMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 6000*pars[2], 'mL/min/100mL', kidney + '-' + 'TF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', pars[3]/60, 'min', kidney + '-' + 'TMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*pars[1]*pars[0], 'mL/100mL', kidney + '-' + 'ECV' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 60*vol*pars[2], 'mL/min', kidney + '-' + 'SKGFR' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 60*vol*pars[0]/(1-Hct), 'mL/min', kidney + '-' + 'SKBF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*pars[2]/pars[0], '%', kidney + '-' + 'FF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*pars[2]/(pars[0]+pars[2]), '%', kidney + '-' + 'KEF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', pars[4], 'sec', kidney + '-' + 'AMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*vol*pars[0]/(1-Hct)/CO, '%', kidney + '-' + 'PCO' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[1][2], pfree[1][3], kidney + '-' + 'PMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[2][2], pfree[2][3], kidney + '-' + 'TF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[3][2], pfree[3][3], kidney + '-' + 'TMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[4][2], pfree[4][3], kidney + '-' + 'AMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[0][2], pdep[0][3], kidney + '-' + 'RBF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[1][2], pdep[1][3], kidney + '-' + 'ECV' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[2][2], pdep[2][3], kidney + '-' + 'SKGFR' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[3][2], pdep[3][3], kidney + '-' + 'SKBF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[4][2], pdep[4][3], kidney + '-' + 'FF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[5][2], pdep[5][3], kidney + '-' + 'KEF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[6][2], pdep[6][3], kidney + '-' + 'PCO' + '-ROI', 'ROI fit'],
     ])
 
     # Fit RK
     folder.message('Fitting RK.. ')
     kidney = 'RK'
     t1_kidney = measure.read_master_table(folder, kidney+'-T1-Median')
-    vars['R10'] = 1/(t1_kidney/1000)
-    FAcorr = measure.read_master_table(folder, kidney+'-T1FA-ROI')
-    vars['FA'] = FA*FAcorr/12 # Use B1 correction from T1 mapping 
-    pars, _, fit = dcmri.fit_kidney_signal_6(time, dyn_kidneys[1], parset='iBEAt', **vars) 
+    FAcorr = measure.read_master_table(folder, kidney+'-T1FAcorr-ROI')
+    kid.R10 = 1/(t1_kidney/1000)
+    kid.FA = FA*FAcorr/12 # Use B1 correction from T1 mapping 
+    kid.vol = len(vals_kidneys[1][0])*vox # kidney volume mL
+    kid.initialize('iBEAt').pretrain(time, dyn_kidneys[1])
+    kid.train(time, dyn_kidneys[1], bounds='iBEAt', xtol=1e-4) 
 
     # Plot fit
     fig, ax = plt.subplots(1,1,figsize=(5,5))
     ax.plot(time/60, dyn_kidneys[1], 'ro', label='Signal for right kidney', markersize=markersize)
-    ax.plot(time/60, fit, 'b-', label='Signal for right kidney', linewidth=linewidth)
+    ax.plot(t_highres/60, kid.predict(t_highres), 'b-', label='Signal for right kidney', linewidth=linewidth)
     ax.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     ax.legend()
     plt.savefig(os.path.join(results_path, 'model fit DCE ('+kidney+').png'), dpi=600)
@@ -575,19 +587,19 @@ def dce(folder):
 
     # Update master table
     table[kidney] = dyn_kidneys[1]
-    vol = len(vals_kidneys[1][0])*vox # kidney volume mL
+    pfree, pdep = kid.pfree('custom'), kid.pdep('custom')
     measure.add_rows(folder, [
-        [pid, kidney, 'Kidney', 'ROI', 6000*pars[0]/(1-Hct), 'mL/min/100mL', kidney + '-' + 'RBF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', pars[1], 'sec', kidney + '-' + 'PMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 6000*pars[2], 'mL/min/100mL', kidney + '-' + 'TF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', pars[3]/60, 'min', kidney + '-' + 'TMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*pars[1]*pars[0], 'mL/100mL', kidney + '-' + 'ECV' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 60*vol*pars[2], 'mL/min', kidney + '-' + 'SKGFR' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 60*vol*pars[0]/(1-Hct), 'mL/min', kidney + '-' + 'SKBF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*pars[2]/pars[0], '%', kidney + '-' + 'FF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*pars[2]/(pars[0]+pars[2]), '%', kidney + '-' + 'KEF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', pars[4], 'sec', kidney + '-' + 'AMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*vol*pars[0]/(1-Hct)/CO, '%', kidney + '-' + 'PCO' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[1][2], pfree[1][3], kidney + '-' + 'PMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[2][2], pfree[2][3], kidney + '-' + 'TF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[3][2], pfree[3][3], kidney + '-' + 'TMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[4][2], pfree[4][3], kidney + '-' + 'AMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[0][2], pdep[0][3], kidney + '-' + 'RBF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[1][2], pdep[1][3], kidney + '-' + 'ECV' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[2][2], pdep[2][3], kidney + '-' + 'SKGFR' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[3][2], pdep[3][3], kidney + '-' + 'SKBF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[4][2], pdep[4][3], kidney + '-' + 'FF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[5][2], pdep[5][3], kidney + '-' + 'KEF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[6][2], pdep[6][3], kidney + '-' + 'PCO' + '-ROI', 'ROI fit'],
     ])
 
     # Fit BK
@@ -600,15 +612,17 @@ def dce(folder):
         dyn_kidney[t] = np.mean(vals_t)
 
     t1_kidney = measure.read_master_table(folder, kidney+'-T1-Median')
-    vars['R10'] = 1/(t1_kidney/1000)
-    FAcorr = measure.read_master_table(folder, kidney+'-T1FA-ROI')
-    vars['FA'] = FA*FAcorr/12 # Use B1 correction from T1 mapping 
-    pars, _, fit = dcmri.fit_kidney_signal_6(time, dyn_kidney, parset='iBEAt', **vars) 
+    FAcorr = measure.read_master_table(folder, kidney+'-T1FAcorr-ROI')
+    kid.R10 = 1/(t1_kidney/1000)
+    kid.FA = FA*FAcorr/12 # Use B1 correction from T1 mapping 
+    kid.vol = len(vals_kidneys[0][0])*vox + len(vals_kidneys[1][0])*vox # kidney volume mL
+    kid.initialize('iBEAt').pretrain(time, dyn_kidney)
+    kid.train(time, dyn_kidney, bounds='iBEAt', xtol=1e-4)
     
     # Plot fit
     fig, ax = plt.subplots(1,1,figsize=(5,5))
     ax.plot(time/60, dyn_kidney, 'ro', label='Signal for both kidneys', markersize=markersize)
-    ax.plot(time/60, fit, 'b-', label='Signal for both kidneys', linewidth=linewidth)
+    ax.plot(t_highres/60, kid.predict(t_highres), 'b-', label='Signal for both kidneys', linewidth=linewidth)
     ax.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     ax.legend()
     plt.savefig(os.path.join(results_path, 'model fit DCE ('+kidney+').png'), dpi=600)
@@ -616,21 +630,20 @@ def dce(folder):
 
     # Update master table
     table[kidney] = dyn_kidney
-    vol = len(vals_kidneys[0][0])*vox + len(vals_kidneys[1][0])*vox # kidney volume mL
+    pfree, pdep = kid.pfree('custom'), kid.pdep('custom')
     measure.add_rows(folder, [
-        [pid, kidney, 'Kidney', 'ROI', 6000*pars[0]/(1-Hct), 'mL/min/100mL', kidney + '-' + 'RBF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', pars[1], 'sec', kidney + '-' + 'PMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 6000*pars[2], 'mL/min/100mL', kidney + '-' + 'TF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', pars[3]/60, 'min', kidney + '-' + 'TMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*pars[1]*pars[0], 'mL/100mL', kidney + '-' + 'ECV' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 60*vol*pars[2], 'mL/min', kidney + '-' + 'GFR' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 60*vol*pars[0]/(1-Hct), 'mL/min', kidney + '-' + 'BF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*pars[2]/pars[0], '%', kidney + '-' + 'FF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*pars[2]/(pars[0]+pars[2]), '%', kidney + '-' + 'KEF' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', pars[4], 'sec', kidney + '-' + 'AMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney, 'Kidney', 'ROI', 100*vol*pars[0]/(1-Hct)/CO, '%', kidney + '-' + 'PCO' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[1][2], pfree[1][3], kidney + '-' + 'PMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[2][2], pfree[2][3], kidney + '-' + 'TF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[3][2], pfree[3][3], kidney + '-' + 'TMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pfree[4][2], pfree[4][3], kidney + '-' + 'AMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[0][2], pdep[0][3], kidney + '-' + 'RBF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[1][2], pdep[1][3], kidney + '-' + 'ECV' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[2][2], pdep[2][3], kidney + '-' + 'SKGFR' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[3][2], pdep[3][3], kidney + '-' + 'SKBF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[4][2], pdep[4][3], kidney + '-' + 'FF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[5][2], pdep[5][3], kidney + '-' + 'KEF' + '-ROI', 'ROI fit'],
+        [pid, kidney, 'Kidney', 'ROI', pdep[6][2], pdep[6][3], kidney + '-' + 'PCO' + '-ROI', 'ROI fit'],
     ])
-
     table.to_csv(os.path.join(results_path, 'data_DCE.csv'))
     return figs
 
@@ -703,130 +716,143 @@ def dce_cm(folder):
 
     # Fit AIF and get concentrations (here for debugging)
     time, aif = load_aif(folder)
-    vars = {
-        'dt': 0.5,
-        'weight': weight, 
-        'dose': dose,
-        'rate': 2, # mL/sec (different for Gadovist?)
-        'agent': agent, 
-        'TD': TD, 
-        'R10': 1/dcmri.T1(field_strength=3, tissue='blood', Hct=Hct),
-    }
-    folder.message('Fitting AIF.. ')
-    pars, _, fit = dcmri.fit_aorta_signal_8b(time, aif, parset='TRISTAN', **vars)
+    table['time (s)'] = time
+    table['AIF'] = aif
+    
+    aorta = dcmri.AortaSignal8c()
+    aorta.dt = 0.5
+    aorta.weight = weight
+    aorta.dose = dose
+    aorta.rate = 2
+    aorta.agent = agent
+    aorta.TD = TD
+    aorta.R10 = 1/dcmri.T1(field_strength=3, tissue='blood', Hct=Hct)
+    aorta.initialize('TRISTAN').pretrain(time, aif)
+    aorta.train(time, aif, bounds='TRISTAN', xtol=1e-4)
 
     # variables for cortex-medulla fitting
-    CO = pars[1] # mL/sec
-    t, cb = dcmri.aorta_signal_8b(time, *pars, return_conc=True, **vars)
-    vars = {'dt':0.5, 'cb':cb, 'agent':agent, 'TR':TR, 'TD':TD, 'Hct':Hct}
+    xdata = np.concatenate((time, time))
+    t_highres = np.arange(0, max(time)+time[1]+aorta.dt, aorta.dt)
+    nt = len(time)
+    kid = dcmri.KidneyCMSignal9()
+    kid.dt = aorta.dt
+    kid.cb = aorta.predict(t_highres, return_conc=True)
+    kid.agent = agent
+    kid.TR = TR
+    kid.TD = TD
+    kid.agent = agent
+    kid.Hct = Hct
+    kid.CO = aorta.pars[1] # mL/sec
 
     # Fit LK
     folder.message('Fitting LK.. ')
     kidney = 'LK'
-    t1_cortex = measure.read_master_table(folder, kidney+'C-T1-ROI') 
-    vars['R10c'] = 1/(t1_cortex/1000)
-    t1_medulla = measure.read_master_table(folder, kidney+'M-T1-ROI')
-    vars['R10m'] = 1/(t1_medulla/1000)
-    FAcorr = measure.read_master_table(folder, kidney+'C-T1FA-ROI')
-    vars['FAc'] = FA*FAcorr/12 # Use B1 correction from T1 mapping
-    FAcorr = measure.read_master_table(folder, kidney+'M-T1FA-ROI')
-    vars['FAm'] = FA*FAcorr/12 # Use B1 correction from T1 mapping 
-    pars, _, fit_cortex, fit_medulla = dcmri.fit_kidney_cm_signal_9(
-            time, dyn_cortex[0], dyn_medulla[0], parset='iBEAt', **vars) 
+    ydata = np.concatenate((dyn_cortex[0], dyn_medulla[0]))
+    T1c = measure.read_master_table(folder, kidney+'C-T1-ROI')
+    T1m = measure.read_master_table(folder, kidney+'M-T1-ROI')
+    FAc = measure.read_master_table(folder, kidney+'C-T1FAcorr-ROI') 
+    FAm = measure.read_master_table(folder, kidney+'M-T1FAcorr-ROI')
+    kid.R10c = 1/(T1c/1000)
+    kid.R10m = 1/(T1m/1000)
+    kid.FAc = FA*FAc/12
+    kid.FAm = FA*FAm/12 
+    kid.vol = len(vals_cortex[0][0])*vox # kidney volume mL
+    kid.initialize('iBEAt').pretrain(xdata, ydata)
+    kid.train(xdata, ydata, bounds='iBEAt', xtol=1e-4)
+    ypred = kid.predict(xdata)
 
     # Export the results
     fig, (axc, axm) = plt.subplots(1,2,figsize=(10,5))
     axc.plot(time/60, dyn_cortex[0], 'ro', label='Signal for left cortex', markersize=markersize)
-    axc.plot(time/60, fit_cortex, 'b-', label='Fit for left cortex', linewidth=linewidth)
+    axc.plot(time/60, ypred[:nt], 'b-', label='Fit for left cortex', linewidth=linewidth)
     axc.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     axc.legend()
     axm.plot(time/60, dyn_medulla[0], 'ro', label='Signal for left medulla', markersize=markersize)
-    axm.plot(time/60, fit_medulla, 'b-', label='Fit for left medulla', linewidth=linewidth)
+    axm.plot(time/60, ypred[nt:], 'b-', label='Fit for left medulla', linewidth=linewidth)
     axm.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     axm.legend()
     plt.savefig(os.path.join(results_path, 'model fit DCE (LKCM).png'), dpi=600)
     figs.append(fig)
 
     # Update tables
-    table['time (s)'] = time
-    table['AIF'] = aif
     table['LKC'] = dyn_cortex[0]
     table['LKM'] = dyn_medulla[0]
-    vol = len(vals_cortex[0][0])*vox # kidney volume mL
+    pfree, pdep = kid.pfree('custom'), kid.pdep('custom')
     measure.add_rows(folder, [
-        [pid, kidney+'CM', 'Kidney', 'ROI', 6000*pars[0]/(1-Hct), 'mL/min/100mL', kidney + '-' + 'CBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*pars[1], '%', kidney + '-' + 'CM-KEF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*pars[2], '%', kidney + '-' + 'CPVF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[3], 'sec', kidney + '-' + 'GMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[4], 'sec', kidney + '-' + 'VMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[5]/60, 'min', kidney + '-' + 'PTMTT' + '-ROI', 'ROI fit'],    
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[6]/60, 'min', kidney + '-' + 'LHMTT' + '-ROI', 'ROI fit'],    
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[7]/60, 'min', kidney + '-' + 'DTMTT' + '-ROI', 'ROI fit'],    
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[8]/60, 'min', kidney + '-' + 'CDMTT' + '-ROI', 'ROI fit'], 
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*pars[1]/(1-pars[1]), '%', kidney + '-' + 'CM-FF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[1]/(1-pars[1])*6000*pars[0], 'mL/min/100mL', kidney + '-' + 'CM-TF' + '-ROI', 'ROI fit'],   
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[1]/(1-pars[1])*pars[0]*vol*60, 'mL/min', kidney + '-' + 'CM-SKGFR' + '-ROI', 'ROI fit'],   
-        [pid, kidney+'CM', 'Kidney', 'ROI', 6000*pars[2]*(1-pars[1])*pars[0]/(1-Hct), 'mL/min/100mL', kidney + '-' + 'MBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 60*vol*pars[0]/(1-Hct), 'mL/min', kidney + '-' + 'CM-SKBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 60*vol*pars[2]*(1-pars[1])*pars[0]/(1-Hct), 'mL/min', kidney + '-' + 'SKMBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*vol*pars[0]/(1-Hct)/CO, '%', kidney + '-' + 'CM-PCO' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[1][2], pfree[1][3], kidney + '-' + 'CM-KEF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[2][2], pfree[2][3], kidney + '-' + 'CPVF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[3][2], pfree[3][3], kidney + '-' + 'GMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[4][2], pfree[4][3], kidney + '-' + 'VMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[5][2], pfree[5][3], kidney + '-' + 'PTMTT' + '-ROI', 'ROI fit'],    
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[6][2], pfree[6][3], kidney + '-' + 'LHMTT' + '-ROI', 'ROI fit'],    
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[7][2], pfree[7][3], kidney + '-' + 'DTMTT' + '-ROI', 'ROI fit'],    
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[8][2], pfree[8][3], kidney + '-' + 'CDMTT' + '-ROI', 'ROI fit'], 
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[0][2], pdep[0][3], kidney + '-' + 'CM-FF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[1][2], pdep[1][3], kidney + '-' + 'CM-TF' + '-ROI', 'ROI fit'],   
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[2][2], pdep[2][3], kidney + '-' + 'CM-SKGFR' + '-ROI', 'ROI fit'],   
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[3][2], pdep[3][3], kidney + '-' + 'MBF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[4][2], pdep[4][3], kidney + '-' + 'CM-SKBF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[5][2], pdep[5][3], kidney + '-' + 'SKMBF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[6][2], pdep[6][3], kidney + '-' + 'CM-PCO' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[7][2], pdep[7][3], kidney + '-' + 'CBF' + '-ROI', 'ROI fit'],
     ])
 
     # Fit RK
     folder.message('Fitting RK.. ')
     kidney = 'RK'
-    t1_cortex = measure.read_master_table(folder, kidney+'C-T1-ROI') 
-    vars['R10c'] = 1/(t1_cortex/1000)
-    t1_medulla = measure.read_master_table(folder, kidney+'M-T1-ROI')
-    vars['R10m'] = 1/(t1_medulla/1000)
-    FAcorr = measure.read_master_table(folder, kidney+'C-T1FA-ROI')
-    vars['FAc'] = FA*FAcorr/12 # Use B1 correction from T1 mapping
-    FAcorr = measure.read_master_table(folder, kidney+'M-T1FA-ROI')
-    vars['FAm'] = FA*FAcorr/12 # Use B1 correction from T1 mapping 
-    pars, _, fit_cortex, fit_medulla = dcmri.fit_kidney_cm_signal_9(
-            time, dyn_cortex[1], dyn_medulla[1], parset='iBEAt', **vars) 
+    ydata = np.concatenate((dyn_cortex[1], dyn_medulla[1]))
+    T1c = measure.read_master_table(folder, kidney+'C-T1-ROI') 
+    T1m = measure.read_master_table(folder, kidney+'M-T1-ROI')
+    FAc = measure.read_master_table(folder, kidney+'C-T1FAcorr-ROI')
+    FAm = measure.read_master_table(folder, kidney+'M-T1FAcorr-ROI')
+    kid.R10c = 1/(T1c/1000)
+    kid.R10m = 1/(T1m/1000)
+    kid.FAc = FA*FAc/12 
+    kid.FAm = FA*FAm/12 
+    kid.vol = len(vals_cortex[1][0])*vox # kidney volume mL
+    kid.initialize('iBEAt').pretrain(xdata, ydata)
+    kid.train(xdata, ydata, bounds='iBEAt', xtol=1e-4)
+    ypred = kid.predict(xdata)
 
     # Export the results
     fig, (axc, axm) = plt.subplots(1,2,figsize=(10,5))
     axc.plot(time/60, dyn_cortex[1], 'ro', label='Signal for right cortex', markersize=markersize)
-    axc.plot(time/60, fit_cortex, 'b-', label='Fit for right cortex', linewidth=linewidth)
+    axc.plot(time/60, ypred[:nt], 'b-', label='Fit for right cortex', linewidth=linewidth)
     axc.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     axc.legend()
     axm.plot(time/60, dyn_medulla[1], 'ro', label='Signal for right medulla', markersize=markersize)
-    axm.plot(time/60, fit_medulla, 'b-', label='Fit for right medulla', linewidth=linewidth)
+    axm.plot(time/60, ypred[nt:], 'b-', label='Fit for right medulla', linewidth=linewidth)
     axm.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     axm.legend()
     plt.savefig(os.path.join(results_path, 'model fit DCE (RKCM).png'), dpi=600)
     figs.append(fig)
 
-
     # Update master table
     table['RKC'] = dyn_cortex[1]
     table['RKM'] = dyn_medulla[1]
-    vol = len(vals_cortex[1][0])*vox # kidney volume mL
+    pfree, pdep = kid.pfree('custom'), kid.pdep('custom')
     measure.add_rows(folder, [
-        [pid, kidney+'CM', 'Kidney', 'ROI', 6000*pars[0]/(1-Hct), 'mL/min/100mL', kidney + '-' + 'CBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*pars[1], '%', kidney + '-' + 'CM-KEF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*pars[2], '%', kidney + '-' + 'CPVF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[3], 'sec', kidney + '-' + 'GMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[4], 'sec', kidney + '-' + 'VMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[5]/60, 'min', kidney + '-' + 'PTMTT' + '-ROI', 'ROI fit'],    
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[6]/60, 'min', kidney + '-' + 'LHMTT' + '-ROI', 'ROI fit'],    
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[7]/60, 'min', kidney + '-' + 'DTMTT' + '-ROI', 'ROI fit'],    
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[8]/60, 'min', kidney + '-' + 'CDMTT' + '-ROI', 'ROI fit'], 
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*pars[1]/(1-pars[1]), '%', kidney + '-' + 'CM-FF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[1]/(1-pars[1])*6000*pars[0], 'mL/min/100mL', kidney + '-' + 'CM-TF' + '-ROI', 'ROI fit'],   
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[1]/(1-pars[1])*pars[0]*vol*60, 'mL/min', kidney + '-' + 'CM-SKGFR' + '-ROI', 'ROI fit'],   
-        [pid, kidney+'CM', 'Kidney', 'ROI', 6000*pars[2]*(1-pars[1])*pars[0]/(1-Hct), 'mL/min/100mL', kidney + '-' + 'MBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 60*vol*pars[0]/(1-Hct), 'mL/min', kidney + '-' + 'CM-SKBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 60*vol*pars[2]*(1-pars[1])*pars[0]/(1-Hct), 'mL/min', kidney + '-' + 'SKMBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*vol*pars[0]/(1-Hct)/CO, '%', kidney + '-' + 'CM-PCO' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[1][2], pfree[1][3], kidney + '-' + 'CM-KEF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[2][2], pfree[2][3], kidney + '-' + 'CPVF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[3][2], pfree[3][3], kidney + '-' + 'GMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[4][2], pfree[4][3], kidney + '-' + 'VMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[5][2], pfree[5][3], kidney + '-' + 'PTMTT' + '-ROI', 'ROI fit'],    
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[6][2], pfree[6][3], kidney + '-' + 'LHMTT' + '-ROI', 'ROI fit'],    
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[7][2], pfree[7][3], kidney + '-' + 'DTMTT' + '-ROI', 'ROI fit'],    
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[8][2], pfree[8][3], kidney + '-' + 'CDMTT' + '-ROI', 'ROI fit'], 
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[0][2], pdep[0][3], kidney + '-' + 'CM-FF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[1][2], pdep[1][3], kidney + '-' + 'CM-TF' + '-ROI', 'ROI fit'],   
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[2][2], pdep[2][3], kidney + '-' + 'CM-SKGFR' + '-ROI', 'ROI fit'],   
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[3][2], pdep[3][3], kidney + '-' + 'MBF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[4][2], pdep[4][3], kidney + '-' + 'CM-SKBF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[5][2], pdep[5][3], kidney + '-' + 'SKMBF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[6][2], pdep[6][3], kidney + '-' + 'CM-PCO' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[7][2], pdep[7][3], kidney + '-' + 'CBF' + '-ROI', 'ROI fit'],
     ])
 
     # Fit BK
     folder.message('Fitting BK.. ')
     kidney = 'BK'
-    nt = len(vals_cortex[0])
     dyn_cor = np.zeros(nt)
     dyn_med = np.zeros(nt)
     for t in range(nt):
@@ -835,25 +861,28 @@ def dce_cm(folder):
         vals_t = list(vals_medulla[0][t]) + list(vals_medulla[1][t])
         dyn_med[t] = np.mean(vals_t)
 
-    t1_cortex = measure.read_master_table(folder, kidney+'C-T1-ROI') 
-    vars['R10c'] = 1/(t1_cortex/1000)
-    t1_medulla = measure.read_master_table(folder, kidney+'M-T1-ROI')
-    vars['R10m'] = 1/(t1_medulla/1000)
-    FAcorr = measure.read_master_table(folder, kidney+'C-T1FA-ROI')
-    vars['FAc'] = FA*FAcorr/12 # Use B1 correction from T1 mapping
-    FAcorr = measure.read_master_table(folder, kidney+'M-T1FA-ROI')
-    vars['FAm'] = FA*FAcorr/12 # Use B1 correction from T1 mapping 
-    pars, _, fit_cortex, fit_medulla = dcmri.fit_kidney_cm_signal_9(
-            time, dyn_cor, dyn_med, parset='iBEAt', **vars) 
+    ydata = np.concatenate((dyn_cor, dyn_med))
+    T1c = measure.read_master_table(folder, kidney+'C-T1-ROI') 
+    T1m = measure.read_master_table(folder, kidney+'M-T1-ROI')
+    FAc = measure.read_master_table(folder, kidney+'C-T1FAcorr-ROI')
+    FAm = measure.read_master_table(folder, kidney+'M-T1FAcorr-ROI')
+    kid.R10c = 1/(T1c/1000)
+    kid.R10m = 1/(T1m/1000)
+    kid.FAc = FA*FAc/12 # Use B1 correction from T1 mapping
+    kid.FAm = FA*FAm/12 # Use B1 correction from T1 mapping 
+    kid.vol = len(vals_cortex[0][0])*vox + len(vals_cortex[1][0])*vox # kidney volume mL
+    kid.initialize('iBEAt').pretrain(xdata, ydata)
+    kid.train(xdata, ydata, bounds='iBEAt', xtol=1e-4)
+    ypred = kid.predict(xdata)
     
     # Export the results
     fig, (axc, axm) = plt.subplots(1,2,figsize=(10,5))
     axc.plot(time/60, dyn_cor, 'ro', label='Signal for cortex', markersize=markersize)
-    axc.plot(time/60, fit_cortex, 'b-', label='Fit for cortex', linewidth=linewidth)
+    axc.plot(time/60, ypred[:nt], 'b-', label='Fit for cortex', linewidth=linewidth)
     axc.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     axc.legend()
     axm.plot(time/60, dyn_med, 'ro', label='Signal for medulla', markersize=markersize)
-    axm.plot(time/60, fit_medulla, 'b-', label='Fit for medulla', linewidth=linewidth)
+    axm.plot(time/60, ypred[nt:], 'b-', label='Fit for medulla', linewidth=linewidth)
     axm.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
     axm.legend()
     plt.savefig(os.path.join(results_path, 'model fit DCE (BKCM).png'), dpi=600)
@@ -862,24 +891,24 @@ def dce_cm(folder):
     # Update master table
     table['BKC'] = dyn_cor
     table['BKM'] = dyn_med
-    vol = len(vals_cortex[0][0])*vox + len(vals_cortex[1][0])*vox # kidney volume mL
+    pfree, pdep = kid.pfree('custom'), kid.pdep('custom')
     measure.add_rows(folder, [
-        [pid, kidney+'CM', 'Kidney', 'ROI', 6000*pars[0]/(1-Hct), 'mL/min/100mL', kidney + '-' + 'CBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*pars[1], '%', kidney + '-' + 'CM-KEF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*pars[2], '%', kidney + '-' + 'CPVF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[3], 'sec', kidney + '-' + 'GMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[4], 'sec', kidney + '-' + 'VMTT' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[5]/60, 'min', kidney + '-' + 'PTMTT' + '-ROI', 'ROI fit'],    
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[6]/60, 'min', kidney + '-' + 'LHMTT' + '-ROI', 'ROI fit'],    
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[7]/60, 'min', kidney + '-' + 'DTMTT' + '-ROI', 'ROI fit'],    
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[8]/60, 'min', kidney + '-' + 'CDMTT' + '-ROI', 'ROI fit'], 
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*pars[1]/(1-pars[1]), '%', kidney + '-' + 'CM-FF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[1]/(1-pars[1])*6000*pars[0], 'mL/min/100mL', kidney + '-' + 'CM-TF' + '-ROI', 'ROI fit'],   
-        [pid, kidney+'CM', 'Kidney', 'ROI', pars[1]/(1-pars[1])*pars[0]*vol*60, 'mL/min', kidney + '-' + 'CM-SKGFR' + '-ROI', 'ROI fit'],   
-        [pid, kidney+'CM', 'Kidney', 'ROI', 6000*pars[2]*(1-pars[1])*pars[0]/(1-Hct), 'mL/min/100mL', kidney + '-' + 'MBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 60*vol*pars[0]/(1-Hct), 'mL/min', kidney + '-' + 'CM-SKBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 60*vol*pars[2]*(1-pars[1])*pars[0]/(1-Hct), 'mL/min', kidney + '-' + 'SKMBF' + '-ROI', 'ROI fit'],
-        [pid, kidney+'CM', 'Kidney', 'ROI', 100*vol*pars[0]/(1-Hct)/CO, '%', kidney + '-' + 'CM-PCO' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[1][2], pfree[1][3], kidney + '-' + 'CM-KEF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[2][2], pfree[2][3], kidney + '-' + 'CPVF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[3][2], pfree[3][3], kidney + '-' + 'GMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[4][2], pfree[4][3], kidney + '-' + 'VMTT' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[5][2], pfree[5][3], kidney + '-' + 'PTMTT' + '-ROI', 'ROI fit'],    
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[6][2], pfree[6][3], kidney + '-' + 'LHMTT' + '-ROI', 'ROI fit'],    
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[7][2], pfree[7][3], kidney + '-' + 'DTMTT' + '-ROI', 'ROI fit'],    
+        [pid, kidney+'CM', 'Kidney', 'ROI', pfree[8][2], pfree[8][3], kidney + '-' + 'CDMTT' + '-ROI', 'ROI fit'], 
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[0][2], pdep[0][3], kidney + '-' + 'CM-FF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[1][2], pdep[1][3], kidney + '-' + 'CM-TF' + '-ROI', 'ROI fit'],   
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[2][2], pdep[2][3], kidney + '-' + 'CM-SKGFR' + '-ROI', 'ROI fit'],   
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[3][2], pdep[3][3], kidney + '-' + 'MBF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[4][2], pdep[4][3], kidney + '-' + 'CM-SKBF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[5][2], pdep[5][3], kidney + '-' + 'SKMBF' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[6][2], pdep[6][3], kidney + '-' + 'CM-PCO' + '-ROI', 'ROI fit'],
+        [pid, kidney+'CM', 'Kidney', 'ROI', pdep[7][2], pdep[7][3], kidney + '-' + 'CBF' + '-ROI', 'ROI fit'],
     ])
 
     table.to_csv(os.path.join(results_path, 'data_DCE_CM.csv'))
