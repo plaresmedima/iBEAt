@@ -51,7 +51,7 @@ model = UNETR(
 ).to(device)
 
 # Required - DICOM series description of validated data
-trained_on = "T1w_abdomen_dixon_cor_bh_out_phase_post_contrast"
+trained_on = "Dixon_post_contrast_out_phase"
 
 
 def largest_cluster(array:np.ndarray)->np.ndarray:

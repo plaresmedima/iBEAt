@@ -4,15 +4,20 @@ from dbdicom.pipelines import input_series
 import dcmri
 
 from pipelines.roi_fit import load_aif
-import models
 
-export_study = 'Parameter maps'
+import models.t1
+import models.t2
+import models.T2star
+import models.DTI
+import models.IVIM
+
+export_study = '2: Parameter maps'
 
 
 def T1(folder):
 
     # Find source DICOM data
-    series, study, desc = _map_input(folder, "T1map_kidneys_cor-oblique_mbh_magnitude")
+    series, study, desc = _map_input(folder, "T1m_magnitude")
 
     # Model parameters (Siemens)
     TR = 4.6 # Echo Spacing is msec but not in header -> Set as TR in harmonize
@@ -20,7 +25,7 @@ def T1(folder):
     N_T1 = 66 # Number of k-space lines (hardcoded from Siemens protocol)
     FA_nom = 12 # Flip angle in degrees (hardcoded from Siemens protocol)
 
-    model = models.T1.Bloch()
+    model = models.t1.Bloch()
     kwargs = {'TR':TR, 'FA_cat':FA_cat, 'N_T1':N_T1, 'FA':FA_nom}
     dims = ['SliceLocation', 'AcquisitionTime']
 
@@ -35,10 +40,10 @@ def T1(folder):
 def T2(folder):
 
     # Find source DICOM data
-    series, study, desc = _map_input(folder, "T2map_kidneys_cor-oblique_mbh_magnitude")
+    series, study, desc = _map_input(folder, "T2m_magnitude")
 
     # Load data
-    model = models.T2.MonoExp()
+    model = models.t2.MonoExp()
     dims = ['SliceLocation', 'AcquisitionTime']
     array, header = series.array(dims, pixels_first=True, first_volume=True)
     TI = series.values('InversionTime', dims=tuple(dims)).astype(np.float32)
@@ -50,7 +55,7 @@ def T2(folder):
 def T2star(folder):
     
     # Find source DICOM data
-    series, study, desc = _map_input(folder, "T2star_map_kidneys_cor-oblique_mbh_magnitude")
+    series, study, desc = _map_input(folder, "T2starm_magnitude")
 
     model = models.T2star.BiExp()
     dims = ['SliceLocation', 'EchoTime']
@@ -63,7 +68,7 @@ def T2star(folder):
 def MT(folder):
     
     # Find source DICOM data
-    series, study, desc = _map_input(folder, "MT_kidneys_cor-oblique_bh")
+    series, study, desc = _map_input(folder, "MT")
         
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
 
@@ -86,7 +91,7 @@ def MT(folder):
 def DTI(folder):
 
     # Find appropriate series
-    series, study, desc = _map_input(folder, "DTI_kidneys_cor-oblique_fb")
+    series, study, desc = _map_input(folder, "DTI")
 
     # Read data
     model = models.DTI.DiPy()
@@ -115,7 +120,7 @@ def DTI(folder):
 def IVIM(folder):
 
     # Find appropriate series
-    series, study, desc = _map_input(folder, "IVIM_kidneys_cor-oblique_fb")
+    series, study, desc = _map_input(folder, "IVIM")
 
     model = models.IVIM.NonLin()
     array, header = series.array(['SliceLocation', 'InstanceNumber'], pixels_first=True, first_volume=True)
@@ -147,7 +152,7 @@ def IVIM(folder):
 def DCE(folder):
 
     # Find appropriate series       
-    series, study, desc = _map_input(folder, "DCE_kidneys_cor-oblique_fb")
+    series, study, desc = _map_input(folder, "DCE")
 
     # Extract data
     time, aif = load_aif(folder)

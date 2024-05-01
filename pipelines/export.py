@@ -16,10 +16,10 @@ def kidney_masks_as_dicom(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    fat_desc = 'T1w_abdomen_dixon_cor_bh_fat_post_contrast' 
-    out_desc = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
-    in_desc = 'T1w_abdomen_dixon_cor_bh_in_phase_post_contrast'
-    water_desc = 'T1w_abdomen_dixon_cor_bh_water_post_contrast'
+    fat_desc = 'Dixon_post_contrast_fat_' 
+    out_desc = 'Dixon_post_contrast_out_phase'
+    in_desc = 'Dixon_post_contrast_in_phase'
+    water_desc = 'Dixon_cor_post_contrast_water'
     k_means1_desc = 'KMeans cluster 1'
     k_means2_desc = 'KMeans cluster 2'
     lk_mask = 'LK' 
@@ -41,7 +41,7 @@ def kidney_masks_as_dicom(folder):
 
 
 
-def kidney_masks_as_png(database,backgroud_series = 'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast',RK_mask = 'RK', LK_mask = 'LK' ):
+def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK' ):
 
     database.message('Exporting masks as png..')
     results_path = database.path() + '_output'
@@ -170,11 +170,11 @@ def mdreg(database):
 
             # Save frames as .gif
             # Faster speed for the big series
-            if desc == "IVIM_kidneys_cor-oblique_fb_mdr_moco":
+            if desc == "IVIM_mdr_moco":
                 duration=25
-            elif desc == "DTI_kidneys_cor-oblique_fb_mdr_moco":
+            elif desc == "DTI_mdr_moco":
                 duration=25
-            elif desc == "DCE_kidneys_cor-oblique_fb_mdr_moco":
+            elif desc == "DCE_mdr_moco":
                 duration=20
             else:
                 duration=100
