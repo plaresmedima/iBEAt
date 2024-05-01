@@ -11,16 +11,14 @@ def single_subject(username, password, path, dataset):
     #Import data from XNAT
     if isinstance(dataset,str) and '_' in dataset:
         ExperimentName = xnat.main(username, password, path, SpecificDataset=dataset)
+        pathScan = os.path.join(path, ExperimentName)
     elif len(dataset)==3:
         ExperimentName = xnat.main(username, password, path, dataset)
+        pathScan = os.path.join(path, ExperimentName)
     elif dataset == 'load':
-        ExperimentName = os.path.basename(path)
+        pathScan = os.path.join(path)
     
-    pathScan = os.path.join(path, ExperimentName)
     filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
-    
-    # THIS NEEDS ANOTHER APPROACH!!!
-    unetr = 'C:\\Users\\steve\\Dropbox\\Data\\dl_models\\UNETR_kidneys_v1.pth'
 
     #Available CPU cores
     try: 
@@ -33,7 +31,6 @@ def single_subject(username, password, path, dataset):
     database.log("Analysis of " + pathScan.split('//')[-1] + " has started!")
     database.log("CPU cores: " + str(UsedCores))
     
-
     ## HARMONIZATION
 
     steps.rename_all_series(database)
@@ -43,12 +40,13 @@ def single_subject(username, password, path, dataset):
     steps.harmonize_dti(database)
     steps.harmonize_ivim(database)
     steps.harmonize_dce(database)
+    steps.harmonize_subject_name(database)
     
     ## SEGMENTATION
 
-    steps.fetch_dl_models() # TODO
-    steps.fetch_kidney_masks(database) # TODO
-    steps.segment_kidneys(database, unetr)
+    steps.fetch_dl_models(database)
+    steps.fetch_kidney_masks(database)
+    steps.segment_kidneys(database)
     steps.segment_renal_sinus_fat(database)
     steps.segment_aorta_on_dce(database)
     steps.segment_renal_artery(database)
