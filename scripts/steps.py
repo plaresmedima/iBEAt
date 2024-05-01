@@ -98,10 +98,19 @@ def harmonize_dce(database):
         database.log("Harmonizing DCE series was NOT completed; error: " + str(e)) 
         database.restore()
 
+def harmonize_subject_name(database):
+    start_time = time.time()
+    database.log("Harmonizing subject name has started!")
+    try:
+        harmonize.subject_name(database)
+        database.log("Harmonizing subject name was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing subject name was NOT completed; error: " + str(e)) 
+        database.restore()
+
 
 ## SEGMENTATION
-        
-
 
 def fetch_kidney_masks(database):
     start_time = time.time()
@@ -125,21 +134,42 @@ def fetch_dl_models(database):
         database.restore()
 
 
-def segment_kidneys(database, weights):
+def segment_kidneys(database):
     start_time = time.time()
     database.log("Kidney segmentation has started")
     try:
+
         lk = database.series(SeriesDescription='LK')
         if len(lk) == 0:
-            segment.kidneys(database, weights)
-            database.log("Kidney segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+            database.log("Starting kidney (LK) segmentation")
+            segment.kidneys(database)
+            database.log("Kidney (LK) segmentation was completed")
         else:
-            database.log('Kidney masks were already present - no automated kidney segmentation was performed.')
+            database.log('Kidney (LK) mask were already present - no automated kidney segmentation was performed.')
         database.save()
+        
     except Exception as e:
-        database.log("Kidney segmentation was NOT completed; error: "+str(e))
+        database.log("Kidney (LK) segmentation was NOT completed; error: "+str(e))
         database.restore()
         raise RuntimeError('Critical step failed (kidney segmentation) - exiting pipeline.')
+    
+    try:
+
+        rk = database.series(SeriesDescription='RK')
+        if len(rk) == 0:
+            database.log("Starting kidney (RK) segmentation")
+            segment.kidneys(database)
+            database.log("Kidney (RK) segmentation was completed")
+        else:
+            database.log('Kidney (RK) mask were already present - no automated kidney segmentation was performed.')
+        database.save()
+        
+    except Exception as e:
+        database.log("Kidney (RK) segmentation was NOT completed; error: "+str(e))
+        database.restore()
+        raise RuntimeError('Critical step failed (kidney segmentation) - exiting pipeline.')
+
+    database.log("Kidney segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
 
 def segment_renal_sinus_fat(database):
