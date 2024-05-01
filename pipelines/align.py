@@ -6,7 +6,7 @@ from dipy.align.imaffine import MutualInformationMetric, AffineRegistration
 from dipy.align.transforms import TranslationTransform2D
 
 
-export_study = "Alignment"
+export_study = "3: Alignment"
 
 
 def _inslice_active_translation(fixed, moving, progress, applyto=[]):
