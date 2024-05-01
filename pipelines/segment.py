@@ -2,13 +2,16 @@ import numpy as np
 from dbdicom.extensions import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
 from models import DCE_aorta, PC, UNETR_kidneys_v1
+import utilities.zenodo_link as UNETR_zenodo
+import os
 
 
 
-export_study = 'Segmentations'
+
+export_study = '0: Segmentations'
 
 
-def kidneys(database, weights):
+def kidneys(database):
 
     # Get weights file and check if valid 
     # if not os.path.isfile(weights):
@@ -16,6 +19,9 @@ def kidneys(database, weights):
     #     msg += 'Please check that the file with model weights is in the folder, and is named ' + UNETR_kidneys_v1.filename
     #     database.dialog.information(msg)
     #     return
+
+    unetr, unetr_link= UNETR_zenodo.main()
+    weights = os.path.join(os.path.dirname(database.path()),unetr)
 
     database.message('Segmenting kidneys. This could take a few minutes. Please be patient..')
 
@@ -54,7 +60,7 @@ def kidneys(database, weights):
 
 def renal_sinus_fat(folder):
 
-    fat = folder.series(SeriesDescription='T1w_abdomen_dixon_cor_bh_fat_post_contrast')
+    fat = folder.series(SeriesDescription='Dixon_post_contrast_fat')
     lk  = folder.series(SeriesDescription='LK')
     rk  = folder.series(SeriesDescription='RK')
 
@@ -87,8 +93,8 @@ def renal_sinus_fat(folder):
 
 def compute_whole_kidney_canvas(database):
     series_desc = [
-        'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
-        'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
+        'Dixon_post_contrast_fat',
+        'Dixon_post_contrast_out_phase'
     ] 
     features, study = input_series(database, series_desc, export_study)
     if features is None:
@@ -119,10 +125,10 @@ def aorta_on_dce(folder):
 def renal_artery(folder):
 
     desc = [
-        'PC_RenalArtery_Right_EcgTrig_fb_120_magnitude',
-        'PC_RenalArtery_Right_EcgTrig_fb_120_velocity',
-        'PC_RenalArtery_Left_EcgTrig_fb_120_magnitude',
-        'PC_RenalArtery_Left_EcgTrig_fb_120_velocity',
+        'PC_right_delta_magnitude',
+        'PC_right_delta_phase',
+        'PC_left_delta_magnitude',
+        'PC_left_delta_phase',
     ]
     series, study = input_series(folder, desc, export_study)
     if series is None:
@@ -154,9 +160,9 @@ def renal_artery(folder):
 def cortex_medulla(database):
 
     features = [
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_AVD_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_RPF_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_MTT_map',  
+        'DCE_mdr_moco_AVD_map',
+        'DCE_mdr_moco_RPF_map',
+        'DCE_mdr_moco_MTT_map',  
     ]
 
     output = []
