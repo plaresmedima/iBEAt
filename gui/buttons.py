@@ -20,7 +20,7 @@ import utilities.upload as upload
 
 
 # Needs to be in a central location
-weights = 'C:\\Users\\steve\\Dropbox\\Data\\dl_models\\UNETR_kidneys_v1.pth'
+#weights = 'C:\\Users\\steve\\Dropbox\\Data\\dl_models\\UNETR_kidneys_v1.pth'
 
 
 def _never(app):
