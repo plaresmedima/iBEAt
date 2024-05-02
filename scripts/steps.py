@@ -140,32 +140,18 @@ def segment_kidneys(database):
     try:
 
         lk = database.series(SeriesDescription='LK')
-        if len(lk) == 0:
-            database.log("Starting kidney (LK) segmentation")
-            segment.kidneys(database)
-            database.log("Kidney (LK) segmentation was completed")
-        else:
-            database.log('Kidney (LK) mask were already present - no automated kidney segmentation was performed.')
-        database.save()
-        
-    except Exception as e:
-        database.log("Kidney (LK) segmentation was NOT completed; error: "+str(e))
-        database.restore()
-        raise RuntimeError('Critical step failed (kidney segmentation) - exiting pipeline.')
-    
-    try:
-
         rk = database.series(SeriesDescription='RK')
-        if len(rk) == 0:
-            database.log("Starting kidney (RK) segmentation")
+
+        if len(lk) == 0 or len(rk) == 0:
+            database.log("Starting AI kidney segmentation")
             segment.kidneys(database)
-            database.log("Kidney (RK) segmentation was completed")
+            database.log("AI Kidney segmentation was completed")
         else:
-            database.log('Kidney (RK) mask were already present - no automated kidney segmentation was performed.')
+            database.log('Both masks were already present - no AI kidney segmentation was performed.')
         database.save()
         
     except Exception as e:
-        database.log("Kidney (RK) segmentation was NOT completed; error: "+str(e))
+        database.log("AI Kidney segmentation was NOT completed; error: "+str(e))
         database.restore()
         raise RuntimeError('Critical step failed (kidney segmentation) - exiting pipeline.')
 

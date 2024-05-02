@@ -41,9 +41,9 @@ def find_mask_in_drive(database):
                 files_LK = [os.path.join(os.path.join(download_path,LK_name,'dbdicom'), file) for file in os.listdir(os.path.join(download_path,LK_name,'dbdicom'))]
                 database.import_dicom(files_LK)
                 shutil.rmtree(os.path.join(download_path,LK_name))
-                database.log("LK Mask was found in the mask drive folder")
+                database.log(LK_name + " was found in the mask drive folder")
             except:
-                database.log("LK Mask was NOT found in the mask drive folder")
+                database.log(LK_name + " was NOT found in the mask drive folder")
             database.save()
 
         if item['title'] == RK_name:
@@ -53,9 +53,9 @@ def find_mask_in_drive(database):
                 files_RK = [os.path.join(os.path.join(download_path,RK_name,'dbdicom'), file) for file in os.listdir(os.path.join(download_path,RK_name,'dbdicom'))]
                 database.import_dicom(files_RK)
                 shutil.rmtree(os.path.join(download_path,RK_name))
-                database.log("RK Mask was found in the mask drive folder")
+                database.log(RK_name + " was found in the mask drive folder")
             except:
-                database.log("RK Mask was NOT found in the mask drive folder")
+                database.log(RK_name + " was NOT found in the mask drive folder")
             database.save()
     
     if LK_drive == 1 and RK_drive == 1:
