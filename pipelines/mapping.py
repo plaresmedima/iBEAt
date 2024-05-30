@@ -101,13 +101,13 @@ def DTI(folder):
     # Compute
     series.message('Fitting DTI model..')
     fit, pars = model.fit(array, bvals[0,:], np.stack(bvecs[0,:]), fit_method='NLLS')
-    err = model.error(array, fit)
+    #err = model.error(array, fit)
 
     # Save as DICOM
     series = study.new_series(SeriesDescription=desc + '_fit')
     series.set_array(fit, header, pixels_first=True)
     series = study.new_series(SeriesDescription=desc + '_fiterr_map')
-    series.set_array(err, header[:,0], pixels_first=True)
+    #series.set_array(err, header[:,0], pixels_first=True)
     maps = []
     for i, p in enumerate(model.pars()):
         series = study.new_series(SeriesDescription=desc + '_' + p +'_map')
@@ -160,7 +160,7 @@ def DCE(folder):
     
     # Calculate maps
     series.message('Calculating descriptive parameters..')
-    MAX, AUC, ATT = dcmri.pixel_descriptives(array, aif, time[1]-time[0], baseline=15)
+    MAX, AUC, ATT, SO = dcmri.pixel_descriptives(array, aif, time[1]-time[0], baseline=15)
     series.message('Performing linear fit..')
     fit, par = dcmri.pixel_2cfm_linfit(array, aif, time, baseline=15)
     series.message('Deconvolving..')

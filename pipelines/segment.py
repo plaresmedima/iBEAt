@@ -55,6 +55,8 @@ def kidneys(database):
     right.set_array(right_kidney, header, pixels_first=True)
     # right[['WindowCenter','WindowWidth']] = [1.0, 2.0]
 
+    database.save()
+
     return left, right
 
 

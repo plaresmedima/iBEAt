@@ -8,7 +8,10 @@ from dbdicom.extensions import vreg
 import dcmri
 
 from pipelines import measure
-import models.PC, models.T1, models.T2, models.T2star
+import models.PC 
+import models.t1 
+import models.t2 
+import models.T2star
 
 
 def PC(folder):

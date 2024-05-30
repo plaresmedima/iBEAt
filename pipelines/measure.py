@@ -65,25 +65,27 @@ def sinus_fat_volumetrics(folder):
 
 
 def t1_maps(folder):
-    seq = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    seq = 'T1m_magnitude_mdr_moco'
     pars = ['T1', 'T1FAcorr']
     units = ['msec', 'deg']
     return features(folder, seq, pars, units)
 
 def t2_maps(folder):
-    seq = 'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
-    pars = ['T2', 'T2FAcorr']
-    units = ['msec', 'deg']
+    seq = 'T2m_magnitude_mdr_moco'
+    #pars = ['T2', 'T2FAcorr']
+    pars = ['T2']
+    #units = ['msec', 'deg']
+    units = ['msec']
     return features(folder, seq, pars, units)
 
 def t2star_maps(folder):
-    seq = 'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
-    pars = [ 'T2s','f_fat']
+    seq = 'T2starm_magnitude_mdr_moco'
+    pars = [ 'T2star','f_fat']
     units = ['msec','']
     return features(folder, seq, pars, units)
 
 def mt_maps(folder):
-    seq = 'MT_kidneys_cor-oblique_bh_mdr_moco'
+    seq = 'MT_mdr_moco'
     pars = ['MTR']
     units = ['%']
     return features(folder, seq, pars, units)
@@ -95,13 +97,13 @@ def ivim_maps(folder):
     return features(folder, seq, pars, units)
 
 def dti_maps(folder):
-    seq = 'DTI_kidneys_cor-oblique_fb_mdr_moco'
+    seq = 'DTI_mdr_moco'
     pars = ['MD','RD','AD','Planarity','Linearity','Sphericity','FA']
     units = ['','','','','','','']
     return features(folder, seq, pars, units)
 
 def dce_maps(folder):
-    seq = 'DCE_kidneys_cor-oblique_fb_mdr_moco'
+    seq = 'DCE_mdr_moco'
     pars = ['AVD', 'RPF', 'MTT']
     units = ['mL/100mL', 'mL/min/100mL', 'sec']
     return features(folder, seq, pars, units)
