@@ -21,8 +21,8 @@ def PC(folder):
         os.mkdir(results_path)
 
     dyn_desc = [
-        'PC_RenalArtery_Left_EcgTrig_fb_120_velocity',
-        'PC_RenalArtery_Right_EcgTrig_fb_120_velocity',
+        'PC_left_delta_velocity',
+        'PC_right_delta_velocity',
     ]
 
     dims = 'InstanceNumber'
@@ -108,7 +108,7 @@ def T1(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    dyn_desc = 'T1m_magnitude_mdr_moco'
     
     # Model parameters (Siemens)
     TR = 4.6 # Echo Spacing is msec but not in header -> Set as TR in harmonize
@@ -116,7 +116,7 @@ def T1(folder):
     N_T1 = 66 # Number of k-space lines (hardcoded from Siemens protocol)
     FA_nom = 12 # Flip angle in degrees (hardcoded from Siemens protocol)
 
-    model = models.T1.Bloch()
+    model = models.t1.Bloch()
     kwargs = {'TR':TR, 'FA_cat':FA_cat, 'N_T1':N_T1, 'FA':FA_nom}
     dims = ('SliceLocation', 'AcquisitionTime')
 
@@ -216,7 +216,7 @@ def T2(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = 'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    dyn_desc = 'T2m_magnitude_mdr_moco'
 
     # Parameters
     # Defaults from Siemens iBEAt protocol
@@ -229,7 +229,7 @@ def T2(folder):
     # model = T2_mono_exp_offset
     # dims = ('SliceLocation', 'InversionTime')
     # kwargs = {}
-    model = models.T2.Bloch()
+    model = models.t2.Bloch()
     #model = T2_prep
     dims = ('SliceLocation', 'AcquisitionTime')
     kwargs = {'Tspoil':Tspoil, 'N_T2':N_T2, 'Trec':Trec, 'TR':TR, 'FA':FA}
@@ -330,7 +330,7 @@ def T2star(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = 'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    dyn_desc = 'T2starm_magnitude_mdr_moco'
     dims = ('SliceLocation', 'EchoTime')
     model = models.T2star.BiExp()
     figs = []
@@ -427,7 +427,7 @@ def dce(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = "DCE_kidneys_cor-oblique_fb_mdr_moco"
+    dyn_desc = "DCE_mdr_moco"
 
     dyn_kidneys = []
     vals_kidneys = []
@@ -657,7 +657,7 @@ def dce_cm(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = "DCE_kidneys_cor-oblique_fb_mdr_moco"
+    dyn_desc = "DCE_mdr_moco"
 
     dyn_cortex, dyn_medulla = [], []
     vals_cortex, vals_medulla = [], []

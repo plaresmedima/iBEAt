@@ -19,7 +19,7 @@ def kidney_masks_as_dicom(folder):
     fat_desc = 'Dixon_post_contrast_fat_' 
     out_desc = 'Dixon_post_contrast_out_phase'
     in_desc = 'Dixon_post_contrast_in_phase'
-    water_desc = 'Dixon_cor_post_contrast_water'
+    water_desc = 'Dixon_post_contrast_water'
     k_means1_desc = 'KMeans cluster 1'
     k_means2_desc = 'KMeans cluster 2'
     lk_mask = 'LK' 
@@ -192,13 +192,14 @@ def alignment(database):
     lk = database.series(SeriesDescription='LK')
     rk = database.series(SeriesDescription='RK')
 
-    for s, background_series in enumerate(database.series(StudyDescription='Alignment')):
+    for s, background_series in enumerate(database.series(StudyDescription='3: Alignment')):
 
         desc = background_series.instance().SeriesDescription
-        if desc[-2:] == 'LK':
-            overlay_mask  = vreg.map_to(lk, background_series)
+
+        if 'LK' in desc:
+            overlay_mask  = vreg.map_to(lk[0], background_series)
         else:
-            overlay_mask  = vreg.map_to(rk, background_series)
+            overlay_mask  = vreg.map_to(rk[0], background_series)
 
         array_background, _ = background_series.array(['SliceLocation'], pixels_first=True, first_volume=True)
         array_overlay_mask, _ = overlay_mask.array(['SliceLocation'], pixels_first=True, first_volume=True)
