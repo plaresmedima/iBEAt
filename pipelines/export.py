@@ -71,6 +71,10 @@ def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_pha
     array_overlay_mask_RK = array_overlay_mask_RK.transpose((1,0,2))
 
     array_overlay_mask = array_overlay_mask_LK + array_overlay_mask_RK
+    array_overlay_mask[array_overlay_mask >0.5] = 1
+    array_overlay_mask[array_overlay_mask <0.5] = np.nan
+    
+
 
     num_row_cols = int(np.ceil (np.sqrt(array_overlay_mask.shape[2])))
 
@@ -85,13 +89,20 @@ def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_pha
                 col.axis("off")
             else:  
             
-                col.imshow(array_series_img[:,:,i], 'gray', interpolation='none',vmin=0,vmax=np.mean(array_series_img)+np.std(array_series_img))
-                col.imshow(array_overlay_mask[:,:,i], 'jet' , interpolation='none', alpha=0.5)
+                # Display the background image
+                col.imshow(array_series_img[:,:,i], cmap='gray', interpolation='none', vmin=0, vmax=np.mean(array_series_img) + 2 * np.std(array_series_img))
+            
+                # Overlay the mask with transparency
+                col.imshow(array_overlay_mask[:,:,i], cmap='autumn', interpolation='none', alpha=0.5)
+
                 col.set_xticklabels([])
                 col.set_yticklabels([])
                 col.set_aspect('equal')
                 col.axis("off")
             i = i +1 
+
+
+    
     fig.suptitle('Kidney Masks', fontsize=14)
     fig.savefig(os.path.join(results_path, 'Masks.png'), dpi=600)
 
@@ -119,28 +130,79 @@ def aif_as_png(folder):
 
 def mapping(database):
 
+
+    scale_dict = {
+
+    'T1m_magnitude_mdr_moco_err_map'       : (0.5,1), 
+    'T1m_magnitude_mdr_moco_T1_map'        : (1000,2000), 
+    'T1m_magnitude_mdr_moco_T1FAcorr_map'  : (0,20),
+    'T2m_magnitude_mdr_moco_err_map'       : (0.5,1), 
+    'T2m_magnitude_mdr_moco_T2_map'        : (10,100), 
+    'T2starm_magnitude_mdr_moco_err_map'   : (0.5,1),
+    'T2starm_magnitude_mdr_moco_T2star_map': (0,80),
+    'T2starm_magnitude_mdr_moco_f_fat_map' : (0,0.5),
+    'MT_mdr_moco_MTR_map'                  : (0,80), 
+    'MT_mdr_moco_AVR_map'                  : (0,80), 
+    'DTI_mdr_moco_FA_map'                  : (0,0.6), 
+    'DTI_mdr_moco_MD_map'                  : (0.001,0.003),
+    'DTI_mdr_moco_Sphericity_map'          : (0,1),
+    'DTI_mdr_moco_Linearity_map'           : (0,0.5),
+    'DTI_mdr_moco_Planarity_map'           : (0,0.5),
+    'DTI_mdr_moco_AD_map'                  : (0.001,0.003),
+    'DTI_mdr_moco_RD_map'                  : (0.001,0.003), 
+    'DCE_mdr_moco_ATT_map'                 : (0,20),
+    'DCE_mdr_moco_RPF_map'                 : (0,1000),
+    'DCE_mdr_moco_AVD_map'                 : (0,500),
+    'DCE_mdr_moco_MTT_map'                 : (0,200), 
+    'DCE_mdr_moco_FP_map'                  : (0,500),
+    'DCE_mdr_moco_TP_map'                  : (0,200), 
+    'DCE_mdr_moco_VP_map'                  : (0,500),
+    'DCE_mdr_moco_FT_map'                  : (0,300),
+    'DCE_mdr_moco_TT_map'                  : (0,400)
+    }
+
     results_path = database.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
     for series in database.series():
         desc = series['SeriesDescription']
+
         if desc[-4:] == '_map':
-
+            print(desc)
             array, _ = series.array(['SliceLocation'], pixels_first=True, first_volume=True)
+            array  = np.transpose(array,(1,0,2))
             
-            # Create frames for gif movie
-            frames = []
-            for z in range(array.shape[2]):
-                series.progress(z+1, array.shape[2], 'Exporting '+desc+' as gif..')
-                smin = np.amin(array[:,:,z])
-                smax = np.amax(array[:,:,z])
-                frame = 255*(array[:,:,z]-smin)/(smax-smin)
-                frame = frame.astype(np.uint8)
-                frames.append(frame.T)
+            vmin, vmax = scale_dict.get(desc, (0, np.median(array) + 2 * np.std(array)))
 
-            # Save the frames as a GIF
-            imageio.mimsave(os.path.join(results_path, 'map_'+ desc + '.gif'), frames, duration=100)
+            num_row_cols = int(np.ceil (np.sqrt(array.shape[2])))
+
+            fig, ax = plt.subplots(nrows=num_row_cols, ncols=num_row_cols,gridspec_kw = {'wspace':0, 'hspace':0},figsize=(num_row_cols,num_row_cols))
+            i=0
+            for row in ax:
+                for col in row:
+                    if i>=array.shape[2]:
+                        col.set_xticklabels([])
+                        col.set_yticklabels([])
+                        col.set_aspect('equal')
+                        col.axis("off")
+                    else:  
+                        
+                        if "_S0_" in desc:
+                            im = col.imshow(array[:,:,i], cmap='gray', interpolation='none', vmin=vmin, vmax=vmax)
+                        else:
+                            im = col.imshow(array[:,:,i], cmap='jet', interpolation='none', vmin=vmin, vmax=vmax)
+
+                        col.set_xticklabels([])
+                        col.set_yticklabels([])
+                        col.set_aspect('equal')
+                        col.axis("off")
+                    i = i +1 
+            
+            #cbar = fig.colorbar(im, ax=ax[-1, -1], orientation='vertical', fraction=0.046, pad=0.04)
+            fig.suptitle(desc, fontsize=10)
+            fig.savefig(os.path.join(results_path, 'map_'+ desc +'.png'), dpi=600)
+
 
 
 
@@ -192,42 +254,81 @@ def alignment(database):
     lk = database.series(SeriesDescription='LK')
     rk = database.series(SeriesDescription='RK')
 
-    for s, background_series in enumerate(database.series(StudyDescription='3: Alignment')):
+    desc_list = [
+    
+    'MT_mdr_moco_MTR_map_LK_align',
+    'MT_mdr_moco_MTR_map_RK_align',
+    'T1m_magnitude_mdr_moco_T1_map_LK_align',
+    'T1m_magnitude_mdr_moco_T1_map_RK_align',
+    'T2m_magnitude_mdr_moco_T2_map_LK_align',
+    'T2m_magnitude_mdr_moco_T2_map_RK_align',
+    'T2starm_magnitude_mdr_moco_T2star_map_LK_align',
+    'T2starm_magnitude_mdr_moco_T2star_map_RK_align',
+    'DTI_mdr_moco_MD_map_LK_align',
+    'DTI_mdr_moco_MD_map_RK_align',
+    'DCE_mdr_moco_AUC_map_LK_align',
+    'DCE_mdr_moco_AUC_map_RK_align'
+    ]
 
+    scale_dict = {
+
+    'MT_mdr_moco_MTR_map_LK_align'                  : (0,80), 
+    'MT_mdr_moco_MTR_map_RK_align'                  : (0,80),
+    'T1m_magnitude_mdr_moco_T1_map_LK_align'        : (1000,2000),
+    'T1m_magnitude_mdr_moco_T1_map_RK_align'        : (1000,2000),
+    'T2m_magnitude_mdr_moco_T2_map_LK_align'        : (10,100),
+    'T2m_magnitude_mdr_moco_T2_map_RK_align'        : (10,100),
+    'T2starm_magnitude_mdr_moco_T2star_map_LK_align': (0,80),
+    'T2starm_magnitude_mdr_moco_T2star_map_RK_align': (0,80),
+    'DTI_mdr_moco_MD_map_LK_align'                  : (0.001,0.003),
+    'DTI_mdr_moco_MD_map_RK_align'                  : (0.001,0.003),
+    }
+
+
+
+    for s, background_series in enumerate(database.series(StudyDescription='3: Alignment')):
+        
         desc = background_series.instance().SeriesDescription
 
-        if 'LK' in desc:
-            overlay_mask  = vreg.map_to(lk[0], background_series)
-        else:
-            overlay_mask  = vreg.map_to(rk[0], background_series)
+        if desc in desc_list:
 
-        array_background, _ = background_series.array(['SliceLocation'], pixels_first=True, first_volume=True)
-        array_overlay_mask, _ = overlay_mask.array(['SliceLocation'], pixels_first=True, first_volume=True)
+            if 'LK' in desc:
+                overlay_mask  = vreg.map_to(lk[0], background_series)
+            else:
+                overlay_mask  = vreg.map_to(rk[0], background_series)
 
-        array_background  = np.transpose(array_background,(1,0,2))
-        array_overlay_mask = np.transpose(array_overlay_mask,(1,0,2))
+            array_background, _ = background_series.array(['SliceLocation'], pixels_first=True, first_volume=True)
+            array_overlay_mask, _ = overlay_mask.array(['SliceLocation'], pixels_first=True, first_volume=True)
 
-        num_row_cols = int(np.ceil(np.sqrt(array_overlay_mask.shape[2])))
-        fig, ax = plt.subplots(nrows=num_row_cols, ncols=num_row_cols, gridspec_kw = {'wspace':0, 'hspace':0}, figsize=(num_row_cols,num_row_cols))
-        i=0
-        for row in ax:
-            for col in row:
-                if i>=array_overlay_mask.shape[2]:
-                    col.set_xticklabels([])
-                    col.set_yticklabels([])
-                    col.set_aspect('equal')
-                    col.axis("off")
-                else:  
-                
-                    col.imshow(array_background[:,:,i], 'gray', interpolation='none',vmin=0,vmax=np.median(array_background)+np.std(array_background))
-                    col.imshow(array_overlay_mask[:,:,i], 'jet' , interpolation='none', alpha=0.2)
-                    col.set_xticklabels([])
-                    col.set_yticklabels([])
-                    col.set_aspect('equal')
-                    col.axis("off")
-                i = i +1 
-        fig.suptitle(desc, fontsize=14)
-        fig.savefig(os.path.join(results_path, desc + '.png'), dpi=600)
+            array_background  = np.transpose(array_background,(1,0,2))
+            array_overlay_mask = np.transpose(array_overlay_mask,(1,0,2))
+
+            array_overlay_mask[array_overlay_mask >0.5] = 1
+            array_overlay_mask[array_overlay_mask <0.5] = np.nan
+
+            vmin, vmax = scale_dict.get(desc, (0, np.median(array_background) + 2 * np.std(array_background)))
+
+            num_row_cols = int(np.ceil(np.sqrt(array_overlay_mask.shape[2])))
+            fig, ax = plt.subplots(nrows=num_row_cols, ncols=num_row_cols, gridspec_kw = {'wspace':0, 'hspace':0}, figsize=(num_row_cols,num_row_cols))
+            i=0
+            for row in ax:
+                for col in row:
+                    if i>=array_overlay_mask.shape[2]:
+                        col.set_xticklabels([])
+                        col.set_yticklabels([])
+                        col.set_aspect('equal')
+                        col.axis("off")
+                    else:  
+                    
+                        col.imshow(array_background[:,:,i], 'gray', interpolation='none',vmin=vmin,vmax=vmax)
+                        col.imshow(array_overlay_mask[:,:,i], 'autumn' , interpolation='none', alpha=0.5)
+                        col.set_xticklabels([])
+                        col.set_yticklabels([])
+                        col.set_aspect('equal')
+                        col.axis("off")
+                    i = i +1 
+            fig.suptitle(desc, fontsize=10)
+            fig.savefig(os.path.join(results_path, desc + '.png'), dpi=600)
 
 
 
