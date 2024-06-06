@@ -38,6 +38,25 @@ class DiPy():
         # MD[MD<0]=0
 
         fit = tenfit.predict(gtab)
+
+        tenfit.S0_hat[tenfit.S0_hat<0] = 0
+        tenfit.S0_hat[tenfit.S0_hat>100000] = 100000
+        tenfit.fa[tenfit.fa<0] = 0
+        tenfit.fa[tenfit.fa>1] = 1
+        tenfit.md[tenfit.md<0] = 0
+        tenfit.md[tenfit.md>0.05] = 0.05
+        tenfit.sphericity[tenfit.sphericity<0] = 0
+        tenfit.sphericity[tenfit.sphericity>1] = 1
+        tenfit.linearity[tenfit.linearity<0] = 0
+        tenfit.linearity[tenfit.linearity>1] = 1
+        tenfit.planarity[tenfit.planarity<0] = 0
+        tenfit.planarity[tenfit.planarity>1] = 1
+        tenfit.ad[tenfit.ad<0] = 0
+        tenfit.ad[tenfit.ad>0.05] = 0.05
+        tenfit.rd[tenfit.rd<0] = 0
+        tenfit.rd[tenfit.rd>0.05] = 0.05
+
+
         pars = ( 
             tenfit.S0_hat, 
             tenfit.fa, 
