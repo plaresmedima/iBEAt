@@ -106,7 +106,7 @@ def DTI(folder):
     # Save as DICOM
     series = study.new_series(SeriesDescription=desc + '_fit')
     series.set_array(fit, header, pixels_first=True)
-    series = study.new_series(SeriesDescription=desc + '_fiterr_map')
+    #series = study.new_series(SeriesDescription=desc + '_fiterr_map')
     #series.set_array(err, header[:,0], pixels_first=True)
     maps = []
     for i, p in enumerate(model.pars()):
@@ -169,7 +169,20 @@ def DCE(folder):
     # Save maps as DICOM
     fit_series = study.new_series(SeriesDescription=desc + "_fit")
     fit_series.set_array(fit, header, pixels_first=True)
-    
+
+    MAX[MAX<0]=0
+    MAX[MAX>10000]=10000
+    AUC[AUC<0]=0
+    AUC[AUC>10000]=10000
+    ATT[ATT<0]=0
+    ATT[ATT>10000]=10000
+    RPF[RPF<0]=0
+    RPF[RPF>10000]=10000
+    AVD[AVD<0]=0
+    AVD[AVD>10000]=10000
+    MTT[MTT<0]=0
+    MTT[MTT>10000]=10000
+
     MAX_series = study.new_series(SeriesDescription=desc + "_MAX_map")
     AUC_series = study.new_series(SeriesDescription=desc + "_AUC_map")
     ATT_series = study.new_series(SeriesDescription=desc + "_ATT_map")
