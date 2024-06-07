@@ -12,6 +12,7 @@ import models.PC
 import models.t1 
 import models.t2 
 import models.T2star
+from utilities import calculte_goodness_of_fit as gof
 
 
 def PC(folder):
@@ -152,11 +153,13 @@ def T1(folder):
             pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
             fit = model.signal(TI, *pars, **kwargs)
 
+            rsquared = gof.r_square(dyn_kidney,fit)
+
             # Export the results
             fig, ax = plt.subplots(1,1,figsize=(5,5))
             iTI = np.argsort(TI)
             ax.plot(TI[iTI], dyn_kidney[iTI], 'ro', label='Signal for ' + kidney, linewidth=3.0)
-            ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney, linewidth=3.0)
+            ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
             ax.plot(TI[iTI], 0*TI[iTI], color='gray')
             ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
             ax.legend()
@@ -185,11 +188,14 @@ def T1(folder):
         pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
         fit = model.signal(TI, *pars, **kwargs)
 
+        rsquared = gof.r_square(dyn_kidney,fit)
+            
+
         # Export the results
         fig, ax = plt.subplots(1,1,figsize=(5,5))
         iTI = np.argsort(TI)
         ax.plot(TI[iTI], dyn_kidney[iTI], 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney, linewidth=3.0)
+        ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
         ax.plot(TI[iTI], 0*TI[iTI], color='gray')
         ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
         ax.legend()
@@ -267,10 +273,12 @@ def T2(folder):
             pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
             fit = model.signal(TI, *pars, **kwargs)
 
+            rsquared = gof.r_square(dyn_kidney,fit)
+
             # Export the results
             fig, ax = plt.subplots(1,1,figsize=(5,5))
             ax.plot(TI, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-            ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney, linewidth=3.0)
+            ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
             ax.plot(TI, 0*TI, color='gray')
             ax.set(xlabel='Preparation delay (msec)', ylabel='Signal (a.u.)')
             ax.legend()
@@ -300,10 +308,12 @@ def T2(folder):
         pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
         fit = model.signal(TI, *pars, **kwargs)
 
+        rsquared = gof.r_square(dyn_kidney,fit)
+
         # Export the results
         fig, ax = plt.subplots(1,1,figsize=(5,5))
         ax.plot(TI, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney, linewidth=3.0)
+        ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney+ ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
         ax.plot(TI, 0*TI, color='gray')
         ax.set(xlabel='Preparation delay (msec)', ylabel='Signal (a.u.)')
         ax.legend()
@@ -365,10 +375,12 @@ def T2star(folder):
             pars = model.fit_signal((TE, dyn_kidney, 1e-6, True, {}))
             fit = model.signal(TE, *pars)
 
+            rsquared = gof.r_square(dyn_kidney,fit)
+
             # Export the results
             fig, ax = plt.subplots(1,1,figsize=(5,5))
             ax.plot(TE, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-            ax.plot(TE, fit, 'b-', label='T2* model fit for ' + kidney, linewidth=3.0)
+            ax.plot(TE, fit, 'b-', label='T2* model fit for ' + kidney+ ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
             ax.plot(TE, 0*TE, color='gray')
             ax.set(xlabel='Echo time (msec)', ylabel='Signal (a.u.)')
             ax.legend()
@@ -397,10 +409,12 @@ def T2star(folder):
         pars = model.fit_signal((TE, dyn_kidney, 1e-6, True, {}))
         fit = model.signal(TE, *pars)
 
+        rsquared = gof.r_square(dyn_kidney,fit)
+
         # Export the results
         fig, ax = plt.subplots(1,1,figsize=(5,5))
         ax.plot(TE, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TE, fit, 'b-', label='T2 model fit for ' + kidney, linewidth=3.0)
+        ax.plot(TE, fit, 'b-', label='T2 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
         ax.plot(TE, 0*TE, color='gray')
         ax.set(xlabel='Echo time (msec)', ylabel='Signal (a.u.)')
         ax.legend()
@@ -541,6 +555,7 @@ def dce(folder):
     kid.vol = len(vals_kidneys[0][0])*vox # kidney volume mL
     kid.initialize('iBEAt').pretrain(time, dyn_kidneys[0])
     kid.train(time, dyn_kidneys[0], bounds='iBEAt', xtol=1e-4) 
+
 
     # Export the results
     fig, ax = plt.subplots(1,1,figsize=(5,5))
