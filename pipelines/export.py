@@ -59,8 +59,8 @@ def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_pha
     array_overlay_mask_LK , _  = overlay_mask_LK.array(['SliceLocation','AcquisitionTime'], pixels_first=True)
     array_overlay_mask_RK , _  = overlay_mask_RK.array(['SliceLocation','AcquisitionTime'], pixels_first=True)
 
-    overlay_mask_LK.remove()
-    overlay_mask_RK.remove()
+    #overlay_mask_LK.remove()
+    #overlay_mask_RK.remove()
 
     array_series_img = np.squeeze(array_series_img)
     array_overlay_mask_LK = np.squeeze(array_overlay_mask_LK)
@@ -133,12 +133,12 @@ def mapping(database):
 
     scale_dict = {
 
-    'T1m_magnitude_mdr_moco_err_map'       : (0.5,1), 
+    'T1m_magnitude_mdr_moco_err_map'       : (0,100), 
     'T1m_magnitude_mdr_moco_T1_map'        : (1000,2000), 
     'T1m_magnitude_mdr_moco_T1FAcorr_map'  : (0,20),
-    'T2m_magnitude_mdr_moco_err_map'       : (0.5,1), 
+    'T2m_magnitude_mdr_moco_err_map'       : (0,100), 
     'T2m_magnitude_mdr_moco_T2_map'        : (10,100), 
-    'T2starm_magnitude_mdr_moco_err_map'   : (0.5,1),
+    'T2starm_magnitude_mdr_moco_err_map'   : (0,100),
     'T2starm_magnitude_mdr_moco_T2star_map': (0,80),
     'T2starm_magnitude_mdr_moco_f_fat_map' : (0,0.5),
     'MT_mdr_moco_MTR_map'                  : (0,80), 
