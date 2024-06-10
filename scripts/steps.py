@@ -695,7 +695,7 @@ def roi_fit_T2star(database):
     start_time = time.time()
     database.log("ROI analysis for T2* has started")
     try:
-        roi_fit.T2(database)
+        roi_fit.T2star(database)
         database.log("ROI analysis for T2* was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("ROI analysis for T2* was NOT completed; error: "+str(e))
