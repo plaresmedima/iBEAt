@@ -5,9 +5,6 @@ from models import DCE_aorta, PC, UNETR_kidneys_v1
 import utilities.zenodo_link as UNETR_zenodo
 import os
 
-
-
-
 export_study = '0: Segmentations'
 
 
@@ -27,7 +24,7 @@ def kidneys(database):
 
     # Get appropriate series and check if valid
     #series = database.series(SeriesDescription=UNETR_kidneys_v1.trained_on)
-    sery, study = input_series(database, UNETR_kidneys_v1.trained_on, export_study)
+    sery, study = input_series(database, UNETR_kidneys_v1.trained_on,export_study)
     if sery is None:
         msg = 'Cannot autosegment the kidneys: series ' + UNETR_kidneys_v1.trained_on + ' not found.'
         raise RuntimeError(msg)
@@ -57,7 +54,7 @@ def kidneys(database):
 
     database.save()
 
-    return left, right
+    return
 
 
 def renal_sinus_fat(folder):
