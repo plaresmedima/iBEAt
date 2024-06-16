@@ -1,15 +1,53 @@
-import os
-import multiprocessing
 import numpy as np
-from scipy.optimize import curve_fit
-
 from utilities.fit import Model
+from dipy.core.gradients import gradient_table
+from dipy.reconst.ivim import IvimModel
+from scipy.optimize import curve_fit
 from models.DWI import NonLin as DWI
+import multiprocessing
+import os
 
-try: 
+try:
     num_workers = int(len(os.sched_getaffinity(0)))
-except: 
+except:
     num_workers = int(os.cpu_count())
+
+
+class DiPy():
+
+    def pars(self):
+        return [
+            'S0',
+            'Perfusion_fraction',
+            'D_star',
+            'D',
+            
+        ]
+
+    def fit(self, array, bvals:np.ndarray=None, bvecs:np.ndarray=None, fit_method="varpro"):
+        # array (x,y,z,t)
+        # bvals (t)
+        # bvecs (t) 
+
+        # 2-stage Trust-Region Reflective
+        # based NLLS fitting method (also containing the linear fit): `trr` and the
+        # Variable Projections based fitting method: `varpro`.
+        gtab = gradient_table(bvals, bvecs, b0_threshold=0)
+        ivimmodel_vp = IvimModel(gtab, fit_method=fit_method, bounds=([0., 0., 0.,0.], [np.max(array), 1., 1., 1.]),split_b_S0=100,split_b_D=100)
+        ivim_fit = ivimmodel_vp.fit(array)
+
+        pars = ( 
+            ivim_fit.S0_predicted,
+            ivim_fit.perfusion_fraction, 
+            ivim_fit.D_star, 
+            ivim_fit.D,
+            
+        )
+        pars = np.stack(pars, axis=-1)
+
+        fit = ivim_fit.predict(gtab)
+
+        return fit, pars
 
 
 class SemiLin(Model):
