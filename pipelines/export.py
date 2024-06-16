@@ -133,32 +133,32 @@ def mapping(database):
 
     scale_dict = {
 
-    'T1m_magnitude_mdr_moco_err_map'       : (0,100), 
+    'T1m_magnitude_mdr_moco_err_map'       : (0,50), 
     'T1m_magnitude_mdr_moco_T1_map'        : (1000,2000), 
     'T1m_magnitude_mdr_moco_T1FAcorr_map'  : (0,20),
     'T2m_magnitude_mdr_moco_err_map'       : (0,100), 
-    'T2m_magnitude_mdr_moco_T2_map'        : (10,100), 
-    'T2starm_magnitude_mdr_moco_err_map'   : (0,100),
-    'T2starm_magnitude_mdr_moco_T2star_map': (0,80),
-    'T2starm_magnitude_mdr_moco_f_fat_map' : (0,0.5),
-    'MT_mdr_moco_MTR_map'                  : (0,80), 
-    'MT_mdr_moco_AVR_map'                  : (0,80), 
+    'T2m_magnitude_mdr_moco_T2_map'        : (40,100), 
+    'T2starm_magnitude_mdr_moco_err_map'   : (0,50),
+    'T2starm_magnitude_mdr_moco_T2star_map': (20,80),
+    'T2starm_magnitude_mdr_moco_f_fat_map' : (0,0.4),
+    'MT_mdr_moco_MTR_map'                  : (0,50), 
+    'MT_mdr_moco_AVR_map'                  : (0,120), 
     'DTI_mdr_moco_FA_map'                  : (0,0.6), 
     'DTI_mdr_moco_MD_map'                  : (0.001,0.003),
-    'DTI_mdr_moco_Sphericity_map'          : (0,1),
+    'DTI_mdr_moco_Sphericity_map'          : (0.5,1),
     'DTI_mdr_moco_Linearity_map'           : (0,0.5),
     'DTI_mdr_moco_Planarity_map'           : (0,0.5),
     'DTI_mdr_moco_AD_map'                  : (0.001,0.003),
     'DTI_mdr_moco_RD_map'                  : (0.001,0.003), 
-    'DCE_mdr_moco_ATT_map'                 : (0,20),
-    'DCE_mdr_moco_RPF_map'                 : (0,1000),
-    'DCE_mdr_moco_AVD_map'                 : (0,500),
+    'DCE_mdr_moco_ATT_map'                 : (0,15),
+    'DCE_mdr_moco_RPF_map'                 : (100,400),
+    'DCE_mdr_moco_AVD_map'                 : (0,300),
     'DCE_mdr_moco_MTT_map'                 : (0,200), 
-    'DCE_mdr_moco_FP_map'                  : (0,500),
-    'DCE_mdr_moco_TP_map'                  : (0,200), 
-    'DCE_mdr_moco_VP_map'                  : (0,500),
-    'DCE_mdr_moco_FT_map'                  : (0,300),
-    'DCE_mdr_moco_TT_map'                  : (0,400)
+    'DCE_mdr_moco_FP_map'                  : (50,300),
+    'DCE_mdr_moco_TP_map'                  : (0,100), 
+    'DCE_mdr_moco_VP_map'                  : (50,150),
+    'DCE_mdr_moco_FT_map'                  : (10,150),
+    'DCE_mdr_moco_TT_map'                  : (0,150)
     }
 
     results_path = database.path() + '_output'
@@ -173,7 +173,7 @@ def mapping(database):
             array, _ = series.array(['SliceLocation'], pixels_first=True, first_volume=True)
             array  = np.transpose(array,(1,0,2))
             
-            vmin, vmax = scale_dict.get(desc, (0, np.median(array) + 2 * np.std(array)))
+            vmin, vmax = scale_dict.get(desc, (np.median(array) - np.std(array), np.median(array) + np.std(array)))
 
             num_row_cols = int(np.ceil (np.sqrt(array.shape[2])))
 
