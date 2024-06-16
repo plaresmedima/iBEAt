@@ -122,31 +122,52 @@ def IVIM(folder):
     # Find appropriate series
     series, study, desc = _map_input(folder, "IVIM")
 
-    model = models.IVIM.NonLin()
+    model = models.IVIM.DiPy()
     array, header = series.array(['SliceLocation', 'InstanceNumber'], pixels_first=True, first_volume=True)
     bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=('SliceLocation', 'InstanceNumber'))
 
-    # Calculate fit slice by slice so progress bar can be shown
-    fit = np.empty(array.shape)
-    par = np.empty(array.shape[:3] + (len(model.pars()),) )
-    for z in range(array.shape[2]):
-        series.progress(z+1, array.shape[2], 'Fitting IVIM model')
-        fit[:,:,z,:], par[:,:,z,:] = model.fit(array[:,:,z,:], bvals[0,:10].astype(np.float32), xtol=1e-3, bounds=True, parallel=True) 
-    S0, Df, MD, ff = model.derived(par)
+    # Compute
+    series.message('Fitting IVIM model..')
+    fit, pars = model.fit(array, bvals[0,:], np.stack(bvecs[0,:]), fit_method='TRR')
+    #err = model.error(array, fit)
 
     # Save as DICOM
-    fit_series = study.new_series(SeriesDescription=desc + "_fit")
-    fit_series.set_array(fit, header, pixels_first=True)
-    Df_series = study.new_series(SeriesDescription=desc + "_Df_map")
-    Df_series.set_array(Df, header[:,0], pixels_first=True)
-    MD_series = study.new_series(SeriesDescription=desc + "_MD_map")
-    MD_series.set_array(MD, header[:,0], pixels_first=True)
-    S0_series = study.new_series(SeriesDescription=desc + "_S0_map")
-    S0_series.set_array(S0, header[:,0], pixels_first=True)
-    ff_series = study.new_series(SeriesDescription=desc + "_ff_map")
-    ff_series.set_array(ff, header[:,0], pixels_first=True)
+    series = study.new_series(SeriesDescription=desc + '_fit')
+    series.set_array(fit, header, pixels_first=True)
+    #series = study.new_series(SeriesDescription=desc + '_fiterr_map')
+    #series.set_array(err, header[:,0], pixels_first=True)
 
-    return Df_series, ff_series
+
+
+    # Calculate fit slice by slice so progress bar can be shown
+    # fit = np.empty(array.shape)
+    # par = np.empty(array.shape[:3] + (len(model.pars()),) )
+    # for z in range(array.shape[2]):
+    #     series.progress(z+1, array.shape[2], 'Fitting IVIM model')
+    #     fit[:,:,z,:], par[:,:,z,:] = model.fit(array[:,:,z,:], bvals[0,:10].astype(np.float32), xtol=1e-3, bounds=True, parallel=True) 
+    # S0, Df, D, ff = model.derived(par)
+
+    # Save as DICOM
+    # fit_series = study.new_series(SeriesDescription=desc + "_fit")
+    # fit_series.set_array(fit, header, pixels_first=True)
+    # Df_series = study.new_series(SeriesDescription=desc + "_Df_map")
+    # Df_series.set_array(Df, header[:,0], pixels_first=True)
+    # MD_series = study.new_series(SeriesDescription=desc + "_D_map")
+    # MD_series.set_array(MD, header[:,0], pixels_first=True)
+    # S0_series = study.new_series(SeriesDescription=desc + "_S0_map")
+    # S0_series.set_array(S0, header[:,0], pixels_first=True)
+    # ff_series = study.new_series(SeriesDescription=desc + "_ff_map")
+    # ff_series.set_array(ff, header[:,0], pixels_first=True)
+
+    # return Df_series, ff_series
+
+    maps = []
+    for i, p in enumerate(model.pars()):
+        series = study.new_series(SeriesDescription=desc + '_' + p +'_map')
+        series.set_array(pars[...,i], header[:,0], pixels_first=True)
+        maps.append(series)
+
+    return maps[0], maps[1]
 
 
 def DCE(folder):

@@ -8,6 +8,7 @@ import mdreg
 import dcmri
 from mdreg.models import constant
 
+import models.DWI
 import models.t1
 import models.t2
 import models.T2star
@@ -115,8 +116,8 @@ def IVIM(folder, series=None,study=None):
     array, header = series.array(dims, pixels_first=True, first_volume=True)
 
     series.message('Setting up MDR..')
-    signal_pars = [{'bvals':bvals[z,:], 'bvecs':np.stack(bvecs[z,:]), 'fit_method':'WLS'} for z in range(array.shape[2])]
-    signal_model = models.IVIM.DiPy().fit
+    signal_pars = [{'bvals':bvals[z,:], 'bvecs':np.stack(bvecs[z,:])} for z in range(array.shape[2])]
+    signal_model = models.DWI.Lin().fit
     return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
