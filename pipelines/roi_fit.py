@@ -159,7 +159,7 @@ def T1(folder):
             fig, ax = plt.subplots(1,1,figsize=(5,5))
             iTI = np.argsort(TI)
             ax.plot(TI[iTI], dyn_kidney[iTI], 'ro', label='Signal for ' + kidney, linewidth=3.0)
-            ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+            ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney + ' fit error  = ' + str(round(rsquared,3)), linewidth=3.0)
             ax.plot(TI[iTI], 0*TI[iTI], color='gray')
             ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
             ax.legend()
