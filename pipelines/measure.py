@@ -10,7 +10,7 @@ def _master_table_file(folder):
     results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
-    return os.path.join(results_path, 'biomarkers.csv')
+    return os.path.join(results_path, folder.PatientName[0] + '_biomarkers.csv')
 
 def _load_master_table(folder):
     # Read master table
@@ -111,47 +111,57 @@ def dce_maps(folder):
 # Needs to be brought in line with the others - same format
 def asl_maps(folder):
     for ROI in ['LK','RK','LKC','RKC','LKM','RKM']:
-        kidney  = folder.series(SeriesDescription=ROI)
-        rbf = folder.series(SeriesDescription='RBF - ' + ROI[:2])
-        features = vreg.mask_statistics(kidney, rbf)
-        features['Biomarker'] = features['SeriesDescription'] + '-' + features['Parameter']
-        features['Region of Interest'] = 'Kidney'
-        _update_master_table(folder, features)
+        try:
+            kidney  = folder.series(SeriesDescription=ROI)
+            rbf = folder.series(SeriesDescription='RBF - ' + ROI[:2])
+            features = vreg.mask_statistics(kidney, rbf)
+            features['Biomarker'] = ROI[:2] + '-' + 'RBF' + '-' + features['Parameter']
+            features['Region of Interest'] = 'Kidney'
+            _update_master_table(folder, features)
+        except:
+            print('Cannot find: RBF - ' + ROI)
+            folder.log('Cannot find: RBF - ' + ROI)
     return features
 
 
 def features(folder, seq, pars, units):
     cnt=0
     for p, par in enumerate(pars):
-        for subroi in ['','C','M']:
-            vals = []
-            for ROI in ['LK'+subroi,'RK'+subroi]: 
+        try:
+            for subroi in ['','C','M']:
+                vals = []
+                for ROI in ['LK'+subroi,'RK'+subroi]: 
+                    folder.progress(cnt+1, len(pars)*9, 'Exporting metrics (' + par + ' on ' + ROI + ')')
+                    cnt+=1
+                    desc = seq + '_' + par + '_map_' + ROI[:2] + '_align'
+
+                    kidney = folder.series(SeriesDescription=ROI)[0]
+                    series = folder.series(SeriesDescription=desc)[0]
+                    kidney_vals = vreg.mask_values(kidney, series)
+                    vals.append(kidney_vals)
+
+                    # update master table
+                    features = vreg.mask_data_statistics(kidney_vals, kidney, series)
+                    features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
+                    features['Unit'] = units[p]
+                    features['SeriesDescription'] = ROI
+                    features['Region of Interest'] = 'Kidney'
+                    _update_master_table(folder, features)
+
+                ROI = 'BK' + subroi
                 folder.progress(cnt+1, len(pars)*9, 'Exporting metrics (' + par + ' on ' + ROI + ')')
                 cnt+=1
-                desc = seq + '_' + par + '_map_' + ROI[:2] + '_align'
-                kidney = folder.series(SeriesDescription=ROI)[0]
-                series = folder.series(SeriesDescription=desc)[0]
-                kidney_vals = vreg.mask_values(kidney, series)
-                vals.append(kidney_vals)
-
-                # update master table
-                features = vreg.mask_data_statistics(kidney_vals, kidney, series)
+                vals = np.concatenate(vals)
+                features = vreg.mask_data_statistics(vals, kidney, series)
                 features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
                 features['Unit'] = units[p]
                 features['SeriesDescription'] = ROI
                 features['Region of Interest'] = 'Kidney'
                 _update_master_table(folder, features)
-
-            ROI = 'BK' + subroi
-            folder.progress(cnt+1, len(pars)*9, 'Exporting metrics (' + par + ' on ' + ROI + ')')
-            cnt+=1
-            vals = np.concatenate(vals)
-            features = vreg.mask_data_statistics(vals, kidney, series)
-            features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
-            features['Unit'] = units[p]
-            features['SeriesDescription'] = ROI
-            features['Region of Interest'] = 'Kidney'
-            _update_master_table(folder, features)
+        except:
+            print('cannot find ' + str(ROI) +' ' + par)
+            folder.log('cannot find ' + str(ROI) +' ' + par)
+            continue
 
     return features
 
