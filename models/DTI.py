@@ -18,7 +18,7 @@ class DiPy():
             'RD',
         ]
 
-    def fit(self, array, bvals:np.ndarray=None, bvecs:np.ndarray=None, fit_method="WLS"):
+    def fit(self, array, bvals:np.ndarray=None, bvecs:np.ndarray=None, fit_method="LS"):
         # array (x,y,z,t)
         # bvals (t)
         # bvecs (t) 
