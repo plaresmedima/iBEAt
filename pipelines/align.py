@@ -148,9 +148,9 @@ def ivim(database):
         'LK',
         'RK',  
         'IVIM_mdr_moco_S0_map',
-        'IVIM_mdr_moco_MD_map',
-        'IVIM_mdr_moco_Df_map',
-        'IVIM_mdr_moco_ff_map',
+        'IVIM_mdr_moco_D_map',
+        'IVIM_mdr_moco_D_star_map',
+        'IVIM_mdr_moco_Perfusion_fraction_map',
         'IVIM_mdr_moco',
     ]
     return _align(database, desc)

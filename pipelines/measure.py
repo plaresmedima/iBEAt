@@ -91,8 +91,8 @@ def mt_maps(folder):
     return features(folder, seq, pars, units)
 
 def ivim_maps(folder):
-    seq = 'IVIM_kidneys_cor-oblique_fb_mdr_moco'
-    pars = ['MD','Df','ff']
+    seq = 'IVIM_mdr_moco'
+    pars = ['D','D_star','Perfusion_fraction']
     units = ['','','']
     return features(folder, seq, pars, units)
 

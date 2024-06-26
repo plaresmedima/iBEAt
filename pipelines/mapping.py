@@ -126,14 +126,22 @@ def IVIM(folder):
     array, header = series.array(['SliceLocation', 'InstanceNumber'], pixels_first=True, first_volume=True)
     bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=('SliceLocation', 'InstanceNumber'))
 
+    array_x = array[:, :, :, 0:10]
+    array_y = array[:, :, :, 10:20]
+    array_z = array[:, :, :, 20:30]
+
+    # Compute geometric mean using all three orthogonal directions
+    product_xyz = array_x * array_y * array_z
+    cubic_root_product = np.cbrt(product_xyz)
+
     # Compute
     series.message('Fitting IVIM model..')
-    fit, pars = model.fit(array, bvals[0,:], np.stack(bvecs[0,:]), fit_method='TRR')
+    fit, pars = model.fit(cubic_root_product, bvals[0,0:10], np.stack(bvecs[0,0:10]), fit_method='TRR')
     #err = model.error(array, fit)
 
     # Save as DICOM
     series = study.new_series(SeriesDescription=desc + '_fit')
-    series.set_array(fit, header, pixels_first=True)
+    series.set_array(fit, header[:,0:10], pixels_first=True)
     #series = study.new_series(SeriesDescription=desc + '_fiterr_map')
     #series.set_array(err, header[:,0], pixels_first=True)
 

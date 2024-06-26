@@ -709,6 +709,15 @@ def roi_fit_PC(database):
     except Exception as e:
         database.log("ROI analysis for PC was NOT completed; error: "+str(e))
 
+def roi_fit_IVIM(database):
+    start_time = time.time()
+    database.log("ROI analysis for IVIM has started")
+    try:
+        roi_fit.IVIM(database)
+        database.log("ROI analysis for IVIM was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for IVIM was NOT completed; error: "+str(e))
+
 def roi_fit_DCE(database):
     start_time = time.time()
     database.log("ROI analysis for DCE has started")
