@@ -182,15 +182,26 @@ def segment_aorta_on_dce(database):
         database.restore()
 
 
-def segment_renal_artery(database):
+def segment_left_renal_artery(database):
     start_time = time.time()
-    database.log("Renal artery segmentation has started")
+    database.log("Left renal artery segmentation has started")
     try:
         segment.renal_artery(database)
-        database.log("Renal artery segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.log("Left renal artery segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e:
-        database.log("Renal artery segmentation was NOT completed; error: "+str(e))
+        database.log("Left renal artery segmentation was NOT completed; error: "+str(e))
+        database.restore()
+
+def segment_right_renal_artery(database):
+    start_time = time.time()
+    database.log("Right renal artery segmentation has started")
+    try:
+        segment.renal_artery(database)
+        database.log("Right renal artery segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Right renal artery segmentation was NOT completed; error: "+str(e))
         database.restore()
 
 

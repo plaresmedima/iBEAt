@@ -121,14 +121,37 @@ def aorta_on_dce(folder):
     return aif_mask_series
 
 
-def renal_artery(folder):
+def left_renal_artery(folder):
+
+    desc = [
+        'PC_left_delta_magnitude',
+        'PC_left_delta_phase',
+    ]
+    series, study = input_series(folder, desc, export_study)
+    if series is None:
+        raise RuntimeError('Cannot create PC-RA mask: some series are missing.')
+    
+    dims = ['InstanceNumber']
+    dx = series[0].values('PixelSpacing')[0][0]
+
+    # Calculate left artery mask:
+    mag, mag_hdr_left = series[2].array(dims, pixels_first=True, first_volume=True)
+    vel, vel_hdr_left = series[3].array(dims, pixels_first=True, first_volume=True)
+    left_mask = PC.renal_artery_mask(mag, vel, pixel_spacing=dx)
+
+    # Save as DICOM
+    left_mask_series = study.new_series(SeriesDescription='PC-LRA')
+    left_mask_series.set_array(left_mask, mag_hdr_left[0], pixels_first=True)
+
+    return left_mask_series
+
+def right_renal_artery(folder):
 
     desc = [
         'PC_right_delta_magnitude',
         'PC_right_delta_phase',
-        'PC_left_delta_magnitude',
-        'PC_left_delta_phase',
     ]
+
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot create PC-RA mask: some series are missing.')
@@ -141,19 +164,12 @@ def renal_artery(folder):
     vel, vel_hdr_right = series[1].array(dims, pixels_first=True, first_volume=True) 
     right_mask = PC.renal_artery_mask(mag, -vel, pixel_spacing=dx)
 
-    # Calculate left artery mask:
-    mag, mag_hdr_left = series[2].array(dims, pixels_first=True, first_volume=True)
-    vel, vel_hdr_left = series[3].array(dims, pixels_first=True, first_volume=True)
-    left_mask = PC.renal_artery_mask(mag, vel, pixel_spacing=dx)
-
     # Save as DICOM
     right_mask_series = study.new_series(SeriesDescription='PC-RRA')
     right_mask_series.set_array(right_mask, mag_hdr_right[0], pixels_first=True)
 
-    left_mask_series = study.new_series(SeriesDescription='PC-LRA')
-    left_mask_series.set_array(left_mask, mag_hdr_left[0], pixels_first=True)
 
-    return right_mask_series, left_mask_series
+    return right_mask_series
 
 
 def cortex_medulla(database):
