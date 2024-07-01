@@ -169,39 +169,42 @@ def mapping(database):
         desc = series['SeriesDescription']
 
         if desc[-4:] == '_map':
-            print(desc)
-            array, _ = series.array(['SliceLocation'], pixels_first=True, first_volume=True)
-            array  = np.transpose(array,(1,0,2))
-            
-            vmin, vmax = scale_dict.get(desc, (np.median(array) - np.std(array), np.median(array) + np.std(array)))
+            if '_AD_' in desc or '_RD_' in desc or '_Sphericity_' in desc or '_Linearity_' in desc or '_Planarity_' in desc:
+                continue
+            else:    
+                print(desc)
+                array, _ = series.array(['SliceLocation'], pixels_first=True, first_volume=True)
+                array  = np.transpose(array,(1,0,2))
+                
+                vmin, vmax = scale_dict.get(desc, (np.median(array) - np.std(array), np.median(array) + np.std(array)))
 
-            num_row_cols = int(np.ceil (np.sqrt(array.shape[2])))
+                num_row_cols = int(np.ceil (np.sqrt(array.shape[2])))
 
-            fig, ax = plt.subplots(nrows=num_row_cols, ncols=num_row_cols,gridspec_kw = {'wspace':0, 'hspace':0},figsize=(num_row_cols,num_row_cols))
-            i=0
-            for row in ax:
-                for col in row:
-                    if i>=array.shape[2]:
-                        col.set_xticklabels([])
-                        col.set_yticklabels([])
-                        col.set_aspect('equal')
-                        col.axis("off")
-                    else:  
-                        
-                        if "_S0_" in desc:
-                            im = col.imshow(array[:,:,i], cmap='gray', interpolation='none', vmin=vmin, vmax=vmax)
-                        else:
-                            im = col.imshow(array[:,:,i], cmap='jet', interpolation='none', vmin=vmin, vmax=vmax)
+                fig, ax = plt.subplots(nrows=num_row_cols, ncols=num_row_cols,gridspec_kw = {'wspace':0, 'hspace':0},figsize=(num_row_cols,num_row_cols))
+                i=0
+                for row in ax:
+                    for col in row:
+                        if i>=array.shape[2]:
+                            col.set_xticklabels([])
+                            col.set_yticklabels([])
+                            col.set_aspect('equal')
+                            col.axis("off")
+                        else:  
+                            
+                            if "_S0_" in desc:
+                                im = col.imshow(array[:,:,i], cmap='gray', interpolation='none', vmin=vmin, vmax=vmax)
+                            else:
+                                im = col.imshow(array[:,:,i], cmap='jet', interpolation='none', vmin=vmin, vmax=vmax)
 
-                        col.set_xticklabels([])
-                        col.set_yticklabels([])
-                        col.set_aspect('equal')
-                        col.axis("off")
-                    i = i +1 
-            
-            #cbar = fig.colorbar(im, ax=ax[-1, -1], orientation='vertical', fraction=0.046, pad=0.04)
-            fig.suptitle(desc, fontsize=10)
-            fig.savefig(os.path.join(results_path, 'map_'+ desc +'.png'), dpi=600)
+                            col.set_xticklabels([])
+                            col.set_yticklabels([])
+                            col.set_aspect('equal')
+                            col.axis("off")
+                        i = i +1 
+                
+                #cbar = fig.colorbar(im, ax=ax[-1, -1], orientation='vertical', fraction=0.046, pad=0.04)
+                fig.suptitle(desc, fontsize=10)
+                fig.savefig(os.path.join(results_path, 'map_'+ desc +'.png'), dpi=600)
 
 
 
