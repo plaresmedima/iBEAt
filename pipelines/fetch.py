@@ -9,6 +9,46 @@ import utilities.zenodo_link as UNETR_zenodo
 import requests
 
 
+
+import os
+
+def find_mask_in_local_rep(database):
+    # Define the mask folder path
+    mask_folder = '//mnt//fastdata//md1jdsp//Leeds_Vol_Masks'
+    
+    # Get the name of the dataset folder from the database path
+    dataset_folder_name = os.path.basename(database.path())
+    
+    # List all folders in the mask directory
+    mask_folder_name_list = os.listdir(mask_folder)
+    
+    # Check if the dataset folder name exists in the mask folder list
+    if dataset_folder_name in mask_folder_name_list:
+        dataset_folder_path = os.path.join(mask_folder, dataset_folder_name)
+        for folder in os.listdir(dataset_folder_path):
+            try:
+                # Get the path to the 'dbdicom' directory
+                dbdicom_path = os.path.join(dataset_folder_path, folder, 'dbdicom')
+                
+                # Check if 'dbdicom' directory exists
+                if os.path.exists(dbdicom_path):
+                    # List all files in the 'dbdicom' directory
+                    maskfiles = [os.path.join(dbdicom_path, file) for file in os.listdir(dbdicom_path)]
+                    
+                    # Import DICOM files into the database
+                    database.import_dicom(maskfiles)
+                    database.log(folder + " was found in the repeatability mask local folder")
+                else:
+                    database.log(folder + " was NOT found in the repeatability mask local folder")
+            except Exception as e:
+                database.log(f"Error processing folder {folder}: {str(e)}")
+        
+        # Save the database after processing all folders
+        database.save()
+    else:
+        database.log(f"{dataset_folder_name} was NOT found in the mask folder list")
+
+
 def find_mask_in_drive(database):
 
     gauth = GoogleAuth()
@@ -67,6 +107,7 @@ def kidney_masks(folder):
     # Alternative: save them on XNAT on a separate project and download from there
 
     find_mask_in_drive(folder)
+    #find_mask_in_local_rep(folder)
 
 def dl_models(database):
 
