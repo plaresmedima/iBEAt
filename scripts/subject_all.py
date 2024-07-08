@@ -42,18 +42,19 @@ def single_subject(username, password, path, dataset):
     steps.harmonize_dce(database)
     steps.harmonize_subject_name(database)
     
-    # ## SEGMENTATION
+    # SEGMENTATION
 
     steps.fetch_dl_models(database)
     steps.fetch_kidney_masks(database)
     steps.segment_kidneys(database)
     steps.segment_renal_sinus_fat(database)
     steps.segment_aorta_on_dce(database)
-    steps.segment_renal_artery(database)
+    steps.segment_left_renal_artery(database)
+    steps.segment_right_renal_artery(database)
     steps.compute_whole_kidney_canvas(database)
     steps.export_segmentations(database) 
 
-    # ## MOTION CORRECTION
+    # MOTION CORRECTION
 
     steps.mdreg_t1(database)
     steps.mdreg_t2(database)
@@ -64,7 +65,7 @@ def single_subject(username, password, path, dataset):
     steps.mdreg_dce(database)
     steps.export_mdreg(database)
 
-    # # MAPPING
+    # MAPPING
 
     steps.map_T1(database)
     steps.map_T2(database)
@@ -75,7 +76,7 @@ def single_subject(username, password, path, dataset):
     steps.map_DCE(database)
     steps.export_mapping(database)
 
-    # # ALIGNMENT
+    # ALIGNMENT
 
     steps.align_dixon(database) 
     steps.align_T1(database)
@@ -88,7 +89,7 @@ def single_subject(username, password, path, dataset):
     steps.align_ASL(database)
     steps.export_alignment(database)
 
-    # # MEASUREMENT
+    # MEASUREMENT
 
     steps.fill_gaps(database)
     steps.cortex_medulla(database)
@@ -104,7 +105,7 @@ def single_subject(username, password, path, dataset):
     steps.measure_asl_maps(database)
     steps.measure_dce_maps(database)
 
-    # # ROI analysis
+    # ROI analysis
 
     steps.roi_fit_T1(database)
     steps.roi_fit_T2(database)
@@ -112,7 +113,8 @@ def single_subject(username, password, path, dataset):
     steps.roi_fit_PC(database)
     steps.roi_fit_DCE(database)
     steps.roi_fit_DCE_cm(database)
-    # TODO: IVIM, DTI
+    steps.roi_fit_IVIM(database)
+    steps.roi_fit_DTI(database)
 
         
     #upload images, logfile and csv to google drive

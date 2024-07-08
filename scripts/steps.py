@@ -186,7 +186,7 @@ def segment_left_renal_artery(database):
     start_time = time.time()
     database.log("Left renal artery segmentation has started")
     try:
-        segment.renal_artery(database)
+        segment.left_renal_artery(database)
         database.log("Left renal artery segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e:
@@ -197,7 +197,7 @@ def segment_right_renal_artery(database):
     start_time = time.time()
     database.log("Right renal artery segmentation has started")
     try:
-        segment.renal_artery(database)
+        segment.right_renal_artery(database)
         database.log("Right renal artery segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e:
@@ -225,6 +225,8 @@ def export_segmentations(database):
         export.kidney_masks_as_dicom(database)
         export.kidney_masks_as_png(database)
         export.aif_as_png(database)
+        export.right_renal_artery_masks_as_png(database)
+        export.left_renal_artery_masks_as_png(database)
         database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("Export kidney segmentations was NOT completed; error: "+str(e))
@@ -327,12 +329,9 @@ def export_mdreg(database):
         database.log("Exporting MDR results was NOT completed; error: "+str(e))
         database.restore()
 
-        
-
+    
 ## MAPPING
 
-
-  
 def map_T1(database):
     start_time = time.time()
     print('Starting T1 mapping')
@@ -747,5 +746,11 @@ def roi_fit_DCE_cm(database):
     except Exception as e:
         database.log("ROI analysis for DCE (Cortex-Medulla) was NOT completed; error: "+str(e))
 
-
-
+def roi_fit_DTI(database):
+    start_time = time.time()
+    database.log("ROI analysis for DTI has started")
+    try:
+        roi_fit.DTI(database)
+        database.log("ROI analysis for DTI was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for DTI was NOT completed; error: "+str(e))

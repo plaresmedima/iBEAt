@@ -106,6 +106,121 @@ def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_pha
     fig.suptitle('Kidney Masks', fontsize=14)
     fig.savefig(os.path.join(results_path, 'Masks.png'), dpi=600)
 
+def left_renal_artery_masks_as_png(database,backgroud_series = 'PC_left_delta_magnitude', LK_mask = 'PC-LRA' ):
+
+    database.message('Exporting masks as png..')
+    results_path = database.path() + '_output'
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    series_img = database.series(SeriesDescription=backgroud_series)
+    series_mask_LK = database.series(SeriesDescription=LK_mask)
+
+    array_series_img, _ = series_img[0].array(['SliceLocation','AcquisitionTime'], pixels_first=True)
+    array_overlay_mask_LK , _  = series_mask_LK[0].array(['SliceLocation','AcquisitionTime'], pixels_first=True)
+
+    #overlay_mask_LK.remove()
+    #overlay_mask_RK.remove()
+
+    array_series_img = np.squeeze(array_series_img)
+    array_overlay_mask_LK = np.tile(array_overlay_mask_LK, (1,1,array_series_img.shape[2]))
+    array_overlay_mask_LK = np.squeeze(array_overlay_mask_LK)
+
+    array_series_img = array_series_img.transpose((1,0,2))
+    array_overlay_mask_LK = array_overlay_mask_LK.transpose((1,0,2))
+
+    array_overlay_mask = array_overlay_mask_LK
+    array_overlay_mask[array_overlay_mask >0.5] = 1
+    array_overlay_mask[array_overlay_mask <0.5] = np.nan
+    
+    num_row_cols = int(np.ceil (np.sqrt(array_overlay_mask.shape[2])))
+
+    fig, ax = plt.subplots(nrows=num_row_cols, ncols=num_row_cols,gridspec_kw = {'wspace':0, 'hspace':0},figsize=(num_row_cols,num_row_cols))
+    i=0
+    for row in ax:
+        for col in row:
+            if i>=array_overlay_mask.shape[2]:
+                col.set_xticklabels([])
+                col.set_yticklabels([])
+                col.set_aspect('equal')
+                col.axis("off")
+            else:  
+            
+                # Display the background image
+                col.imshow(array_series_img[:,:,i], cmap='gray', interpolation='none', vmin=0, vmax=np.mean(array_series_img) + 2 * np.std(array_series_img))
+            
+                # Overlay the mask with transparency
+                col.imshow(array_overlay_mask[:,:,i], cmap='autumn', interpolation='none', alpha=0.5)
+
+                col.set_xticklabels([])
+                col.set_yticklabels([])
+                col.set_aspect('equal')
+                col.axis("off")
+            i = i +1 
+
+
+    
+    fig.suptitle('PC-LRA', fontsize=14)
+    fig.savefig(os.path.join(results_path, 'PC-LRA.png'), dpi=600)
+
+def right_renal_artery_masks_as_png(database,backgroud_series = 'PC_right_delta_magnitude', RK_mask = 'PC-RRA' ):
+
+    database.message('Exporting masks as png..')
+    results_path = database.path() + '_output'
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    series_img = database.series(SeriesDescription=backgroud_series)
+    series_mask_RK = database.series(SeriesDescription=RK_mask)
+
+    overlay_mask_RK  = vreg.map_to(series_mask_RK[0],series_img[0])
+
+    array_series_img, _ = series_img[0].array(['SliceLocation','AcquisitionTime'], pixels_first=True)
+    array_overlay_mask_RK , _  = overlay_mask_RK.array(['SliceLocation','AcquisitionTime'], pixels_first=True)
+
+    #overlay_mask_LK.remove()
+    #overlay_mask_RK.remove()
+
+    array_series_img = np.squeeze(array_series_img)
+    array_overlay_mask_RK = np.tile(array_overlay_mask_RK, (1,1,array_series_img.shape[2]))
+    array_overlay_mask_RK = np.squeeze(array_overlay_mask_RK)
+
+    array_series_img = array_series_img.transpose((1,0,2))
+    array_overlay_mask_RK = array_overlay_mask_RK.transpose((1,0,2))
+
+    array_overlay_mask = array_overlay_mask_RK
+    array_overlay_mask[array_overlay_mask >0.5] = 1
+    array_overlay_mask[array_overlay_mask <0.5] = np.nan
+    
+    num_row_cols = int(np.ceil (np.sqrt(array_overlay_mask.shape[2])))
+
+    fig, ax = plt.subplots(nrows=num_row_cols, ncols=num_row_cols,gridspec_kw = {'wspace':0, 'hspace':0},figsize=(num_row_cols,num_row_cols))
+    i=0
+    for row in ax:
+        for col in row:
+            if i>=array_overlay_mask.shape[2]:
+                col.set_xticklabels([])
+                col.set_yticklabels([])
+                col.set_aspect('equal')
+                col.axis("off")
+            else:  
+            
+                # Display the background image
+                col.imshow(array_series_img[:,:,i], cmap='gray', interpolation='none', vmin=0, vmax=np.mean(array_series_img) + 2 * np.std(array_series_img))
+            
+                # Overlay the mask with transparency
+                col.imshow(array_overlay_mask[:,:,i], cmap='autumn', interpolation='none', alpha=0.5)
+
+                col.set_xticklabels([])
+                col.set_yticklabels([])
+                col.set_aspect('equal')
+                col.axis("off")
+            i = i +1 
+
+
+    
+    fig.suptitle('PC-RRA', fontsize=14)
+    fig.savefig(os.path.join(results_path, 'PC-RRA.png'), dpi=600)
 
 
 def aif_as_png(folder):
