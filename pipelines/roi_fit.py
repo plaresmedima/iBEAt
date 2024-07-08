@@ -170,7 +170,18 @@ def T1(folder):
             ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
             ax.legend()
 
-            plt.savefig(os.path.join(results_path, 'model fit T1 ('+ kidney +').png'), dpi=600)
+            plt.savefig(os.path.join(results_path, 'model fit T1: TI ordered ('+ kidney +').png'), dpi=600)
+            figs.append(fig)
+
+
+            fig, ax = plt.subplots(1,1,figsize=(5,5))
+            ax.plot(dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
+            ax.plot(fit, 'b-', label='T1 model fit for ' + kidney + ' fit error  = ' + str(round(rsquared,3)), linewidth=3.0)
+            ax.plot(0*TI, color='gray')
+            ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
+            ax.legend()
+
+            plt.savefig(os.path.join(results_path, 'model fit T1: Acq Time ordered ('+ kidney +').png'), dpi=600)
             figs.append(fig)
 
             # Update master table
@@ -198,17 +209,17 @@ def T1(folder):
             
 
         # Export the results
-        fig, ax = plt.subplots(1,1,figsize=(5,5))
-        iTI = np.argsort(TI)
-        ax.plot(TI[iTI], dyn_kidney[iTI], 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
-        ax.plot(TI[iTI], 0*TI[iTI], color='gray')
-        ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
-        ax.legend()
+        # fig, ax = plt.subplots(1,1,figsize=(5,5))
+        # iTI = np.argsort(TI)
+        # ax.plot(TI[iTI], dyn_kidney[iTI], 'ro', label='Signal for ' + kidney, linewidth=3.0)
+        # ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+        # ax.plot(TI[iTI], 0*TI[iTI], color='gray')
+        # ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
+        # ax.legend()
 
-        plt.savefig(os.path.join(results_path, 'model fit T1 ('+ kidney +').png'), dpi=600)
-        #plt.close()
-        figs.append(fig)
+        # plt.savefig(os.path.join(results_path, 'model fit T1 ('+ kidney +').png'), dpi=600)
+        # #plt.close()
+        # figs.append(fig)
 
         # Update master table
         table[kidney] = dyn_kidney
@@ -317,15 +328,15 @@ def T2(folder):
         rsquared = gof.r_square(dyn_kidney,fit)
 
         # Export the results
-        fig, ax = plt.subplots(1,1,figsize=(5,5))
-        ax.plot(TI, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney+ ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
-        ax.plot(TI, 0*TI, color='gray')
-        ax.set(xlabel='Preparation delay (msec)', ylabel='Signal (a.u.)')
-        ax.legend()
+        # fig, ax = plt.subplots(1,1,figsize=(5,5))
+        # ax.plot(TI, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
+        # ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney+ ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+        # ax.plot(TI, 0*TI, color='gray')
+        # ax.set(xlabel='Preparation delay (msec)', ylabel='Signal (a.u.)')
+        # ax.legend()
 
-        plt.savefig(os.path.join(results_path, 'model fit T2 ('+ kidney +').png'), dpi=600)
-        figs.append(fig)
+        # plt.savefig(os.path.join(results_path, 'model fit T2 ('+ kidney +').png'), dpi=600)
+        # figs.append(fig)
 
         # Update master table
         table['TP (msec)'] = TI
@@ -388,8 +399,11 @@ def IVIM(folder):
             array_y = dyn_kidney[10:20]
             array_z = dyn_kidney[20:]
 
-            product_xyz = array_x * array_y * array_z
-            cubic_root_product = np.cbrt(product_xyz)
+            # product_xyz = array_x * array_y * array_z
+            # cubic_root_product = np.cbrt(product_xyz)
+
+            product_xyz = array_x + array_y + array_z
+            cubic_root_product = product_xyz/3
 
             # Calculate the fit
             fit, pars = model.fit(cubic_root_product, TI, np.stack(bvecs[0,:10]))
@@ -437,15 +451,15 @@ def IVIM(folder):
         rsquared = gof.r_square(cubic_root_product,fit)
 
         # Export the results
-        fig, ax = plt.subplots(1,1,figsize=(5,5))
-        ax.plot(TI, cubic_root_product, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TI, fit, 'b-', label='IVIM model fit for ' + kidney+ ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
-        ax.plot(TI, 0*TI, color='gray')
-        ax.set(xlabel='b-value', ylabel='Signal (a.u.)')
-        ax.legend()
+        # fig, ax = plt.subplots(1,1,figsize=(5,5))
+        # ax.plot(TI, cubic_root_product, 'ro', label='Signal for ' + kidney, linewidth=3.0)
+        # ax.plot(TI, fit, 'b-', label='IVIM model fit for ' + kidney+ ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+        # ax.plot(TI, 0*TI, color='gray')
+        # ax.set(xlabel='b-value', ylabel='Signal (a.u.)')
+        # ax.legend()
 
-        plt.savefig(os.path.join(results_path, 'model fit IVIM ('+ kidney +').png'), dpi=600)
-        figs.append(fig)
+        # plt.savefig(os.path.join(results_path, 'model fit IVIM ('+ kidney +').png'), dpi=600)
+        # figs.append(fig)
 
         # Update master table
         table['TP (msec)'] = TI
@@ -459,6 +473,62 @@ def IVIM(folder):
 
     table.to_csv(os.path.join(results_path, 'data_IVIM.csv'))
     return figs
+
+
+def DTI(folder):
+
+    results_path = folder.path() + '_output'
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    dyn_desc = 'DTI_mdr'
+    export_study = ''
+
+    dims = ['SliceLocation', 'InstanceNumber']
+
+    figs = []
+    table = pd.DataFrame()
+    for struct in ['','C','M']:
+        vals_kidneys = []
+        for kidney in ['LK'+struct,'RK'+struct]:
+
+            # Check if the required series are there and raise an error if not
+            dyn_kidney_fit = dyn_desc + '_moco_fit' + '_' + kidney[:2] + '_align' 
+            folder.message('Finding ' + dyn_kidney_fit)
+            dyn_kidney_fit = folder.series(SeriesDescription=dyn_kidney_fit)
+            if dyn_kidney_fit == []:
+                raise ValueError('Cannot perform DTI ROI analysis: missing dynamic series aligned to kidney ' + kidney)
+            folder.message('Finding ' + kidney)
+            kidney_mask = folder.series(SeriesDescription=kidney)
+            if kidney_mask == []:
+                raise ValueError('Cannot perform DTI ROI analysis: missing mask for kidney' + kidney)
+            dyn_kidney_moco = dyn_desc + '_moco_' + kidney[:2] + '_align' 
+            folder.message('Finding ' + dyn_kidney_moco)
+            dyn_kidney_moco = folder.series(SeriesDescription=dyn_kidney_moco)
+            if dyn_kidney_moco == []:
+                raise ValueError('Cannot perform DTI ROI analysis: missing D map aligned to kidney ' + kidney)
+            map_kidney = dyn_desc + '_moco_MD_map_' + kidney[:2] + '_align' 
+            folder.message('Finding ' + map_kidney)
+            map_kidney = folder.series(SeriesDescription=map_kidney)
+            if map_kidney == []:
+                raise ValueError('Cannot perform IVIM ROI analysis: missing D map aligned to kidney ' + kidney)
+            
+            # Load curve and T1 values for the kidney
+            dyn_kidney_fit, vals_kidney_fit = load_roi_curve(dyn_kidney_fit[0], kidney_mask[0], map_kidney[0], dims=dims)
+            dyn_kidney_moco, vals_kidney_moco = load_roi_curve(dyn_kidney_moco[0], kidney_mask[0], map_kidney[0], dims=dims)
+            x = np.linspace(0, 300, 10)
+            # Export the results
+            fig, ax = plt.subplots(1,1,figsize=(5,5))
+            ax.scatter(dyn_kidney_moco, dyn_kidney_fit, label='Moco vs Fit ' + kidney)
+            ax.plot(x, x, color='black', label='Identity line (y=x)')
+            ax.set(xlabel='moco', ylabel='fit')
+            ax.legend()
+
+            plt.savefig(os.path.join(results_path, 'model fit DTI ('+ kidney +').png'), dpi=600)
+            figs.append(fig)
+
+    return figs
+
 
 def T2star(folder):
 
@@ -535,18 +605,18 @@ def T2star(folder):
         pars = model.fit_signal((TE, dyn_kidney, 1e-6, True, {}))
         fit = model.signal(TE, *pars)
 
-        rsquared = gof.r_square(dyn_kidney,fit)
+        # rsquared = gof.r_square(dyn_kidney,fit)
 
         # Export the results
-        fig, ax = plt.subplots(1,1,figsize=(5,5))
-        ax.plot(TE, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TE, fit, 'b-', label='T2 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
-        ax.plot(TE, 0*TE, color='gray')
-        ax.set(xlabel='Echo time (msec)', ylabel='Signal (a.u.)')
-        ax.legend()
+        # fig, ax = plt.subplots(1,1,figsize=(5,5))
+        # ax.plot(TE, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
+        # ax.plot(TE, fit, 'b-', label='T2 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+        # ax.plot(TE, 0*TE, color='gray')
+        # ax.set(xlabel='Echo time (msec)', ylabel='Signal (a.u.)')
+        # ax.legend()
 
-        plt.savefig(os.path.join(results_path, 'model fit T2star ('+ kidney +').png'), dpi=600)
-        figs.append(fig)
+        # plt.savefig(os.path.join(results_path, 'model fit T2star ('+ kidney +').png'), dpi=600)
+        # figs.append(fig)
 
         # Update master table
         table['TE '+kidney] = TE
@@ -764,13 +834,13 @@ def dce(folder):
     kid.train(time, dyn_kidney, bounds='iBEAt', xtol=1e-4)
     
     # Plot fit
-    fig, ax = plt.subplots(1,1,figsize=(5,5))
-    ax.plot(time/60, dyn_kidney, 'ro', label='Signal for both kidneys', markersize=markersize)
-    ax.plot(t_highres/60, kid.predict(t_highres), 'b-', label='Signal for both kidneys', linewidth=linewidth)
-    ax.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
-    ax.legend()
-    plt.savefig(os.path.join(results_path, 'model fit DCE ('+kidney+').png'), dpi=600)
-    figs.append(fig)
+    # fig, ax = plt.subplots(1,1,figsize=(5,5))
+    # ax.plot(time/60, dyn_kidney, 'ro', label='Signal for both kidneys', markersize=markersize)
+    # ax.plot(t_highres/60, kid.predict(t_highres), 'b-', label='Signal for both kidneys', linewidth=linewidth)
+    # ax.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
+    # ax.legend()
+    # plt.savefig(os.path.join(results_path, 'model fit DCE ('+kidney+').png'), dpi=600)
+    # figs.append(fig)
 
     # Update master table
     table[kidney] = dyn_kidney
@@ -1020,17 +1090,17 @@ def dce_cm(folder):
     ypred = kid.predict(xdata)
     
     # Export the results
-    fig, (axc, axm) = plt.subplots(1,2,figsize=(10,5))
-    axc.plot(time/60, dyn_cor, 'ro', label='Signal for cortex', markersize=markersize)
-    axc.plot(time/60, ypred[:nt], 'b-', label='Fit for cortex', linewidth=linewidth)
-    axc.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
-    axc.legend()
-    axm.plot(time/60, dyn_med, 'ro', label='Signal for medulla', markersize=markersize)
-    axm.plot(time/60, ypred[nt:], 'b-', label='Fit for medulla', linewidth=linewidth)
-    axm.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
-    axm.legend()
-    plt.savefig(os.path.join(results_path, 'model fit DCE (BKCM).png'), dpi=600)
-    figs.append(fig)
+    # fig, (axc, axm) = plt.subplots(1,2,figsize=(10,5))
+    # axc.plot(time/60, dyn_cor, 'ro', label='Signal for cortex', markersize=markersize)
+    # axc.plot(time/60, ypred[:nt], 'b-', label='Fit for cortex', linewidth=linewidth)
+    # axc.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
+    # axc.legend()
+    # axm.plot(time/60, dyn_med, 'ro', label='Signal for medulla', markersize=markersize)
+    # axm.plot(time/60, ypred[nt:], 'b-', label='Fit for medulla', linewidth=linewidth)
+    # axm.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
+    # axm.legend()
+    # plt.savefig(os.path.join(results_path, 'model fit DCE (BKCM).png'), dpi=600)
+    # figs.append(fig)
 
     # Update master table
     table['BKC'] = dyn_cor

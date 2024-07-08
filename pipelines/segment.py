@@ -135,9 +135,10 @@ def left_renal_artery(folder):
     dx = series[0].values('PixelSpacing')[0][0]
 
     # Calculate left artery mask:
-    mag, mag_hdr_left = series[2].array(dims, pixels_first=True, first_volume=True)
-    vel, vel_hdr_left = series[3].array(dims, pixels_first=True, first_volume=True)
+    mag, mag_hdr_left = series[0].array(dims, pixels_first=True, first_volume=True)
+    vel, vel_hdr_left = series[1].array(dims, pixels_first=True, first_volume=True)
     left_mask = PC.renal_artery_mask(mag, vel, pixel_spacing=dx)
+    #left_mask = PC.renal_artery_mask_alternative(mag)
 
     # Save as DICOM
     left_mask_series = study.new_series(SeriesDescription='PC-LRA')

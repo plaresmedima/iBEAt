@@ -168,6 +168,7 @@ def dti(database):
         'DTI_mdr_moco_Linearity_map',
         'DTI_mdr_moco_Sphericity_map',
         'DTI_mdr_moco_FA_map',
+        'DTI_mdr_moco_fit',
         'DTI_mdr_moco',
     ]
     return _align(database, desc)
