@@ -5,10 +5,20 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from dbdicom.extensions import vreg
+from dbdicom.pipelines import input_series
 import dcmri
 
+from dipy.core.gradients import gradient_table
+from dipy.reconst.ivim import IvimModel
+
 from pipelines import measure
-import models.PC, models.T1, models.T2, models.T2star
+import models.PC 
+import models.t1 
+import models.t2 
+import models.T2star
+import models.IVIM
+from utilities import calculte_goodness_of_fit as gof
+
 
 
 def PC(folder):
@@ -18,8 +28,8 @@ def PC(folder):
         os.mkdir(results_path)
 
     dyn_desc = [
-        'PC_RenalArtery_Left_EcgTrig_fb_120_velocity',
-        'PC_RenalArtery_Right_EcgTrig_fb_120_velocity',
+        'PC_left_delta_velocity',
+        'PC_right_delta_velocity',
     ]
 
     dims = 'InstanceNumber'
@@ -105,7 +115,7 @@ def T1(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    dyn_desc = 'T1m_magnitude_mdr_moco'
     
     # Model parameters (Siemens)
     TR = 4.6 # Echo Spacing is msec but not in header -> Set as TR in harmonize
@@ -113,7 +123,7 @@ def T1(folder):
     N_T1 = 66 # Number of k-space lines (hardcoded from Siemens protocol)
     FA_nom = 12 # Flip angle in degrees (hardcoded from Siemens protocol)
 
-    model = models.T1.Bloch()
+    model = models.t1.Bloch()
     kwargs = {'TR':TR, 'FA_cat':FA_cat, 'N_T1':N_T1, 'FA':FA_nom}
     dims = ('SliceLocation', 'AcquisitionTime')
 
@@ -149,16 +159,29 @@ def T1(folder):
             pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
             fit = model.signal(TI, *pars, **kwargs)
 
+            rsquared = gof.r_square(dyn_kidney,fit)
+
             # Export the results
             fig, ax = plt.subplots(1,1,figsize=(5,5))
             iTI = np.argsort(TI)
             ax.plot(TI[iTI], dyn_kidney[iTI], 'ro', label='Signal for ' + kidney, linewidth=3.0)
-            ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney, linewidth=3.0)
+            ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney + ' fit error  = ' + str(round(rsquared,3)), linewidth=3.0)
             ax.plot(TI[iTI], 0*TI[iTI], color='gray')
             ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
             ax.legend()
 
-            plt.savefig(os.path.join(results_path, 'model fit T1 ('+ kidney +').png'), dpi=600)
+            plt.savefig(os.path.join(results_path, 'model fit T1: TI ordered ('+ kidney +').png'), dpi=600)
+            figs.append(fig)
+
+
+            fig, ax = plt.subplots(1,1,figsize=(5,5))
+            ax.plot(dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
+            ax.plot(fit, 'b-', label='T1 model fit for ' + kidney + ' fit error  = ' + str(round(rsquared,3)), linewidth=3.0)
+            ax.plot(0*TI, color='gray')
+            ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
+            ax.legend()
+
+            plt.savefig(os.path.join(results_path, 'model fit T1: Acq Time ordered ('+ kidney +').png'), dpi=600)
             figs.append(fig)
 
             # Update master table
@@ -182,18 +205,21 @@ def T1(folder):
         pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
         fit = model.signal(TI, *pars, **kwargs)
 
-        # Export the results
-        fig, ax = plt.subplots(1,1,figsize=(5,5))
-        iTI = np.argsort(TI)
-        ax.plot(TI[iTI], dyn_kidney[iTI], 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney, linewidth=3.0)
-        ax.plot(TI[iTI], 0*TI[iTI], color='gray')
-        ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
-        ax.legend()
+        rsquared = gof.r_square(dyn_kidney,fit)
+            
 
-        plt.savefig(os.path.join(results_path, 'model fit T1 ('+ kidney +').png'), dpi=600)
-        #plt.close()
-        figs.append(fig)
+        # Export the results
+        # fig, ax = plt.subplots(1,1,figsize=(5,5))
+        # iTI = np.argsort(TI)
+        # ax.plot(TI[iTI], dyn_kidney[iTI], 'ro', label='Signal for ' + kidney, linewidth=3.0)
+        # ax.plot(TI[iTI], fit[iTI], 'b-', label='T1 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+        # ax.plot(TI[iTI], 0*TI[iTI], color='gray')
+        # ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
+        # ax.legend()
+
+        # plt.savefig(os.path.join(results_path, 'model fit T1 ('+ kidney +').png'), dpi=600)
+        # #plt.close()
+        # figs.append(fig)
 
         # Update master table
         table[kidney] = dyn_kidney
@@ -213,7 +239,7 @@ def T2(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = 'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    dyn_desc = 'T2m_magnitude_mdr_moco'
 
     # Parameters
     # Defaults from Siemens iBEAt protocol
@@ -226,7 +252,7 @@ def T2(folder):
     # model = T2_mono_exp_offset
     # dims = ('SliceLocation', 'InversionTime')
     # kwargs = {}
-    model = models.T2.Bloch()
+    model = models.t2.Bloch()
     #model = T2_prep
     dims = ('SliceLocation', 'AcquisitionTime')
     kwargs = {'Tspoil':Tspoil, 'N_T2':N_T2, 'Trec':Trec, 'TR':TR, 'FA':FA}
@@ -264,10 +290,12 @@ def T2(folder):
             pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
             fit = model.signal(TI, *pars, **kwargs)
 
+            rsquared = gof.r_square(dyn_kidney,fit)
+
             # Export the results
             fig, ax = plt.subplots(1,1,figsize=(5,5))
             ax.plot(TI, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-            ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney, linewidth=3.0)
+            ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
             ax.plot(TI, 0*TI, color='gray')
             ax.set(xlabel='Preparation delay (msec)', ylabel='Signal (a.u.)')
             ax.legend()
@@ -297,16 +325,18 @@ def T2(folder):
         pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
         fit = model.signal(TI, *pars, **kwargs)
 
-        # Export the results
-        fig, ax = plt.subplots(1,1,figsize=(5,5))
-        ax.plot(TI, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney, linewidth=3.0)
-        ax.plot(TI, 0*TI, color='gray')
-        ax.set(xlabel='Preparation delay (msec)', ylabel='Signal (a.u.)')
-        ax.legend()
+        rsquared = gof.r_square(dyn_kidney,fit)
 
-        plt.savefig(os.path.join(results_path, 'model fit T2 ('+ kidney +').png'), dpi=600)
-        figs.append(fig)
+        # Export the results
+        # fig, ax = plt.subplots(1,1,figsize=(5,5))
+        # ax.plot(TI, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
+        # ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney+ ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+        # ax.plot(TI, 0*TI, color='gray')
+        # ax.set(xlabel='Preparation delay (msec)', ylabel='Signal (a.u.)')
+        # ax.legend()
+
+        # plt.savefig(os.path.join(results_path, 'model fit T2 ('+ kidney +').png'), dpi=600)
+        # figs.append(fig)
 
         # Update master table
         table['TP (msec)'] = TI
@@ -321,13 +351,192 @@ def T2(folder):
     return figs
 
 
+def IVIM(folder):
+
+    results_path = folder.path() + '_output'
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    dyn_desc = 'IVIM_mdr_moco'
+    export_study = ''
+
+    series, study = input_series(folder, dyn_desc, export_study)
+    if series is None:
+        raise RuntimeError('Cannot perform MDR on IVIM: series ' + dyn_desc + 'does not exist. ')
+
+    dims = ['SliceLocation', 'InstanceNumber']
+    bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=dims)
+    model = models.IVIM.DiPy()
+
+    figs = []
+    table = pd.DataFrame()
+    for struct in ['','C','M']:
+        vals_kidneys = []
+        for kidney in ['LK'+struct,'RK'+struct]:
+
+            # Check if the required series are there and raise an error if not
+            dyn_kidney = dyn_desc + '_' + kidney[:2] + '_align' 
+            folder.message('Finding ' + dyn_kidney)
+            dyn_kidney = folder.series(SeriesDescription=dyn_kidney)
+            if dyn_kidney == []:
+                raise ValueError('Cannot perform IVIM ROI analysis: missing dynamic series aligned to kidney ' + kidney)
+            folder.message('Finding ' + kidney)
+            kidney_mask = folder.series(SeriesDescription=kidney)
+            if kidney_mask == []:
+                raise ValueError('Cannot perform IVIM ROI analysis: missing mask for kidney' + kidney)
+            map_kidney = dyn_desc + '_D_map_' + kidney[:2] + '_align' 
+            folder.message('Finding ' + map_kidney)
+            map_kidney = folder.series(SeriesDescription=map_kidney)
+            if map_kidney == []:
+                raise ValueError('Cannot perform IVIM ROI analysis: missing D map aligned to kidney ' + kidney)
+            
+            # Load curve and T1 values for the kidney
+            TI = bvals[0,:10]
+            dyn_kidney, vals_kidney = load_roi_curve(dyn_kidney[0], kidney_mask[0], map_kidney[0], dims=dims)
+            vals_kidneys.append(vals_kidney)
+
+            array_x = dyn_kidney[:10]
+            array_y = dyn_kidney[10:20]
+            array_z = dyn_kidney[20:]
+
+            # product_xyz = array_x * array_y * array_z
+            # cubic_root_product = np.cbrt(product_xyz)
+
+            product_xyz = array_x + array_y + array_z
+            cubic_root_product = product_xyz/3
+
+            # Calculate the fit
+            fit, pars = model.fit(cubic_root_product, TI, np.stack(bvecs[0,:10]))
+            rsquared = gof.r_square(cubic_root_product,fit)
+
+            # Export the results
+            fig, ax = plt.subplots(1,1,figsize=(5,5))
+            ax.plot(TI, cubic_root_product, 'ro', label='Signal for ' + kidney, linewidth=3.0)
+            ax.plot(TI, fit, 'b-', label='IVIM model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+            ax.plot(TI, 0*TI, color='gray')
+            ax.set(xlabel='b-value', ylabel='Signal (a.u.)')
+            ax.legend()
+
+            plt.savefig(os.path.join(results_path, 'model fit IVIM ('+ kidney +').png'), dpi=600)
+            figs.append(fig)
+
+            # Update master table
+            table['TP (msec)'] = TI
+            table[kidney] = cubic_root_product
+            p = model.pars()
+            measure.add_rows(folder, [
+                [folder.PatientID, kidney, 'Kidney', 'ROI', pars[1], ''          , kidney + '-' + p[1] + '-ROI', 'ROI fit'],
+                [folder.PatientID, kidney, 'Kidney', 'ROI', pars[2], '10-3 mm2/s', kidney + '-' + p[2] + '-ROI', 'ROI fit'],
+                [folder.PatientID, kidney, 'Kidney', 'ROI', pars[3], '10-3 mm2/s', kidney + '-' + p[3] + '-ROI', 'ROI fit'],           
+            ])
+
+
+        # Build dynamic for BK
+        kidney = 'BK' + struct
+        nt = len(vals_kidneys[0])
+        dyn_kidney = np.zeros(nt)
+        for t in range(nt):
+            vals_t = list(vals_kidneys[0][t]) + list(vals_kidneys[1][t])
+            dyn_kidney[t] = np.mean(vals_t)
+
+        array_x = dyn_kidney[:10]
+        array_y = dyn_kidney[10:20]
+        array_z = dyn_kidney[20:]
+
+        product_xyz = array_x * array_y * array_z
+        cubic_root_product = np.cbrt(product_xyz)
+
+        # Calculate the fit
+        fit, pars = model.fit(cubic_root_product, TI, np.stack(bvecs[0,:10]))
+        rsquared = gof.r_square(cubic_root_product,fit)
+
+        # Export the results
+        # fig, ax = plt.subplots(1,1,figsize=(5,5))
+        # ax.plot(TI, cubic_root_product, 'ro', label='Signal for ' + kidney, linewidth=3.0)
+        # ax.plot(TI, fit, 'b-', label='IVIM model fit for ' + kidney+ ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+        # ax.plot(TI, 0*TI, color='gray')
+        # ax.set(xlabel='b-value', ylabel='Signal (a.u.)')
+        # ax.legend()
+
+        # plt.savefig(os.path.join(results_path, 'model fit IVIM ('+ kidney +').png'), dpi=600)
+        # figs.append(fig)
+
+        # Update master table
+        table['TP (msec)'] = TI
+        table[kidney] = cubic_root_product
+        p = model.pars()
+        measure.add_rows(folder, [
+            [folder.PatientID, kidney, 'Kidney', 'ROI', pars[1], ''          , kidney + '-' + p[1] + '-ROI', 'ROI fit'],
+            [folder.PatientID, kidney, 'Kidney', 'ROI', pars[2], '10-3 mm2/s', kidney + '-' + p[2] + '-ROI', 'ROI fit'],
+            [folder.PatientID, kidney, 'Kidney', 'ROI', pars[3], '10-3 mm2/s', kidney + '-' + p[3] + '-ROI', 'ROI fit'],  
+        ])
+
+    table.to_csv(os.path.join(results_path, 'data_IVIM.csv'))
+    return figs
+
+
+def DTI(folder):
+
+    results_path = folder.path() + '_output'
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    dyn_desc = 'DTI_mdr'
+    export_study = ''
+
+    dims = ['SliceLocation', 'InstanceNumber']
+
+    figs = []
+    table = pd.DataFrame()
+    for struct in ['','C','M']:
+        vals_kidneys = []
+        for kidney in ['LK'+struct,'RK'+struct]:
+
+            # Check if the required series are there and raise an error if not
+            dyn_kidney_fit = dyn_desc + '_moco_fit' + '_' + kidney[:2] + '_align' 
+            folder.message('Finding ' + dyn_kidney_fit)
+            dyn_kidney_fit = folder.series(SeriesDescription=dyn_kidney_fit)
+            if dyn_kidney_fit == []:
+                raise ValueError('Cannot perform DTI ROI analysis: missing dynamic series aligned to kidney ' + kidney)
+            folder.message('Finding ' + kidney)
+            kidney_mask = folder.series(SeriesDescription=kidney)
+            if kidney_mask == []:
+                raise ValueError('Cannot perform DTI ROI analysis: missing mask for kidney' + kidney)
+            dyn_kidney_moco = dyn_desc + '_moco_' + kidney[:2] + '_align' 
+            folder.message('Finding ' + dyn_kidney_moco)
+            dyn_kidney_moco = folder.series(SeriesDescription=dyn_kidney_moco)
+            if dyn_kidney_moco == []:
+                raise ValueError('Cannot perform DTI ROI analysis: missing D map aligned to kidney ' + kidney)
+            map_kidney = dyn_desc + '_moco_MD_map_' + kidney[:2] + '_align' 
+            folder.message('Finding ' + map_kidney)
+            map_kidney = folder.series(SeriesDescription=map_kidney)
+            if map_kidney == []:
+                raise ValueError('Cannot perform IVIM ROI analysis: missing D map aligned to kidney ' + kidney)
+            
+            # Load curve and T1 values for the kidney
+            dyn_kidney_fit, vals_kidney_fit = load_roi_curve(dyn_kidney_fit[0], kidney_mask[0], map_kidney[0], dims=dims)
+            dyn_kidney_moco, vals_kidney_moco = load_roi_curve(dyn_kidney_moco[0], kidney_mask[0], map_kidney[0], dims=dims)
+            x = np.linspace(0, 300, 10)
+            # Export the results
+            fig, ax = plt.subplots(1,1,figsize=(5,5))
+            ax.scatter(dyn_kidney_moco, dyn_kidney_fit, label='Moco vs Fit ' + kidney)
+            ax.plot(x, x, color='black', label='Identity line (y=x)')
+            ax.set(xlabel='moco', ylabel='fit')
+            ax.legend()
+
+            plt.savefig(os.path.join(results_path, 'model fit DTI ('+ kidney +').png'), dpi=600)
+            figs.append(fig)
+
+    return figs
+
+
 def T2star(folder):
 
     results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = 'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    dyn_desc = 'T2starm_magnitude_mdr_moco'
     dims = ('SliceLocation', 'EchoTime')
     model = models.T2star.BiExp()
     figs = []
@@ -362,10 +571,12 @@ def T2star(folder):
             pars = model.fit_signal((TE, dyn_kidney, 1e-6, True, {}))
             fit = model.signal(TE, *pars)
 
+            rsquared = gof.r_square(dyn_kidney,fit)
+
             # Export the results
             fig, ax = plt.subplots(1,1,figsize=(5,5))
             ax.plot(TE, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-            ax.plot(TE, fit, 'b-', label='T2* model fit for ' + kidney, linewidth=3.0)
+            ax.plot(TE, fit, 'b-', label='T2* model fit for ' + kidney+ ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
             ax.plot(TE, 0*TE, color='gray')
             ax.set(xlabel='Echo time (msec)', ylabel='Signal (a.u.)')
             ax.legend()
@@ -394,16 +605,18 @@ def T2star(folder):
         pars = model.fit_signal((TE, dyn_kidney, 1e-6, True, {}))
         fit = model.signal(TE, *pars)
 
-        # Export the results
-        fig, ax = plt.subplots(1,1,figsize=(5,5))
-        ax.plot(TE, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-        ax.plot(TE, fit, 'b-', label='T2 model fit for ' + kidney, linewidth=3.0)
-        ax.plot(TE, 0*TE, color='gray')
-        ax.set(xlabel='Echo time (msec)', ylabel='Signal (a.u.)')
-        ax.legend()
+        # rsquared = gof.r_square(dyn_kidney,fit)
 
-        plt.savefig(os.path.join(results_path, 'model fit T2star ('+ kidney +').png'), dpi=600)
-        figs.append(fig)
+        # Export the results
+        # fig, ax = plt.subplots(1,1,figsize=(5,5))
+        # ax.plot(TE, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
+        # ax.plot(TE, fit, 'b-', label='T2 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+        # ax.plot(TE, 0*TE, color='gray')
+        # ax.set(xlabel='Echo time (msec)', ylabel='Signal (a.u.)')
+        # ax.legend()
+
+        # plt.savefig(os.path.join(results_path, 'model fit T2star ('+ kidney +').png'), dpi=600)
+        # figs.append(fig)
 
         # Update master table
         table['TE '+kidney] = TE
@@ -424,7 +637,7 @@ def dce(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = "DCE_kidneys_cor-oblique_fb_mdr_moco"
+    dyn_desc = "DCE_mdr_moco"
 
     dyn_kidneys = []
     vals_kidneys = []
@@ -539,6 +752,7 @@ def dce(folder):
     kid.initialize('iBEAt').pretrain(time, dyn_kidneys[0])
     kid.train(time, dyn_kidneys[0], bounds='iBEAt', xtol=1e-4) 
 
+
     # Export the results
     fig, ax = plt.subplots(1,1,figsize=(5,5))
     ax.plot(time/60, dyn_kidneys[0], 'ro', label='Signal for left kidney', markersize=markersize)
@@ -620,13 +834,13 @@ def dce(folder):
     kid.train(time, dyn_kidney, bounds='iBEAt', xtol=1e-4)
     
     # Plot fit
-    fig, ax = plt.subplots(1,1,figsize=(5,5))
-    ax.plot(time/60, dyn_kidney, 'ro', label='Signal for both kidneys', markersize=markersize)
-    ax.plot(t_highres/60, kid.predict(t_highres), 'b-', label='Signal for both kidneys', linewidth=linewidth)
-    ax.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
-    ax.legend()
-    plt.savefig(os.path.join(results_path, 'model fit DCE ('+kidney+').png'), dpi=600)
-    figs.append(fig)
+    # fig, ax = plt.subplots(1,1,figsize=(5,5))
+    # ax.plot(time/60, dyn_kidney, 'ro', label='Signal for both kidneys', markersize=markersize)
+    # ax.plot(t_highres/60, kid.predict(t_highres), 'b-', label='Signal for both kidneys', linewidth=linewidth)
+    # ax.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
+    # ax.legend()
+    # plt.savefig(os.path.join(results_path, 'model fit DCE ('+kidney+').png'), dpi=600)
+    # figs.append(fig)
 
     # Update master table
     table[kidney] = dyn_kidney
@@ -654,7 +868,7 @@ def dce_cm(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    dyn_desc = "DCE_kidneys_cor-oblique_fb_mdr_moco"
+    dyn_desc = "DCE_mdr_moco"
 
     dyn_cortex, dyn_medulla = [], []
     vals_cortex, vals_medulla = [], []
@@ -876,17 +1090,17 @@ def dce_cm(folder):
     ypred = kid.predict(xdata)
     
     # Export the results
-    fig, (axc, axm) = plt.subplots(1,2,figsize=(10,5))
-    axc.plot(time/60, dyn_cor, 'ro', label='Signal for cortex', markersize=markersize)
-    axc.plot(time/60, ypred[:nt], 'b-', label='Fit for cortex', linewidth=linewidth)
-    axc.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
-    axc.legend()
-    axm.plot(time/60, dyn_med, 'ro', label='Signal for medulla', markersize=markersize)
-    axm.plot(time/60, ypred[nt:], 'b-', label='Fit for medulla', linewidth=linewidth)
-    axm.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
-    axm.legend()
-    plt.savefig(os.path.join(results_path, 'model fit DCE (BKCM).png'), dpi=600)
-    figs.append(fig)
+    # fig, (axc, axm) = plt.subplots(1,2,figsize=(10,5))
+    # axc.plot(time/60, dyn_cor, 'ro', label='Signal for cortex', markersize=markersize)
+    # axc.plot(time/60, ypred[:nt], 'b-', label='Fit for cortex', linewidth=linewidth)
+    # axc.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
+    # axc.legend()
+    # axm.plot(time/60, dyn_med, 'ro', label='Signal for medulla', markersize=markersize)
+    # axm.plot(time/60, ypred[nt:], 'b-', label='Fit for medulla', linewidth=linewidth)
+    # axm.set(xlabel='Time (min)', ylabel='Signal (a.u.)')
+    # axm.legend()
+    # plt.savefig(os.path.join(results_path, 'model fit DCE (BKCM).png'), dpi=600)
+    # figs.append(fig)
 
     # Update master table
     table['BKC'] = dyn_cor

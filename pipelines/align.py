@@ -6,7 +6,7 @@ from dipy.align.imaffine import MutualInformationMetric, AffineRegistration
 from dipy.align.transforms import TranslationTransform2D
 
 
-export_study = "Alignment"
+export_study = "3: Alignment"
 
 
 def _inslice_active_translation(fixed, moving, progress, applyto=[]):
@@ -109,10 +109,10 @@ def t1(database):
     desc = [ 
         'LK',
         'RK',  
-        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T1_map',
-        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
-        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_FA_map',
-        'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco',
+        'T1m_magnitude_mdr_moco_T1_map',
+        'T1m_magnitude_mdr_moco_S0_map',
+        'T1m_magnitude_mdr_moco_T1FAcorr_map',
+        'T1m_magnitude_mdr_moco',
    ]
     return _align(database, desc)
     
@@ -122,9 +122,9 @@ def t2(database):
     desc = [ 
         'LK',
         'RK',  
-        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2_map',
-        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
-        'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco',
+        'T2m_magnitude_mdr_moco_T2_map',
+        'T2m_magnitude_mdr_moco_S0_map',
+        'T2m_magnitude_mdr_moco',
     ]
     return _align(database, desc)
 
@@ -134,9 +134,10 @@ def t2star(database):
     desc = [ 
         'LK',
         'RK',  
-        'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_T2star_map',
-        'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco_S0_map',
-        'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+        'T2starm_magnitude_mdr_moco_T2star_map',
+        'T2starm_magnitude_mdr_moco_S0_map',
+        'T2starm_magnitude_mdr_moco_f_fat_map',
+        'T2starm_magnitude_mdr_moco'
     ]
     return _align(database, desc)
 
@@ -146,11 +147,11 @@ def ivim(database):
     desc = [ 
         'LK',
         'RK',  
-        'IVIM_kidneys_cor-oblique_fb_mdr_moco_S0_map',
-        'IVIM_kidneys_cor-oblique_fb_mdr_moco_MD_map',
-        'IVIM_kidneys_cor-oblique_fb_mdr_moco_Df_map',
-        'IVIM_kidneys_cor-oblique_fb_mdr_moco_ff_map',
-        'IVIM_kidneys_cor-oblique_fb_mdr_moco',
+        'IVIM_mdr_moco_S0_map',
+        'IVIM_mdr_moco_D_map',
+        'IVIM_mdr_moco_D_star_map',
+        'IVIM_mdr_moco_Perfusion_fraction_map',
+        'IVIM_mdr_moco',
     ]
     return _align(database, desc)
 
@@ -160,14 +161,15 @@ def dti(database):
     desc = [ 
         'LK',
         'RK',  
-        'DTI_kidneys_cor-oblique_fb_mdr_moco_MD_map',
-        'DTI_kidneys_cor-oblique_fb_mdr_moco_RD_map',
-        'DTI_kidneys_cor-oblique_fb_mdr_moco_AD_map',
-        'DTI_kidneys_cor-oblique_fb_mdr_moco_Planarity_map',
-        'DTI_kidneys_cor-oblique_fb_mdr_moco_Linearity_map',
-        'DTI_kidneys_cor-oblique_fb_mdr_moco_Sphericity_map',
-        'DTI_kidneys_cor-oblique_fb_mdr_moco_FA_map',
-        'DTI_kidneys_cor-oblique_fb_mdr_moco',
+        'DTI_mdr_moco_MD_map',
+        'DTI_mdr_moco_RD_map',
+        'DTI_mdr_moco_AD_map',
+        'DTI_mdr_moco_Planarity_map',
+        'DTI_mdr_moco_Linearity_map',
+        'DTI_mdr_moco_Sphericity_map',
+        'DTI_mdr_moco_FA_map',
+        'DTI_mdr_moco_fit',
+        'DTI_mdr_moco',
     ]
     return _align(database, desc)
 
@@ -177,11 +179,11 @@ def dce(database):
     desc = [ 
         'LK',
         'RK',  
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_AUC_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_AVD_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_RPF_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_MTT_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco',
+        'DCE_mdr_moco_AUC_map',
+        'DCE_mdr_moco_AVD_map',
+        'DCE_mdr_moco_RPF_map',
+        'DCE_mdr_moco_MTT_map',
+        'DCE_mdr_moco',
     ]
     return _align(database, desc)
 
@@ -192,8 +194,8 @@ def mt(database):
     desc = [ 
         'LK',
         'RK',  
-        'MT_kidneys_cor-oblique_bh_mdr_moco_AVR',
-        'MT_kidneys_cor-oblique_bh_mdr_moco_MTR',
+        'MT_mdr_moco_AVR_map',
+        'MT_mdr_moco_MTR_map',
     ]
     return _align(database, desc)
 
@@ -202,9 +204,9 @@ def asl(database):
 
     # Get input parameters
     desc = [   
-        'T1w_abdomen_dixon_cor_bh_water_post_contrast',
-        'ASL_kidneys_pCASL_cor-oblique_fb_M0_moco',
-        'ASL_kidneys_pCASL_cor-oblique_fb_RBF_moco',
+        'Dixon_post_contrast_water',
+        'ASL_M0_moco',
+        'ASL_RBF_moco',
         'LK',
         'RK',
     ]
@@ -233,11 +235,11 @@ def dixon(database):
 
     # Get input parameters
     desc = [   
-        'T1w_abdomen_dixon_cor_bh_out_phase',
-        'T1w_abdomen_dixon_cor_bh_in_phase',
-        'T1w_abdomen_dixon_cor_bh_water',
-        'T1w_abdomen_dixon_cor_bh_fat',
-        'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
+        'Dixon_out_phase',
+        'Dixon_in_phase',
+        'Dixon_water',
+        'Dixon_fat',
+        'Dixon_post_contrast_fat',
     ]
     series, study = input_series(database, desc, export_study)
     if series is None:
@@ -259,11 +261,11 @@ def dixon(database):
 def fill_gaps(database):
 
     to_fill = [
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_AVD_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_RPF_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_MTT_map',        
+        'DCE_mdr_moco_AVD_map',
+        'DCE_mdr_moco_RPF_map',
+        'DCE_mdr_moco_MTT_map',        
     ]
-    ref = ['T1w_abdomen_dixon_cor_bh_fat_post_contrast']
+    ref = ['Dixon_post_contrast_fat']
 
     output = []
     for kidney in ['LK','RK']:

@@ -4,15 +4,20 @@ from dbdicom.pipelines import input_series
 import dcmri
 
 from pipelines.roi_fit import load_aif
-import models
 
-export_study = 'Parameter maps'
+import models.t1
+import models.t2
+import models.T2star
+import models.DTI
+import models.IVIM
+
+export_study = '2: Parameter maps'
 
 
 def T1(folder):
 
     # Find source DICOM data
-    series, study, desc = _map_input(folder, "T1map_kidneys_cor-oblique_mbh_magnitude")
+    series, study, desc = _map_input(folder, "T1m_magnitude")
 
     # Model parameters (Siemens)
     TR = 4.6 # Echo Spacing is msec but not in header -> Set as TR in harmonize
@@ -20,7 +25,7 @@ def T1(folder):
     N_T1 = 66 # Number of k-space lines (hardcoded from Siemens protocol)
     FA_nom = 12 # Flip angle in degrees (hardcoded from Siemens protocol)
 
-    model = models.T1.Bloch()
+    model = models.t1.Bloch()
     kwargs = {'TR':TR, 'FA_cat':FA_cat, 'N_T1':N_T1, 'FA':FA_nom}
     dims = ['SliceLocation', 'AcquisitionTime']
 
@@ -35,10 +40,10 @@ def T1(folder):
 def T2(folder):
 
     # Find source DICOM data
-    series, study, desc = _map_input(folder, "T2map_kidneys_cor-oblique_mbh_magnitude")
+    series, study, desc = _map_input(folder, "T2m_magnitude")
 
     # Load data
-    model = models.T2.MonoExp()
+    model = models.t2.MonoExp()
     dims = ['SliceLocation', 'AcquisitionTime']
     array, header = series.array(dims, pixels_first=True, first_volume=True)
     TI = series.values('InversionTime', dims=tuple(dims)).astype(np.float32)
@@ -50,7 +55,7 @@ def T2(folder):
 def T2star(folder):
     
     # Find source DICOM data
-    series, study, desc = _map_input(folder, "T2star_map_kidneys_cor-oblique_mbh_magnitude")
+    series, study, desc = _map_input(folder, "T2starm_magnitude")
 
     model = models.T2star.BiExp()
     dims = ['SliceLocation', 'EchoTime']
@@ -63,7 +68,7 @@ def T2star(folder):
 def MT(folder):
     
     # Find source DICOM data
-    series, study, desc = _map_input(folder, "MT_kidneys_cor-oblique_bh")
+    series, study, desc = _map_input(folder, "MT")
         
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
 
@@ -86,7 +91,7 @@ def MT(folder):
 def DTI(folder):
 
     # Find appropriate series
-    series, study, desc = _map_input(folder, "DTI_kidneys_cor-oblique_fb")
+    series, study, desc = _map_input(folder, "DTI")
 
     # Read data
     model = models.DTI.DiPy()
@@ -96,13 +101,13 @@ def DTI(folder):
     # Compute
     series.message('Fitting DTI model..')
     fit, pars = model.fit(array, bvals[0,:], np.stack(bvecs[0,:]), fit_method='NLLS')
-    err = model.error(array, fit)
+    #err = model.error(array, fit)
 
     # Save as DICOM
     series = study.new_series(SeriesDescription=desc + '_fit')
     series.set_array(fit, header, pixels_first=True)
-    series = study.new_series(SeriesDescription=desc + '_fiterr_map')
-    series.set_array(err, header[:,0], pixels_first=True)
+    #series = study.new_series(SeriesDescription=desc + '_fiterr_map')
+    #series.set_array(err, header[:,0], pixels_first=True)
     maps = []
     for i, p in enumerate(model.pars()):
         series = study.new_series(SeriesDescription=desc + '_' + p +'_map')
@@ -115,39 +120,68 @@ def DTI(folder):
 def IVIM(folder):
 
     # Find appropriate series
-    series, study, desc = _map_input(folder, "IVIM_kidneys_cor-oblique_fb")
+    series, study, desc = _map_input(folder, "IVIM")
 
-    model = models.IVIM.NonLin()
+    model = models.IVIM.DiPy()
     array, header = series.array(['SliceLocation', 'InstanceNumber'], pixels_first=True, first_volume=True)
     bvals, bvecs = series.values('DiffusionBValue', 'DiffusionGradientOrientation', dims=('SliceLocation', 'InstanceNumber'))
 
-    # Calculate fit slice by slice so progress bar can be shown
-    fit = np.empty(array.shape)
-    par = np.empty(array.shape[:3] + (len(model.pars()),) )
-    for z in range(array.shape[2]):
-        series.progress(z+1, array.shape[2], 'Fitting IVIM model')
-        fit[:,:,z,:], par[:,:,z,:] = model.fit(array[:,:,z,:], bvals[0,:10].astype(np.float32), xtol=1e-3, bounds=True, parallel=True) 
-    S0, Df, MD, ff = model.derived(par)
+    array_x = array[:, :, :, 0:10]
+    array_y = array[:, :, :, 10:20]
+    array_z = array[:, :, :, 20:30]
+
+    # Compute geometric mean using all three orthogonal directions
+    product_xyz = array_x * array_y * array_z
+    cubic_root_product = np.cbrt(product_xyz)
+
+    # Compute
+    series.message('Fitting IVIM model..')
+    fit, pars = model.fit(cubic_root_product, bvals[0,0:10], np.stack(bvecs[0,0:10]), fit_method='TRR')
+    #err = model.error(array, fit)
 
     # Save as DICOM
-    fit_series = study.new_series(SeriesDescription=desc + "_fit")
-    fit_series.set_array(fit, header, pixels_first=True)
-    Df_series = study.new_series(SeriesDescription=desc + "_Df_map")
-    Df_series.set_array(Df, header[:,0], pixels_first=True)
-    MD_series = study.new_series(SeriesDescription=desc + "_MD_map")
-    MD_series.set_array(MD, header[:,0], pixels_first=True)
-    S0_series = study.new_series(SeriesDescription=desc + "_S0_map")
-    S0_series.set_array(S0, header[:,0], pixels_first=True)
-    ff_series = study.new_series(SeriesDescription=desc + "_ff_map")
-    ff_series.set_array(ff, header[:,0], pixels_first=True)
+    series = study.new_series(SeriesDescription=desc + '_fit')
+    series.set_array(fit, header[:,0:10], pixels_first=True)
+    #series = study.new_series(SeriesDescription=desc + '_fiterr_map')
+    #series.set_array(err, header[:,0], pixels_first=True)
 
-    return Df_series, ff_series
+
+
+    # Calculate fit slice by slice so progress bar can be shown
+    # fit = np.empty(array.shape)
+    # par = np.empty(array.shape[:3] + (len(model.pars()),) )
+    # for z in range(array.shape[2]):
+    #     series.progress(z+1, array.shape[2], 'Fitting IVIM model')
+    #     fit[:,:,z,:], par[:,:,z,:] = model.fit(array[:,:,z,:], bvals[0,:10].astype(np.float32), xtol=1e-3, bounds=True, parallel=True) 
+    # S0, Df, D, ff = model.derived(par)
+
+    # Save as DICOM
+    # fit_series = study.new_series(SeriesDescription=desc + "_fit")
+    # fit_series.set_array(fit, header, pixels_first=True)
+    # Df_series = study.new_series(SeriesDescription=desc + "_Df_map")
+    # Df_series.set_array(Df, header[:,0], pixels_first=True)
+    # MD_series = study.new_series(SeriesDescription=desc + "_D_map")
+    # MD_series.set_array(MD, header[:,0], pixels_first=True)
+    # S0_series = study.new_series(SeriesDescription=desc + "_S0_map")
+    # S0_series.set_array(S0, header[:,0], pixels_first=True)
+    # ff_series = study.new_series(SeriesDescription=desc + "_ff_map")
+    # ff_series.set_array(ff, header[:,0], pixels_first=True)
+
+    # return Df_series, ff_series
+
+    maps = []
+    for i, p in enumerate(model.pars()):
+        series = study.new_series(SeriesDescription=desc + '_' + p +'_map')
+        series.set_array(pars[...,i], header[:,0], pixels_first=True)
+        maps.append(series)
+
+    return maps[0], maps[1]
 
 
 def DCE(folder):
 
     # Find appropriate series       
-    series, study, desc = _map_input(folder, "DCE_kidneys_cor-oblique_fb")
+    series, study, desc = _map_input(folder, "DCE")
 
     # Extract data
     time, aif = load_aif(folder)
@@ -155,7 +189,7 @@ def DCE(folder):
     
     # Calculate maps
     series.message('Calculating descriptive parameters..')
-    MAX, AUC, ATT = dcmri.pixel_descriptives(array, aif, time[1]-time[0], baseline=15)
+    MAX, AUC, ATT, SO = dcmri.pixel_descriptives(array, aif, time[1]-time[0], baseline=15)
     series.message('Performing linear fit..')
     fit, par = dcmri.pixel_2cfm_linfit(array, aif, time, baseline=15)
     series.message('Deconvolving..')
@@ -164,7 +198,20 @@ def DCE(folder):
     # Save maps as DICOM
     fit_series = study.new_series(SeriesDescription=desc + "_fit")
     fit_series.set_array(fit, header, pixels_first=True)
-    
+
+    MAX[MAX<0]=0
+    MAX[MAX>10000]=10000
+    AUC[AUC<0]=0
+    AUC[AUC>10000]=10000
+    ATT[ATT<0]=0
+    ATT[ATT>10000]=10000
+    RPF[RPF<0]=0
+    RPF[RPF>10000]=10000
+    AVD[AVD<0]=0
+    AVD[AVD>10000]=10000
+    MTT[MTT<0]=0
+    MTT[MTT>10000]=10000
+
     MAX_series = study.new_series(SeriesDescription=desc + "_MAX_map")
     AUC_series = study.new_series(SeriesDescription=desc + "_AUC_map")
     ATT_series = study.new_series(SeriesDescription=desc + "_ATT_map")

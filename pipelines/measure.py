@@ -10,7 +10,7 @@ def _master_table_file(folder):
     results_path = folder.path() + '_output'
     if not os.path.exists(results_path):
         os.mkdir(results_path)
-    return os.path.join(results_path, 'biomarkers.csv')
+    return os.path.join(results_path, folder.PatientName[0] + '_biomarkers.csv')
 
 def _load_master_table(folder):
     # Read master table
@@ -65,43 +65,45 @@ def sinus_fat_volumetrics(folder):
 
 
 def t1_maps(folder):
-    seq = 'T1map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
+    seq = 'T1m_magnitude_mdr_moco'
     pars = ['T1', 'T1FAcorr']
     units = ['msec', 'deg']
     return features(folder, seq, pars, units)
 
 def t2_maps(folder):
-    seq = 'T2map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
-    pars = ['T2', 'T2FAcorr']
-    units = ['msec', 'deg']
+    seq = 'T2m_magnitude_mdr_moco'
+    #pars = ['T2', 'T2FAcorr']
+    pars = ['T2']
+    #units = ['msec', 'deg']
+    units = ['msec']
     return features(folder, seq, pars, units)
 
 def t2star_maps(folder):
-    seq = 'T2star_map_kidneys_cor-oblique_mbh_magnitude_mdr_moco'
-    pars = [ 'T2s','f_fat']
+    seq = 'T2starm_magnitude_mdr_moco'
+    pars = [ 'T2star','f_fat']
     units = ['msec','']
     return features(folder, seq, pars, units)
 
 def mt_maps(folder):
-    seq = 'MT_kidneys_cor-oblique_bh_mdr_moco'
+    seq = 'MT_mdr_moco'
     pars = ['MTR']
     units = ['%']
     return features(folder, seq, pars, units)
 
 def ivim_maps(folder):
-    seq = 'IVIM_kidneys_cor-oblique_fb_mdr_moco'
-    pars = ['MD','Df','ff']
+    seq = 'IVIM_mdr_moco'
+    pars = ['D','D_star','Perfusion_fraction']
     units = ['','','']
     return features(folder, seq, pars, units)
 
 def dti_maps(folder):
-    seq = 'DTI_kidneys_cor-oblique_fb_mdr_moco'
+    seq = 'DTI_mdr_moco'
     pars = ['MD','RD','AD','Planarity','Linearity','Sphericity','FA']
     units = ['','','','','','','']
     return features(folder, seq, pars, units)
 
 def dce_maps(folder):
-    seq = 'DCE_kidneys_cor-oblique_fb_mdr_moco'
+    seq = 'DCE_mdr_moco'
     pars = ['AVD', 'RPF', 'MTT']
     units = ['mL/100mL', 'mL/min/100mL', 'sec']
     return features(folder, seq, pars, units)
@@ -109,47 +111,57 @@ def dce_maps(folder):
 # Needs to be brought in line with the others - same format
 def asl_maps(folder):
     for ROI in ['LK','RK','LKC','RKC','LKM','RKM']:
-        kidney  = folder.series(SeriesDescription=ROI)
-        rbf = folder.series(SeriesDescription='RBF - ' + ROI[:2])
-        features = vreg.mask_statistics(kidney, rbf)
-        features['Biomarker'] = features['SeriesDescription'] + '-' + features['Parameter']
-        features['Region of Interest'] = 'Kidney'
-        _update_master_table(folder, features)
+        try:
+            kidney  = folder.series(SeriesDescription=ROI)
+            rbf = folder.series(SeriesDescription='RBF - ' + ROI[:2])
+            features = vreg.mask_statistics(kidney, rbf)
+            features['Biomarker'] = ROI[:2] + '-' + 'RBF' + '-' + features['Parameter']
+            features['Region of Interest'] = 'Kidney'
+            _update_master_table(folder, features)
+        except:
+            print('Cannot find: RBF - ' + ROI)
+            folder.log('Cannot find: RBF - ' + ROI)
     return features
 
 
 def features(folder, seq, pars, units):
     cnt=0
     for p, par in enumerate(pars):
-        for subroi in ['','C','M']:
-            vals = []
-            for ROI in ['LK'+subroi,'RK'+subroi]: 
+        try:
+            for subroi in ['','C','M']:
+                vals = []
+                for ROI in ['LK'+subroi,'RK'+subroi]: 
+                    folder.progress(cnt+1, len(pars)*9, 'Exporting metrics (' + par + ' on ' + ROI + ')')
+                    cnt+=1
+                    desc = seq + '_' + par + '_map_' + ROI[:2] + '_align'
+
+                    kidney = folder.series(SeriesDescription=ROI)[0]
+                    series = folder.series(SeriesDescription=desc)[0]
+                    kidney_vals = vreg.mask_values(kidney, series)
+                    vals.append(kidney_vals)
+
+                    # update master table
+                    features = vreg.mask_data_statistics(kidney_vals, kidney, series)
+                    features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
+                    features['Unit'] = units[p]
+                    features['SeriesDescription'] = ROI
+                    features['Region of Interest'] = 'Kidney'
+                    _update_master_table(folder, features)
+
+                ROI = 'BK' + subroi
                 folder.progress(cnt+1, len(pars)*9, 'Exporting metrics (' + par + ' on ' + ROI + ')')
                 cnt+=1
-                desc = seq + '_' + par + '_map_' + ROI[:2] + '_align'
-                kidney = folder.series(SeriesDescription=ROI)[0]
-                series = folder.series(SeriesDescription=desc)[0]
-                kidney_vals = vreg.mask_values(kidney, series)
-                vals.append(kidney_vals)
-
-                # update master table
-                features = vreg.mask_data_statistics(kidney_vals, kidney, series)
+                vals = np.concatenate(vals)
+                features = vreg.mask_data_statistics(vals, kidney, series)
                 features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
                 features['Unit'] = units[p]
                 features['SeriesDescription'] = ROI
                 features['Region of Interest'] = 'Kidney'
                 _update_master_table(folder, features)
-
-            ROI = 'BK' + subroi
-            folder.progress(cnt+1, len(pars)*9, 'Exporting metrics (' + par + ' on ' + ROI + ')')
-            cnt+=1
-            vals = np.concatenate(vals)
-            features = vreg.mask_data_statistics(vals, kidney, series)
-            features['Biomarker'] = [ROI + '-' + par + '-' + metric for metric in features['Parameter'].values]
-            features['Unit'] = units[p]
-            features['SeriesDescription'] = ROI
-            features['Region of Interest'] = 'Kidney'
-            _update_master_table(folder, features)
+        except:
+            print('cannot find ' + str(ROI) +' ' + par)
+            folder.log('cannot find ' + str(ROI) +' ' + par)
+            continue
 
     return features
 

@@ -1,5 +1,6 @@
 import numpy as np
 import dbdicom
+import utilities.standardize_subject_name as standardize_subject_name
 
 # Note from older code:
 # For T1-mapping, Siemens uses the field 'InversionTime' 
@@ -11,8 +12,8 @@ def mt(database):
     # Merge MT ON and MT OFF sequences and remove the originals
 
     # Find the series
-    mt_on = database.series(SeriesDescription="MT_ON_kidneys_cor-oblique_bh")
-    mt_off = database.series(SeriesDescription="MT_OFF_kidneys_cor-oblique_bh")
+    mt_on = database.series(SeriesDescription="MT_ON")
+    mt_off = database.series(SeriesDescription="MT_OFF")
 
     # If one is missing, or there are multiple, do not proceed
     if len(mt_on)!=1 or len(mt_off)!=1:
@@ -21,7 +22,7 @@ def mt(database):
     # Merge the two sequences into one
     try:
         study = mt_on[0].parent()
-        mt = study.new_series(SeriesDescription='MT_kidneys_cor-oblique_bh')
+        mt = study.new_series(SeriesDescription='MT')
         dbdicom.merge(mt_on+mt_off, mt)
     except:
         return
@@ -33,7 +34,7 @@ def mt(database):
 
 
 def ivim(database):
-    desc = 'IVIM_kidneys_cor-oblique_fb'
+    desc = 'IVIM'
     series = database.series(SeriesDescription=desc)[0]
 
     if series.instance().Manufacturer=='SIEMENS':
@@ -54,7 +55,7 @@ def ivim(database):
         series.set_values((bvals,bvecs), ('DiffusionBValue', 'DiffusionGradientOrientation'), dims=dims)
 
 def dti(database):
-    desc = "DTI_kidneys_cor-oblique_fb"
+    desc = "DTI"
     series = database.series(SeriesDescription=desc)[0]
 
     if series.instance().Manufacturer=='SIEMENS':
@@ -65,7 +66,7 @@ def dti(database):
 
 
 def t2(database):
-    desc = "T2map_kidneys_cor-oblique_mbh_magnitude"
+    desc = "T2m_magnitude"
     series = database.series(SeriesDescription=desc)[0]
 
     if series.instance().Manufacturer=='SIEMENS':
@@ -74,7 +75,7 @@ def t2(database):
 
 
 def dce(database):
-    desc = "DCE_kidneys_cor-oblique_fb"
+    desc = "DCE"
     series = database.series(SeriesDescription=desc)[0]
 
     if series.instance().Manufacturer=='SIEMENS':
@@ -97,8 +98,8 @@ def dce(database):
         	
 def pc(database):
     desc = [
-        'PC_RenalArtery_Right_EcgTrig_fb_120_phase',
-        'PC_RenalArtery_Left_EcgTrig_fb_120_phase',
+        'PC_right_delta_phase',
+        'PC_left_delta_phase',
     ]   
     for d in desc:
         series = database.series(SeriesDescription=d) 
@@ -112,6 +113,33 @@ def pc(database):
             velocity = phase * venc/4096 # cm/sec
             vel = series.copy(SeriesDescription=d[:-5] + 'velocity')
             vel.set_pixel_values(velocity, dims='TriggerTime')
+
+def subject_name(database):
+
+    series_list = database.series()
+    subject_name = series_list[0]['PatientID']
+    if len(subject_name) != 7 or subject_name[4] != "_":
+
+        correct_name = standardize_subject_name.subject_hifen(subject_name)
+        #print(correct_name)
+        if correct_name != 0:
+            database.PatientName = correct_name
+            database.save()
+            return
+
+        correct_name = standardize_subject_name.subject_underscore(subject_name)
+        print(correct_name)
+        if correct_name != 0:
+            database.PatientName = correct_name
+            database.save()
+            return
+        
+        correct_name = standardize_subject_name.subject_seven_digitd(subject_name)
+        print(correct_name)
+        if correct_name != 0:
+            database.PatientName = correct_name
+            database.save()
+            return
 
 
 def all_series(database):

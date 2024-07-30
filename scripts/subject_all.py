@@ -11,16 +11,14 @@ def single_subject(username, password, path, dataset):
     #Import data from XNAT
     if isinstance(dataset,str) and '_' in dataset:
         ExperimentName = xnat.main(username, password, path, SpecificDataset=dataset)
+        pathScan = os.path.join(path, ExperimentName)
     elif len(dataset)==3:
         ExperimentName = xnat.main(username, password, path, dataset)
+        pathScan = os.path.join(path, ExperimentName)
     elif dataset == 'load':
-        ExperimentName = os.path.basename(path)
+        pathScan = os.path.join(path)
     
-    pathScan = os.path.join(path, ExperimentName)
     filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
-    
-    # THIS NEEDS ANOTHER APPROACH!!!
-    unetr = 'C:\\Users\\steve\\Dropbox\\Data\\dl_models\\UNETR_kidneys_v1.pth'
 
     #Available CPU cores
     try: 
@@ -33,8 +31,7 @@ def single_subject(username, password, path, dataset):
     database.log("Analysis of " + pathScan.split('//')[-1] + " has started!")
     database.log("CPU cores: " + str(UsedCores))
     
-
-    ## HARMONIZATION
+    # HARMONIZATION
 
     steps.rename_all_series(database)
     steps.harmonize_pc(database)
@@ -43,19 +40,21 @@ def single_subject(username, password, path, dataset):
     steps.harmonize_dti(database)
     steps.harmonize_ivim(database)
     steps.harmonize_dce(database)
+    steps.harmonize_subject_name(database)
     
-    ## SEGMENTATION
+    # SEGMENTATION
 
-    steps.fetch_dl_models() # TODO
-    steps.fetch_kidney_masks(database) # TODO
-    steps.segment_kidneys(database, unetr)
+    steps.fetch_dl_models(database)
+    steps.fetch_kidney_masks(database)
+    steps.segment_kidneys(database)
     steps.segment_renal_sinus_fat(database)
     steps.segment_aorta_on_dce(database)
-    steps.segment_renal_artery(database)
+    steps.segment_left_renal_artery(database)
+    steps.segment_right_renal_artery(database)
     steps.compute_whole_kidney_canvas(database)
     steps.export_segmentations(database) 
 
-    ## MOTION CORRECTION
+    # MOTION CORRECTION
 
     steps.mdreg_t1(database)
     steps.mdreg_t2(database)
@@ -114,10 +113,11 @@ def single_subject(username, password, path, dataset):
     steps.roi_fit_PC(database)
     steps.roi_fit_DCE(database)
     steps.roi_fit_DCE_cm(database)
-    # TODO: IVIM, DTI
+    steps.roi_fit_IVIM(database)
+    steps.roi_fit_DTI(database)
 
         
     #upload images, logfile and csv to google drive
     #upload.main(pathScan, filename_log, filename_csv)
-    filename_csv = os.path.join(database.path() + '_output', 'biomarkers.csv')
+    filename_csv = os.path.join(database.path() + '_output',database.PatientName[0] + '_biomarkers.csv')
     upload.main(pathScan, filename_log, filename_csv)

@@ -98,10 +98,19 @@ def harmonize_dce(database):
         database.log("Harmonizing DCE series was NOT completed; error: " + str(e)) 
         database.restore()
 
+def harmonize_subject_name(database):
+    start_time = time.time()
+    database.log("Harmonizing subject name has started!")
+    try:
+        harmonize.subject_name(database)
+        database.log("Harmonizing subject name was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing subject name was NOT completed; error: " + str(e)) 
+        database.restore()
+
 
 ## SEGMENTATION
-        
-
 
 def fetch_kidney_masks(database):
     start_time = time.time()
@@ -125,21 +134,28 @@ def fetch_dl_models(database):
         database.restore()
 
 
-def segment_kidneys(database, weights):
+def segment_kidneys(database):
     start_time = time.time()
     database.log("Kidney segmentation has started")
     try:
+
         lk = database.series(SeriesDescription='LK')
-        if len(lk) == 0:
-            segment.kidneys(database, weights)
-            database.log("Kidney segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        rk = database.series(SeriesDescription='RK')
+
+        if len(lk) == 0 or len(rk) == 0:
+            database.log("Starting AI kidney segmentation")
+            segment.kidneys(database)
+            database.log("AI Kidney segmentation was completed")
         else:
-            database.log('Kidney masks were already present - no automated kidney segmentation was performed.')
+            database.log('Both masks were already present - no AI kidney segmentation was performed.')
         database.save()
+        
     except Exception as e:
-        database.log("Kidney segmentation was NOT completed; error: "+str(e))
+        database.log("AI Kidney segmentation was NOT completed; error: "+str(e))
         database.restore()
         raise RuntimeError('Critical step failed (kidney segmentation) - exiting pipeline.')
+
+    database.log("Kidney segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
 
 def segment_renal_sinus_fat(database):
@@ -166,15 +182,26 @@ def segment_aorta_on_dce(database):
         database.restore()
 
 
-def segment_renal_artery(database):
+def segment_left_renal_artery(database):
     start_time = time.time()
-    database.log("Renal artery segmentation has started")
+    database.log("Left renal artery segmentation has started")
     try:
-        segment.renal_artery(database)
-        database.log("Renal artery segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        segment.left_renal_artery(database)
+        database.log("Left renal artery segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e:
-        database.log("Renal artery segmentation was NOT completed; error: "+str(e))
+        database.log("Left renal artery segmentation was NOT completed; error: "+str(e))
+        database.restore()
+
+def segment_right_renal_artery(database):
+    start_time = time.time()
+    database.log("Right renal artery segmentation has started")
+    try:
+        segment.right_renal_artery(database)
+        database.log("Right renal artery segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Right renal artery segmentation was NOT completed; error: "+str(e))
         database.restore()
 
 
@@ -198,6 +225,8 @@ def export_segmentations(database):
         export.kidney_masks_as_dicom(database)
         export.kidney_masks_as_png(database)
         export.aif_as_png(database)
+        export.right_renal_artery_masks_as_png(database)
+        export.left_renal_artery_masks_as_png(database)
         database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("Export kidney segmentations was NOT completed; error: "+str(e))
@@ -300,12 +329,9 @@ def export_mdreg(database):
         database.log("Exporting MDR results was NOT completed; error: "+str(e))
         database.restore()
 
-        
-
+    
 ## MAPPING
 
-
-  
 def map_T1(database):
     start_time = time.time()
     print('Starting T1 mapping')
@@ -679,7 +705,7 @@ def roi_fit_T2star(database):
     start_time = time.time()
     database.log("ROI analysis for T2* has started")
     try:
-        roi_fit.T2(database)
+        roi_fit.T2star(database)
         database.log("ROI analysis for T2* was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("ROI analysis for T2* was NOT completed; error: "+str(e))
@@ -692,6 +718,15 @@ def roi_fit_PC(database):
         database.log("ROI analysis for PC was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("ROI analysis for PC was NOT completed; error: "+str(e))
+
+def roi_fit_IVIM(database):
+    start_time = time.time()
+    database.log("ROI analysis for IVIM has started")
+    try:
+        roi_fit.IVIM(database)
+        database.log("ROI analysis for IVIM was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for IVIM was NOT completed; error: "+str(e))
 
 def roi_fit_DCE(database):
     start_time = time.time()
@@ -711,5 +746,11 @@ def roi_fit_DCE_cm(database):
     except Exception as e:
         database.log("ROI analysis for DCE (Cortex-Medulla) was NOT completed; error: "+str(e))
 
-
-
+def roi_fit_DTI(database):
+    start_time = time.time()
+    database.log("ROI analysis for DTI has started")
+    try:
+        roi_fit.DTI(database)
+        database.log("ROI analysis for DTI was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("ROI analysis for DTI was NOT completed; error: "+str(e))

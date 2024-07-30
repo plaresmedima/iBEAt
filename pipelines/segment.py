@@ -2,13 +2,13 @@ import numpy as np
 from dbdicom.extensions import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
 from models import DCE_aorta, PC, UNETR_kidneys_v1
+import utilities.zenodo_link as UNETR_zenodo
+import os
+
+export_study = '0: Segmentations'
 
 
-
-export_study = 'Segmentations'
-
-
-def kidneys(database, weights):
+def kidneys(database):
 
     # Get weights file and check if valid 
     # if not os.path.isfile(weights):
@@ -17,11 +17,14 @@ def kidneys(database, weights):
     #     database.dialog.information(msg)
     #     return
 
+    unetr, unetr_link= UNETR_zenodo.main()
+    weights = os.path.join(os.path.dirname(database.path()),unetr)
+
     database.message('Segmenting kidneys. This could take a few minutes. Please be patient..')
 
     # Get appropriate series and check if valid
     #series = database.series(SeriesDescription=UNETR_kidneys_v1.trained_on)
-    sery, study = input_series(database, UNETR_kidneys_v1.trained_on, export_study)
+    sery, study = input_series(database, UNETR_kidneys_v1.trained_on,export_study)
     if sery is None:
         msg = 'Cannot autosegment the kidneys: series ' + UNETR_kidneys_v1.trained_on + ' not found.'
         raise RuntimeError(msg)
@@ -49,12 +52,14 @@ def kidneys(database, weights):
     right.set_array(right_kidney, header, pixels_first=True)
     # right[['WindowCenter','WindowWidth']] = [1.0, 2.0]
 
-    return left, right
+    database.save()
+
+    return
 
 
 def renal_sinus_fat(folder):
 
-    fat = folder.series(SeriesDescription='T1w_abdomen_dixon_cor_bh_fat_post_contrast')
+    fat = folder.series(SeriesDescription='Dixon_post_contrast_fat')
     lk  = folder.series(SeriesDescription='LK')
     rk  = folder.series(SeriesDescription='RK')
 
@@ -87,8 +92,8 @@ def renal_sinus_fat(folder):
 
 def compute_whole_kidney_canvas(database):
     series_desc = [
-        'T1w_abdomen_dixon_cor_bh_fat_post_contrast',
-        'T1w_abdomen_dixon_cor_bh_out_phase_post_contrast'
+        'Dixon_post_contrast_fat',
+        'Dixon_post_contrast_out_phase'
     ] 
     features, study = input_series(database, series_desc, export_study)
     if features is None:
@@ -116,14 +121,38 @@ def aorta_on_dce(folder):
     return aif_mask_series
 
 
-def renal_artery(folder):
+def left_renal_artery(folder):
 
     desc = [
-        'PC_RenalArtery_Right_EcgTrig_fb_120_magnitude',
-        'PC_RenalArtery_Right_EcgTrig_fb_120_velocity',
-        'PC_RenalArtery_Left_EcgTrig_fb_120_magnitude',
-        'PC_RenalArtery_Left_EcgTrig_fb_120_velocity',
+        'PC_left_delta_magnitude',
+        'PC_left_delta_phase',
     ]
+    series, study = input_series(folder, desc, export_study)
+    if series is None:
+        raise RuntimeError('Cannot create PC-RA mask: some series are missing.')
+    
+    dims = ['InstanceNumber']
+    dx = series[0].values('PixelSpacing')[0][0]
+
+    # Calculate left artery mask:
+    mag, mag_hdr_left = series[0].array(dims, pixels_first=True, first_volume=True)
+    vel, vel_hdr_left = series[1].array(dims, pixels_first=True, first_volume=True)
+    left_mask = PC.renal_artery_mask(mag, vel, pixel_spacing=dx)
+    #left_mask = PC.renal_artery_mask_alternative(mag)
+
+    # Save as DICOM
+    left_mask_series = study.new_series(SeriesDescription='PC-LRA')
+    left_mask_series.set_array(left_mask, mag_hdr_left[0], pixels_first=True)
+
+    return left_mask_series
+
+def right_renal_artery(folder):
+
+    desc = [
+        'PC_right_delta_magnitude',
+        'PC_right_delta_phase',
+    ]
+
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot create PC-RA mask: some series are missing.')
@@ -136,27 +165,20 @@ def renal_artery(folder):
     vel, vel_hdr_right = series[1].array(dims, pixels_first=True, first_volume=True) 
     right_mask = PC.renal_artery_mask(mag, -vel, pixel_spacing=dx)
 
-    # Calculate left artery mask:
-    mag, mag_hdr_left = series[2].array(dims, pixels_first=True, first_volume=True)
-    vel, vel_hdr_left = series[3].array(dims, pixels_first=True, first_volume=True)
-    left_mask = PC.renal_artery_mask(mag, vel, pixel_spacing=dx)
-
     # Save as DICOM
     right_mask_series = study.new_series(SeriesDescription='PC-RRA')
     right_mask_series.set_array(right_mask, mag_hdr_right[0], pixels_first=True)
 
-    left_mask_series = study.new_series(SeriesDescription='PC-LRA')
-    left_mask_series.set_array(left_mask, mag_hdr_left[0], pixels_first=True)
 
-    return right_mask_series, left_mask_series
+    return right_mask_series
 
 
 def cortex_medulla(database):
 
     features = [
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_AVD_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_RPF_map',
-        'DCE_kidneys_cor-oblique_fb_mdr_moco_MTT_map',  
+        'DCE_mdr_moco_AVD_map',
+        'DCE_mdr_moco_RPF_map',
+        'DCE_mdr_moco_MTT_map',  
     ]
 
     output = []

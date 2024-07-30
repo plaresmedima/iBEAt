@@ -8,16 +8,21 @@ import mdreg
 import dcmri
 from mdreg.models import constant
 
-import models
+import models.DWI
+import models.t1
+import models.t2
+import models.T2star
+import models.DTI
+import models.IVIM
+
 from pipelines.roi_fit import load_aif
 
-
-export_study = 'MDR results'
+export_study = '1: MDR results'
 
 
 def T1(folder):
 
-    desc = "T1map_kidneys_cor-oblique_mbh_magnitude"
+    desc = "T1m_magnitude"
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot perform MDR on T1: series ' + desc + 'does not exist. ')
@@ -27,14 +32,14 @@ def T1(folder):
     signal_pars = [{'xdata': np.array([hdr['InversionTime'] for hdr in header[z,:]]), 'TR':TR} for z in range(array.shape[2])]
 
     series.message('Setting up MDR..')
-    signal_model = models.T1.MonoExp().fit
+    signal_model = models.t1.MonoExp().fit
     
     return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
 def T2(folder):
 
-    desc = "T2map_kidneys_cor-oblique_mbh_magnitude"
+    desc = "T2m_magnitude"
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot perform MDR on T2: series ' + desc + 'does not exist. ')
@@ -44,14 +49,14 @@ def T2(folder):
 
     series.message('Setting up MDR..')
     signal_pars = [{'xdata':TE[z,:]} for z in range(TE.shape[0])]
-    signal_model = models.T2.MonoExpOffset().fit
+    signal_model = models.t2.MonoExpOffset().fit
     
     return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
 def T2star(folder):
 
-    desc = "T2star_map_kidneys_cor-oblique_mbh_magnitude"
+    desc = "T2starm_magnitude"
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot perform MDR on T2*: series ' + desc + 'does not exist. ')
@@ -67,7 +72,7 @@ def T2star(folder):
 
 def MT(folder): # TODO: Note this is a 3D sequence - do not coreg slice by slice - needs 3D registration
 
-    desc = 'MT_kidneys_cor-oblique_bh'
+    desc = 'MT'
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot perform MDR on MT: series ' + desc + ' does not exist. ')
@@ -83,7 +88,7 @@ def MT(folder): # TODO: Note this is a 3D sequence - do not coreg slice by slice
 
 def DTI(folder):
 
-    desc = "DTI_kidneys_cor-oblique_fb"
+    desc = "DTI"
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot perform MDR on DTI: series ' + desc + 'does not exist. ')
@@ -101,7 +106,7 @@ def DTI(folder):
 
 def IVIM(folder, series=None,study=None):
 
-    desc = 'IVIM_kidneys_cor-oblique_fb'
+    desc = 'IVIM'
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot perform MDR on IVIM: series ' + desc + 'does not exist. ')
@@ -111,14 +116,14 @@ def IVIM(folder, series=None,study=None):
     array, header = series.array(dims, pixels_first=True, first_volume=True)
 
     series.message('Setting up MDR..')
-    signal_pars = [{'bvals':bvals[z,:], 'bvecs':np.stack(bvecs[z,:]), 'fit_method':'WLS'} for z in range(array.shape[2])]
-    signal_model = models.DTI.DiPy().fit
+    signal_pars = [{'bvals':bvals[z,:], 'bvecs':np.stack(bvecs[z,:])} for z in range(array.shape[2])]
+    signal_model = models.DWI.Lin().fit
     return _mdr(series, array, header, signal_model, signal_pars, study)
 
 
 def DCE(folder):
 
-    desc = "DCE_kidneys_cor-oblique_fb"
+    desc = "DCE"
     series, study = input_series(folder, desc, export_study)
     if series is None:
         raise RuntimeError('Cannot perform MDR on DCE: not all series are there.')

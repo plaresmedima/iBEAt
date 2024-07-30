@@ -43,17 +43,31 @@ def GoogleDrive_Upload(pathScan,filename_log,filename_csv):
     gfile.Upload(param={'supportsTeamDrives': True})
     folder_id_parent_imgcheck_aligments = gfile['id']
 
+    gfile = drive.CreateFile({'title':'Models' ,'parents': [{'id': folder_id_parent_imgcheck}],'mimeType': 'application/vnd.google-apps.folder'})
+    gfile.Upload(param={'supportsTeamDrives': True})
+    folder_id_parent_models = gfile['id']
+
+    gfile = drive.CreateFile({'title':'MDR' ,'parents': [{'id': folder_id_parent_imgcheck}],'mimeType': 'application/vnd.google-apps.folder'})
+    gfile.Upload(param={'supportsTeamDrives': True})
+    folder_id_parent_imagescheck_mdr = gfile['id']
+
     extensions = ['.gif','.png','.xlsx']
 
     selected_files = []
-    for filename in os.listdir(pathScan):
+    for filename in os.listdir(pathScan+'_output'):
         if any(filename.endswith(ext) for ext in extensions):
-            selected_files.append(os.path.join(pathScan, filename))
+            print(filename)
+            selected_files.append(os.path.join(pathScan+'_output', filename))
 
     for upload_file in selected_files:
+        print(os.path.basename(upload_file))
         try:
-            if 'alignment' in os.path.basename(upload_file):
+            if  os.path.basename(upload_file).endswith("_align.png"):
                 gfile = drive.CreateFile({'title':os.path.basename(upload_file) ,'parents': [{'id': folder_id_parent_imgcheck_aligments}]})
+                gfile.SetContentFile(upload_file)
+                gfile.Upload(param={'supportsTeamDrives': True})
+            elif  os.path.basename(upload_file).endswith("_mdr_moco.gif"):
+                gfile = drive.CreateFile({'title':os.path.basename(upload_file) ,'parents': [{'id': folder_id_parent_imagescheck_mdr}]})
                 gfile.SetContentFile(upload_file)
                 gfile.Upload(param={'supportsTeamDrives': True})
             elif 'Masks' in os.path.basename(upload_file):
@@ -66,6 +80,10 @@ def GoogleDrive_Upload(pathScan,filename_log,filename_csv):
                 gfile.Upload(param={'supportsTeamDrives': True})
             elif '.csv' in os.path.basename(upload_file):
                 gfile = drive.CreateFile({'title':os.path.basename(upload_file) ,'parents': [{'id': folder_id_parent}]})
+                gfile.SetContentFile(upload_file)
+                gfile.Upload(param={'supportsTeamDrives': True})
+            elif 'model' in os.path.basename(upload_file):
+                gfile = drive.CreateFile({'title':os.path.basename(upload_file) ,'parents': [{'id': folder_id_parent_models}]})
                 gfile.SetContentFile(upload_file)
                 gfile.Upload(param={'supportsTeamDrives': True})
             else:

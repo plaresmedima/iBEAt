@@ -1,0 +1,2 @@
+Filename: UNETR_kidneys_v1.pth
+doi: 10.5281/zenodo.10999126

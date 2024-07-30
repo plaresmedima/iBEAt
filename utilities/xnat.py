@@ -74,7 +74,7 @@ def XNAT_download(username,password,path,DatasetSelected,SpecificDataset=None):
             #xnatExperimentsSelected = int(input())
             #xnatExperimentsSelected = 14
             xnatExperimentsSelected = DatasetSelected[2]
-            print("Selected the project: " + str(xnatExperiments[xnatExperimentsSelected]))	
+            print("Selected project: " + str(xnatExperiments[xnatExperimentsSelected]))	
             experimentName = xnatExperiments[xnatExperimentsSelected]
             dataset = session.projects[projectName].subjects[subjectName].experiments[experimentName]
             dataset.download_dir(path)
