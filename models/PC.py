@@ -347,7 +347,8 @@ def renal_artery_mask(magn, vel, pixel_spacing=0.607, vel_min=30):
     # Grow region from pixel with maximum magnitude
     # select pixels with max velocity > vel_min cm/sec
     # return mask array
-    return region_grow_range(vel, [p_max], np.mean(vel[p_max[0]-5:p_max[0]+5, p_max[1]-5:p_max[1]+5]), 10*vel[p_max[0], p_max[1]])
+    #return region_grow_range(vel, [p_max], np.mean(vel[p_max[0]-5:p_max[0]+5, p_max[1]-5:p_max[1]+5]), 10*vel[p_max[0], p_max[1]])
+    return region_grow_range(vel, [p_max], vel_min, 10*vel[p_max[0], p_max[1]])
 
 
 

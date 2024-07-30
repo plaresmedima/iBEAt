@@ -14,9 +14,9 @@ if __name__ == '__main__':
 
     #SELECT ONE OPTION TO CHOOSE A DATASET
 
-    #dataset = [2,1,8]    #entry in xnat
+    dataset = [6,1,7]    #entry in xnat
     #dataset = '2128_007' #specific dataset
-    dataset = 'load'      #load a previously downloaded dataset
+    #dataset = 'load'      #load a previously downloaded dataset
 
     path = select_save_folder.main()
     
@@ -39,3 +39,13 @@ if __name__ == '__main__':
 
     #function responsable for ibeat analysis of a single subject (processed images, logs, and csv results are exported to Google Drive)
     single_subject(username, password, path, dataset)
+
+
+
+
+
+
+    ####### FOR REPEATABILITY STUDY USING BESSEMER #######
+    # Change: pipeline -> fetch.py: def find_mask_in_local_rep(database)         use: mask_folder = '//mnt//fastdata//md1jdsp//Leeds_Vol_Masks'       (use cluster path)
+    #                               def kidney_masks(folder)                     use: find_mask_in_local_rep(folder)                                  (to use pre made masks, not AI, no DCE)
+    # Change: pipeline -> export.py: def kidney_masks_as_png                     use: backgroud_series = 'Dixon_out_phase'                            (use pre contrast images as background for exporting masks)

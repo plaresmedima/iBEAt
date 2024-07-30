@@ -28,8 +28,8 @@ def PC(folder):
         os.mkdir(results_path)
 
     dyn_desc = [
-        'PC_left_delta_velocity',
-        'PC_right_delta_velocity',
+        'PC_left_velocity',
+        'PC_right_velocity',
     ]
 
     dims = 'InstanceNumber'
@@ -170,7 +170,7 @@ def T1(folder):
             ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
             ax.legend()
 
-            plt.savefig(os.path.join(results_path, 'model fit T1: TI ordered ('+ kidney +').png'), dpi=600)
+            plt.savefig(os.path.join(results_path, 'model fit T1 TI ordered ('+ kidney +').png'), dpi=600)
             figs.append(fig)
 
 
@@ -181,7 +181,7 @@ def T1(folder):
             ax.set(xlabel='Inversion time (msec)', ylabel='Signal (a.u.)')
             ax.legend()
 
-            plt.savefig(os.path.join(results_path, 'model fit T1: Acq Time ordered ('+ kidney +').png'), dpi=600)
+            plt.savefig(os.path.join(results_path, 'model fit T1 Acq Time ordered ('+ kidney +').png'), dpi=600)
             figs.append(fig)
 
             # Update master table
@@ -286,16 +286,19 @@ def T2(folder):
             vals_kidneys.append(vals_kidney)
             kwargs['T1'] = measure.read_master_table(folder, kidney+'-T1-ROI')
 
+            new_TI = np.insert(TI, 0, kwargs['T1'])
+            del kwargs['T1']
+
             # Calculate the fit
-            pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
-            fit = model.signal(TI, *pars, **kwargs)
+            pars = model.fit_signal((new_TI, dyn_kidney, 1e-6, True, kwargs))
+            fit = model.signal(new_TI, *pars, **kwargs)
 
             rsquared = gof.r_square(dyn_kidney,fit)
 
             # Export the results
             fig, ax = plt.subplots(1,1,figsize=(5,5))
             ax.plot(TI, dyn_kidney, 'ro', label='Signal for ' + kidney, linewidth=3.0)
-            ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)), linewidth=3.0)
+            ax.plot(TI, fit, 'b-', label='T2 model fit for ' + kidney + ' rsquared  = ' + str(round(rsquared,3)) +' T2 = ' + str(round(pars[1])), linewidth=3.0)
             ax.plot(TI, 0*TI, color='gray')
             ax.set(xlabel='Preparation delay (msec)', ylabel='Signal (a.u.)')
             ax.legend()

@@ -31,6 +31,20 @@ def mt(database):
     mt_on[0].remove()
     mt_off[0].remove()
 
+def t1_t2_merge(database):
+
+    t1 = database.series(SeriesDescription="T1m_magnitude")
+    t2 = database.series(SeriesDescription="T2m_magnitude")
+
+    if len(t1)!=1 or len(t2)!=1:
+        return
+    
+    try:
+        study = t1[0].parent()
+        t1_t2 = study.new_series(SeriesDescription='T1m_T2m_magnitude')
+        dbdicom.merge(t1+t2, t1_t2)
+    except:
+        return
 
 
 def ivim(database):
@@ -96,9 +110,8 @@ def dce(database):
         series.remove()
 
         	
-def pc(database):
+def pc_left(database):
     desc = [
-        'PC_right_delta_phase',
         'PC_left_delta_phase',
     ]   
     for d in desc:
@@ -111,7 +124,24 @@ def pc(database):
             venc = 120 # cm/sec # read from DICOM header?
             phase = series.pixel_values(dims='TriggerTime')
             velocity = phase * venc/4096 # cm/sec
-            vel = series.copy(SeriesDescription=d[:-5] + 'velocity')
+            vel = series.copy(SeriesDescription=d[:-11] + 'velocity')
+            vel.set_pixel_values(velocity, dims='TriggerTime')
+
+def pc_right(database):
+    desc = [
+        'PC_right_delta_phase',
+    ]   
+    for d in desc:
+        series = database.series(SeriesDescription=d) 
+        if series == []:
+            pass
+        series = series[-1] # selected the last if there are multiple
+        
+        if series.instance().Manufacturer=='SIEMENS':
+            venc = 120 # cm/sec # read from DICOM header?
+            phase = series.pixel_values(dims='TriggerTime')
+            velocity = phase * venc/4096 # cm/sec
+            vel = series.copy(SeriesDescription=d[:-11] + 'velocity')
             vel.set_pixel_values(velocity, dims='TriggerTime')
 
 def subject_name(database):
@@ -144,7 +174,8 @@ def subject_name(database):
 
 def all_series(database):
 
-    pc(database)
+    pc_left(database)
+    pc_right(database)
     t2(database)
     mt(database)
     dti(database)

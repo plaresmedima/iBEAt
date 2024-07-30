@@ -48,6 +48,31 @@ class MonoExp(Model):
         return S0*np.exp(-TE/T2)   
 
 
+# class Bloch(Model):
+
+#     def pars(self):
+#         return ['S0', 'T2', 'T2FAcorr']
+    
+#     def init(self, sig):
+#         return [np.amax(sig), 80, 12]
+    
+#     def bnds(self, sig):
+#         smax = np.amax(sig)
+#         return ([0, 0, 0], [2*smax, 200, 25])
+    
+#     def signal(self, Tprep, S0, T2, FAcorr, 
+#             T1 = 1400, # Get from data
+#             # Defaults from Siemens iBEAt protocol
+#             Tspoil = 1,# Spoil time in ms
+#             N_T2 = 72,# Number of k-space lines (hardcoded from Siemens protocol)
+#             Trec = 463*2,# Recovery time in ms (hardcoded from Siemens protocol)
+#             TR = 4.6,# TR in ms (hardcoded from Siemens protocol)
+#             FA = 12, # Flip angle in degrees (hardcoded from Siemens protocol) converted to radians
+#         ):
+#         FA_eff = FAcorr/FA
+#         FA = FA/180*np.pi
+#         return relaxometry.signalSequenceT2prep(Tprep, S0, T2, T1, Tspoil, FA, FA_eff, TR, N_T2, Trec)
+    
 class Bloch(Model):
 
     def pars(self):
@@ -60,8 +85,7 @@ class Bloch(Model):
         smax = np.amax(sig)
         return ([0, 0, 0], [2*smax, 200, 25])
     
-    def signal(self, Tprep, S0, T2, FAcorr, 
-            T1 = 1400, # Get from data
+    def signal(self, xdata, S0, T2, FAcorr,
             # Defaults from Siemens iBEAt protocol
             Tspoil = 1,# Spoil time in ms
             N_T2 = 72,# Number of k-space lines (hardcoded from Siemens protocol)
@@ -69,6 +93,8 @@ class Bloch(Model):
             TR = 4.6,# TR in ms (hardcoded from Siemens protocol)
             FA = 12, # Flip angle in degrees (hardcoded from Siemens protocol) converted to radians
         ):
+        T1 = xdata[0]
+        Tprep = xdata[1:]
         FA_eff = FAcorr/FA
         FA = FA/180*np.pi
         return relaxometry.signalSequenceT2prep(Tprep, S0, T2, T1, Tspoil, FA, FA_eff, TR, N_T2, Trec)

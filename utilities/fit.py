@@ -11,22 +11,44 @@ except:
 
 
 
-def fit_image(signal, fit_signal, imgs:np.ndarray, xdata=None, xtol=1e-3, bounds=False, parallel=True, **kwargs):
+def fit_image(signal, fit_signal, imgs:np.ndarray, xdata=None, xtol=1e-3, bounds=False, parallel=True, const=None, **kwargs):
     """Fit a single-pixel model pixel-by-pixel to a 2D or 3D image"""
     
     # Reshape to (x,t)
     shape = imgs.shape
     imgs = imgs.reshape((-1,shape[-1]))
+    if const is not None:
+        const = np.ravel(const)
     
     # Perform the fit pixelwise
     if parallel:
-        args = [(xdata, imgs[x,:], xtol, bounds, kwargs) for x in range(imgs.shape[0])]
+        #args = [(xdata, imgs[x,:], xtol, bounds, kwargs) for x in range(imgs.shape[0])]
+        args = []
+        for x in range(imgs.shape[0]):
+            if const is None:
+                xdata_x = np.array(xdata)
+            else:
+                const_pixel = np.array([const[x]])
+                xdata_x = np.concatenate((const_pixel, xdata))
+            args_x = (xdata_x, imgs[x,:], xtol, bounds, kwargs)
+            args.append(args_x)
         pool = multiprocessing.Pool(processes=num_workers)
         fit_pars = pool.map(fit_signal, args)
         pool.close()
         pool.join()
+
     else: # for debugging
-        fit_pars = [fit_signal((xdata, imgs[x,:], xtol, bounds, kwargs)) for x in range(imgs.shape[0])]
+        fit_pars = []
+        for x in range(imgs.shape[0]):
+            if const is None:
+                xdata_x = np.array(xdata)
+            else:
+                const_pixel = np.array([const[x]])
+                xdata_x = np.concatenate((const_pixel, xdata))
+            fit_pars_x = fit_signal((xdata_x, imgs[x,:], xtol, bounds, kwargs))
+            fit_pars.append(fit_pars_x)
+
+        #fit_pars = [fit_signal((xdata_x, imgs[x,:], xtol, bounds, kwargs)) for x in range(imgs.shape[0])]
 
     # Create output arrays
     npars = len(fit_pars[0])

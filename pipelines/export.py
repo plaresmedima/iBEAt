@@ -41,7 +41,8 @@ def kidney_masks_as_dicom(folder):
 
 
 
-def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK' ):
+#def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK' ):
+def kidney_masks_as_png(database,backgroud_series = 'Dixon_out_phase',RK_mask = 'RK', LK_mask = 'LK' ): #ONLY FOR REPEATABILITY STUDY
 
     database.message('Exporting masks as png..')
     results_path = database.path() + '_output'
@@ -106,7 +107,7 @@ def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_pha
     fig.suptitle('Kidney Masks', fontsize=14)
     fig.savefig(os.path.join(results_path, 'Masks.png'), dpi=600)
 
-def left_renal_artery_masks_as_png(database,backgroud_series = 'PC_left_delta_magnitude', LK_mask = 'PC-LRA' ):
+def left_renal_artery_masks_as_png(database,backgroud_series = 'PC_left_velocity', LK_mask = 'PC-LRA' ):
 
     database.message('Exporting masks as png..')
     results_path = database.path() + '_output'
@@ -163,7 +164,7 @@ def left_renal_artery_masks_as_png(database,backgroud_series = 'PC_left_delta_ma
     fig.suptitle('PC-LRA', fontsize=14)
     fig.savefig(os.path.join(results_path, 'PC-LRA.png'), dpi=600)
 
-def right_renal_artery_masks_as_png(database,backgroud_series = 'PC_right_delta_magnitude', RK_mask = 'PC-RRA' ):
+def right_renal_artery_masks_as_png(database,backgroud_series = 'PC_right_velocity', RK_mask = 'PC-RRA' ):
 
     database.message('Exporting masks as png..')
     results_path = database.path() + '_output'

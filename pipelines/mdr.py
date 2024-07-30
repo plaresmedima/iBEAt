@@ -10,6 +10,7 @@ from mdreg.models import constant
 
 import models.DWI
 import models.t1
+import models.t1_t2
 import models.t2
 import models.T2star
 import models.DTI
@@ -53,6 +54,38 @@ def T2(folder):
     
     return _mdr(series, array, header, signal_model, signal_pars, study)
 
+def T1_T2(folder):
+
+    desc_T1_T2 = "T1m_T2m_magnitude"
+    series_T1_T2, study_T1_T2 = input_series(folder, desc_T1_T2, export_study)
+    if series_T1_T2 is None:
+        raise RuntimeError('Cannot perform MDR on T1: series ' + desc_T1 + 'does not exist. ')
+
+    desc_T1 = "T1m_magnitude"
+    series_T1, study_T1 = input_series(folder, desc_T1, export_study)
+    if series_T1 is None:
+        raise RuntimeError('Cannot perform MDR on T1: series ' + desc_T1 + 'does not exist. ')
+    
+    desc_T2 = "T2m_magnitude"
+    series_T2, study_T2 = input_series(folder, desc_T2, export_study)
+    if series_T2 is None:
+        raise RuntimeError('Cannot perform MDR on T1: series ' + desc_T2 + 'does not exist. ')
+
+    array_T1, header_T1 = series_T1.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
+    array_T2, header_T2 = series_T2.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
+    
+    TE = series_T2.values('InversionTime',  dims=('SliceLocation', 'InversionTime')).astype(np.float16)
+    TI = series_T1.values('InversionTime',  dims=('SliceLocation', 'InversionTime')).astype(np.float16)
+
+    array   = np.concatenate((array_T1, array_T2), axis=3)
+    header  = np.concatenate((header_T1,header_T2),axis=1)
+    signal_pars_T1_T2 = np.concatenate((TI,TE),axis=1)
+    signal_pars = [{'xdata':signal_pars_T1_T2[z,:]} for z in range(signal_pars_T1_T2.shape[0])]
+
+    series_T1.message('Setting up MDR..')
+    signal_model = models.t1_t2.MonoExp_T1_T2().fit
+    
+    return _mdr(series_T1_T2, array, header, signal_model, signal_pars, study_T1_T2)
 
 def T2star(folder):
 

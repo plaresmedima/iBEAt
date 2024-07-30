@@ -17,44 +17,44 @@ def check(database):
         os.mkdir(results_path)
 
     df = pd.DataFrame([
-        ['T2w',0],
-        ['Dixon_out_phase',0],
-        ['Dixon_in_phase',0],
-        ['Dixon_fat',0],
-        ['Dixon_water',0],
-        ['PC_right_delta_magnitude',0],
-        ['PC_right',0],
-        ['PC_right_delta_phase',0],
-        ['PC_left_delta_magnitude',0],
-        ['PC_left',0],
-        ['PC_left_delta_phase',0],
-        ['T2starm_pancreas_magnitude',0],
-        ['T2starm_pancreas_phase',0],
-        ['T2starm_pancreas_T2star',0],
-        ['T1w_magnitude',0],
-        ['T1w_phase',0],
-        ['T1m_magnitude',0],
-        ['T1m_phase',0],
-        ['T1m_moco',0],
-        ['T1m_T1',0],
-        ['T2m_magnitude',0],
-        ['T2m_phase',0],
-        ['T2m_moco',0],
-        ['T2m_T2',0],
-        ['T2starm_magnitude',0],
-        ['T2starm_phase',0],
-        ['T2starm_T2star',0],
-        ['DTI',0],
-        ['IVIM',0],
-        ['MT_OFF',0],
-        ['MT_ON',0],
-        ['ASL_RBF_moco',0],
-        ['DCE',0],
-        ['Dixon_post_contrast_out_phase',0],
-        ['Dixon_post_contrast_in_phase',0],
-        ['Dixon_post_contrast_fat',0],
-        ['Dixon_post_contrast_water',0]
-        ], columns=['MRI Sequence','Checked'])
+        ['T2w',0,''],
+        ['Dixon_out_phase',0,''],           #TE
+        ['Dixon_in_phase',0,''],            #TE
+        ['Dixon_fat',0,''],
+        ['Dixon_water',0,''],
+        ['PC_right_delta_magnitude',0,''],  #
+        ['PC_right',0,''],
+        ['PC_right_delta_phase',0,''],
+        ['PC_left_delta_magnitude',0,''],
+        ['PC_left',0,''],
+        ['PC_left_delta_phase',0,''],
+        ['T2starm_pancreas_magnitude',0,''],    #Echo train length
+        ['T2starm_pancreas_phase',0,''],
+        ['T2starm_pancreas_T2star',0,''],
+        ['T1w_magnitude',0,''],
+        ['T1w_phase',0,''],
+        ['T1m_magnitude',0,''],         #number of TIs
+        ['T1m_phase',0,''],
+        ['T1m_moco',0,''],
+        ['T1m_T1',0,''],
+        ['T2m_magnitude',0,''],         #
+        ['T2m_phase',0,''],
+        ['T2m_moco',0,''],
+        ['T2m_T2',0,''],
+        ['T2starm_magnitude',0,''], #echo train length
+        ['T2starm_phase',0,''],
+        ['T2starm_T2star',0,''],
+        ['DTI',0,''],               # bvalues
+        ['IVIM',0,''],              # b vales
+        ['MT_OFF',0,''],            # pulse prepararion
+        ['MT_ON',0,''],
+        ['ASL_RBF_moco',0,''],      # inversion delay
+        ['DCE',0,''],               # time resolution (difference between acqui time)
+        ['Dixon_post_contrast_out_phase',0,''],
+        ['Dixon_post_contrast_in_phase',0,''],
+        ['Dixon_post_contrast_fat',0,''],
+        ['Dixon_post_contrast_water',0,'']
+        ], columns=['MRI Sequence','Checked','Notes'])
 
     list_of_series = database.series()
     list_of_series_description = []
@@ -66,8 +66,70 @@ def check(database):
         if row['MRI Sequence'] in list_of_series_description:
             df.at[index, 'Checked'] = 1
 
+            if row['MRI Sequence'] == 'Dixon_out_phase':
+                series = database.series(SeriesDescription='Dixon_out_phase')
+                if series[0]['EchoTime'] == 1.34:
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'Echo time (1.34ms) = ' + str(series[0]['EchoTime'])
+                    df.at[index, 'Checked'] = 2
+            
+            if row['MRI Sequence'] == 'Dixon_in_phase':
+                series = database.series(SeriesDescription='Dixon_in_phase')
+                if series[0]['EchoTime'] == 2.57:
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'Echo time (2.57ms) = ' + str(series[0]['EchoTime'])
+                    df.at[index, 'Checked'] = 2
+
+            if row['MRI Sequence'] == 'PC_right_delta_magnitude':
+                series = database.series(SeriesDescription='PC_right_delta_magnitude')
+                if series[0]['XXXXX'] == 2.57:
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'XXXXX = ' + str(series[0]['XXXXX'])
+                    df.at[index, 'Checked'] = 2        
+
+            if row['MRI Sequence'] == 'PC_left_delta_magnitude':
+                series = database.series(SeriesDescription='PC_left_delta_magnitude')
+                if series[0]['XXXXX'] == 2.57:
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'XXXXX = ' + str(series[0]['XXXXX'])
+                    df.at[index, 'Checked'] = 2        
+
+            if row['MRI Sequence'] == 'T2starm_pancreas_magnitude':
+                series = database.series(SeriesDescription='T2starm_pancreas_magnitude')
+                if series[0]['EchoTrainLength'] == 12:
+                    df.at[index, 'Notes'] = 'Correct'
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'Echo train length (12) = ' + str(series[0]['EchoTrainLength'])
+                    df.at[index, 'Checked'] = 2
+
+            if row['MRI Sequence'] == 'T1w_magnitude':
+                series = database.series(SeriesDescription='T1w_magnitude')
+                if series[0]['InversionTime'] == 12:
+                    df.at[index, 'Notes'] = 'Correct'
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'Inversion time (12) = ' + str(series[0]['InversionTime'])
+                    df.at[index, 'Checked'] = 2
+
+            if row['MRI Sequence'] == 'T2starm_magnitude':
+                series = database.series(SeriesDescription='T2starm_magnitude')
+                if series[0]['EchoTrainLength'] == 13:
+                    df.at[index, 'Notes'] = 'Correct'
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'Echo train length (12) = ' + str(series[0]['EchoTrainLength'])
+                    df.at[index, 'Checked'] = 2
+
+
+                
+
     def color_rule(val):
-        return ['background-color: red' if x == 0 else 'background-color: green' for x in val]
+        return ['background-color: red' if x == 0 else 'background-color: orange' if x == 2 else 'background-color: green' for x in val]
 
     iBEAt_column = df.style.apply(color_rule, axis=1, subset=['Checked'])
     iBEAt_column.to_excel(os.path.join(results_path,'iBEAt_checklist.xlsx'), engine='openpyxl', index=False)

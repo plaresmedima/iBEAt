@@ -125,7 +125,7 @@ def left_renal_artery(folder):
 
     desc = [
         'PC_left_delta_magnitude',
-        'PC_left_delta_phase',
+        'PC_left_velocity',
     ]
     series, study = input_series(folder, desc, export_study)
     if series is None:
@@ -150,7 +150,7 @@ def right_renal_artery(folder):
 
     desc = [
         'PC_right_delta_magnitude',
-        'PC_right_delta_phase',
+        'PC_right_velocity',
     ]
 
     series, study = input_series(folder, desc, export_study)
@@ -208,3 +208,21 @@ def cortex_medulla(database):
         cm.SeriesDescription = kidney + 'CM'
         output += clusters + [cm]
     return output
+
+def cortex_medulla_local(database):
+    
+    export_study = '0: Segmentations'
+
+    desc = [ 
+        'LK', 
+        'LKM',
+        'RK', 
+        'RKM',
+    ]
+
+    series, study = input_series(database, desc, export_study)
+
+    RKC = scipy.image_calculator(series[0], series[1], 'series 1 - series 2')
+    LKC = scipy.image_calculator(series[2], series[3], 'series 1 - series 2')
+
+    database.save()

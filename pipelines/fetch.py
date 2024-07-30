@@ -15,6 +15,7 @@ import os
 def find_mask_in_local_rep(database):
     # Define the mask folder path
     mask_folder = '//mnt//fastdata//md1jdsp//Leeds_Vol_Masks'
+    #mask_folder = 'C://Users//md1jdsp//Desktop//Leeds_Vol_Masks'
     
     # Get the name of the dataset folder from the database path
     dataset_folder_name = os.path.basename(database.path())
@@ -106,8 +107,8 @@ def kidney_masks(folder):
     # Check for masks on google drive and import into the database if exists.
     # Alternative: save them on XNAT on a separate project and download from there
 
-    find_mask_in_drive(folder)
-    #find_mask_in_local_rep(folder)
+    #find_mask_in_drive(folder)
+    find_mask_in_local_rep(folder)
 
 def dl_models(database):
 

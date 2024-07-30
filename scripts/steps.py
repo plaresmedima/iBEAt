@@ -36,12 +36,19 @@ def harmonize_pc(database):
     start_time = time.time()
     database.log("Harmonizing PC series has started!")
     try:
-        harmonize.pc(database)
-        database.log("Harmonizing PC series was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        harmonize.pc_left(database)
         database.save()
     except Exception as e:
-        database.log("Harmonizing PC series was NOT completed; error: " + str(e)) 
+        database.log("Harmonizing PC left series was NOT completed; error: " + str(e)) 
         database.restore()
+
+    try:
+        harmonize.pc_right(database)
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing PC right series was NOT completed; error: " + str(e)) 
+        database.restore()
+    database.log("Harmonizing PC series was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
 def harmonize_t2(database):
     start_time = time.time()
@@ -52,6 +59,17 @@ def harmonize_t2(database):
         database.save()
     except Exception as e:
         database.log("Harmonizing T2 series was NOT completed; error: " + str(e)) 
+        database.restore()
+
+def harmonize_t1_t2(database):
+    start_time = time.time()
+    database.log("Harmonizing T1 and T2 series (merged) has started!")
+    try:
+        harmonize.t1_t2_merge(database)
+        database.log("Harmonizing T1 and T2 series (merged) was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing T1 and T2 series (merged) was NOT completed; error: " + str(e)) 
         database.restore()
 
 def harmonize_mt(database):
@@ -319,6 +337,17 @@ def mdreg_dce(database):
         database.log("Model-driven registration for DCE was NOT completed; error: "+str(e))
         database.restore()
 
+def mdreg_t1_t2(database):
+    start_time = time.time()
+    database.log("Model-driven registration for T1 T2 has started")
+    try:
+        mdr.T1_T2(database)
+        database.log("Model-driven registration for T1 T2 was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Model-driven registration for T1 T2 was NOT completed; error: "+str(e))
+        database.restore()
+
 def export_mdreg(database):
     start_time = time.time()
     database.log("Exporting MDR results has started")
@@ -343,6 +372,31 @@ def map_T1(database):
     except Exception as e: 
         database.log("T1 mapping was NOT completed; error: "+str(e))
         database.restore()
+
+def map_T1_from_T1_T2_mdr(database):
+    start_time = time.time()
+    print('Starting T1 mapping from T1_T2 MDR')
+    database.log("T1 mapping from T1_T2 MDR has started")
+    try:
+        mapping.T1_from_T1_T2_mdr(database)
+        database.log("T1 mapping from T1_T2 MDR was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("T1 mapping from T1_T2 MDR was NOT completed; error: "+str(e))
+        database.restore()
+
+def map_T2_from_T1_T2_mdr(database):
+    start_time = time.time()
+    print('Starting T2 mapping from T1_T2 MDR')
+    database.log("T2 mapping from T1_T2 MDR has started")
+    try:
+        mapping.T2_from_T1_T2_mdr(database)
+        database.log("T2 mapping from T1_T2 MDR was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("T2 mapping from T1_T2 MDR was NOT completed; error: "+str(e))
+        database.restore()
+
 
 def map_T2(database):
     start_time = time.time()
