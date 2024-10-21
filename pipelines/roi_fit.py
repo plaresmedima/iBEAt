@@ -240,7 +240,6 @@ def T2(folder):
         os.mkdir(results_path)
 
     dyn_desc = 'T2m_magnitude_mdr_moco'
-
     # Parameters
     # Defaults from Siemens iBEAt protocol
     Tspoil = 1# Spoil time in ms
@@ -325,8 +324,12 @@ def T2(folder):
 
         # Calculate the fit
         kwargs['T1'] = measure.read_master_table(folder, kidney+'-T1-ROI')
-        pars = model.fit_signal((TI, dyn_kidney, 1e-6, True, kwargs))
-        fit = model.signal(TI, *pars, **kwargs)
+
+        new_TI = np.insert(TI, 0, kwargs['T1'])
+        del kwargs['T1']
+
+        pars = model.fit_signal((new_TI, dyn_kidney, 1e-6, True, kwargs))
+        fit = model.signal(new_TI, *pars, **kwargs)
 
         rsquared = gof.r_square(dyn_kidney,fit)
 
