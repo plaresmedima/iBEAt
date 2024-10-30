@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     #SELECT YOUR DATASET
     #dataset = [site, study, dataset]
-    dataset = [2,1,args.num]
+    dataset = [6,1,args.num]
 
     ################################################# EXAMPLE DATASET SELECTION #############################################################
     #DATASET CODE FOR LEEDS

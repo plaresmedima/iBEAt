@@ -222,6 +222,16 @@ def segment_right_renal_artery(database):
         database.log("Right renal artery segmentation was NOT completed; error: "+str(e))
         database.restore()
 
+def segment_cortex_medulla_local(database):
+    start_time = time.time()
+    database.log("Local cortex medulla segmentation has started")
+    try:
+        segment.cortex_medulla_local(database)
+        database.log("Local cortex medulla segmentation was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Local cortex medulla segmentation was NOT completed; error: "+str(e))
+        database.restore()
 
 def compute_whole_kidney_canvas(database):
     start_time = time.time()
@@ -241,13 +251,34 @@ def export_segmentations(database):
     database.log("Export kidney segmentations has started")
     try:
         export.kidney_masks_as_dicom(database)
-        export.kidney_masks_as_png(database)
-        export.aif_as_png(database)
-        export.right_renal_artery_masks_as_png(database)
-        export.left_renal_artery_masks_as_png(database)
-        database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+    try:
+        export.kidney_masks_as_png(database)
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+    try:
+        export.aif_as_png(database)
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+    try:
+        export.right_renal_artery_masks_as_png(database)
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+    try:
+        export.left_renal_artery_masks_as_png(database)
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+    try:
+        export.cortex_masks_as_png(database)
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+    try:
+        export.medulla_masks_as_png(database)
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
 
 
@@ -603,7 +634,7 @@ def export_alignment(database):
     print('Exporting alignment')
     database.log("Export alignment has started")
     try:
-        export.alignment(database)
+        export.alignment(database,only_middle_slices=True)
         database.log("Export alignment was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e: 

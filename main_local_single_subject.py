@@ -14,9 +14,9 @@ if __name__ == '__main__':
 
     #SELECT ONE OPTION TO CHOOSE A DATASET
 
-    dataset = [6,1,7]    #entry in xnat
+    #dataset = [6,1,16]    #entry in xnat
     #dataset = '2128_007' #specific dataset
-    #dataset = 'load'      #load a previously downloaded dataset
+    dataset = 'load'      #load a previously downloaded dataset
 
     path = select_save_folder.main()
     
@@ -39,10 +39,6 @@ if __name__ == '__main__':
 
     #function responsable for ibeat analysis of a single subject (processed images, logs, and csv results are exported to Google Drive)
     single_subject(username, password, path, dataset)
-
-
-
-
 
 
     ####### FOR REPEATABILITY STUDY USING BESSEMER #######

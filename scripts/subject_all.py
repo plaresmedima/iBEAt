@@ -51,6 +51,7 @@ def single_subject(username, password, path, dataset):
     steps.segment_renal_sinus_fat(database)
     steps.segment_aorta_on_dce(database)
     steps.segment_left_renal_artery(database)
+    steps.segment_cortex_medulla_local(database)
     steps.segment_right_renal_artery(database)
     steps.compute_whole_kidney_canvas(database)
     steps.export_segmentations(database) 
@@ -64,15 +65,15 @@ def single_subject(username, password, path, dataset):
     steps.mdreg_ivim(database)
     steps.mdreg_dti(database)
     steps.mdreg_dce(database)
-    steps.mdreg_t1_t2(database)
+    #steps.mdreg_t1_t2(database)
     steps.export_mdreg(database)
     
 
     # MAPPING
 
     steps.map_T1(database)
-    steps.map_T1_from_T1_T2_mdr(database)
-    steps.map_T2_from_T1_T2_mdr(database)
+    #steps.map_T1_from_T1_T2_mdr(database)
+    #steps.map_T2_from_T1_T2_mdr(database)
     steps.map_T2(database)
     steps.map_T2star(database)
     steps.map_MT(database)
@@ -92,7 +93,7 @@ def single_subject(username, password, path, dataset):
     steps.align_DTI(database)
     steps.align_DCE(database)
     steps.align_ASL(database)
-    steps.export_alignment(database)
+    steps.export_alignment(database) #ask Steven if this kwarg should be shown at the main script e.g. steps.export_alignment(database,only_middle_slices=True)
 
     # MEASUREMENT
 
@@ -124,4 +125,4 @@ def single_subject(username, password, path, dataset):
         
     #upload images, logfile and csv to google drive
     filename_csv = os.path.join(database.path() + '_output',database.PatientName[0] + '_biomarkers.csv')
-    upload.main(pathScan, filename_log, filename_csv)
+    #upload.main(pathScan, filename_log, filename_csv)

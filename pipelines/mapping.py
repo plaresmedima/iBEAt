@@ -389,6 +389,3 @@ def _map(series, array, header, model, pars, study, desc, **kwargs):
         series.set_array(par[...,i], header[:,0], pixels_first=True)
 
     return (series,)
-
-
-

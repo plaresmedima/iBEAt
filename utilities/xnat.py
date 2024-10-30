@@ -40,8 +40,8 @@ def XNAT_download(username,password,path,DatasetSelected,SpecificDataset=None):
 
     with xnat.connect(url, user=username, password=password) as session:
         xnatProjects = [project.secondary_id for project in session.projects.values()]
-        #for x in range(len(xnatProjects)):
-            #print (str(x) +": " + xnatProjects[x])
+        for x in range(len(xnatProjects)):
+            print (str(x) +": " + xnatProjects[x])
         #print("Select the project:")
         #projectSelected = int(input())
         #projectSelected = 6
@@ -52,8 +52,8 @@ def XNAT_download(username,password,path,DatasetSelected,SpecificDataset=None):
         projectName = [project.name for project in session.projects.values() if project.secondary_id == projectID][0]
         if projectName:
             xnatSubjects = [subject.label for subject in session.projects[projectName].subjects.values()]
-            #for x_2 in range(len(xnatSubjects)):
-                #print (str(x_2) +": " + xnatSubjects[x_2])
+            for x_2 in range(len(xnatSubjects)):
+                print (str(x_2) +": " + xnatSubjects[x_2])
             #print("Select the project:")
             #xnatSubjectsSelected = int(input())
             #xnatSubjectsSelected = 0
@@ -65,10 +65,12 @@ def XNAT_download(username,password,path,DatasetSelected,SpecificDataset=None):
             xnatExperiments = [experiment.label for experiment in session.projects[projectName].subjects[subjectName].experiments.values()]
             if SpecificDataset!=None:
                 for x_3 in range(len(xnatExperiments)):
-                #print(str(x_3) +": " + xnatExperiments[x_3])
+                    print(str(x_3) +": " + xnatExperiments[x_3])
                     if patient in xnatExperiments[x_3]:
                         DatasetSelected[2] = x_3
                         break
+            for x_3 in range(len(xnatExperiments)):
+                print(str(x_3) +": " + xnatExperiments[x_3])
                 
             #print("Selected the project:")
             #xnatExperimentsSelected = int(input())

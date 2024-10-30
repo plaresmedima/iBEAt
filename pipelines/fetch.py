@@ -15,7 +15,7 @@ import os
 def find_mask_in_local_rep(database):
     # Define the mask folder path
     mask_folder = '//mnt//fastdata//md1jdsp//Leeds_Vol_Masks'
-    #mask_folder = 'C://Users//md1jdsp//Desktop//Leeds_Vol_Masks'
+    #mask_folder = 'C://Users//md1jdsp//Desktop//Leeds_Vol_Masks_COR'
     
     # Get the name of the dataset folder from the database path
     dataset_folder_name = os.path.basename(database.path())
@@ -119,7 +119,7 @@ def dl_models(database):
 
     if os.path.exists(unetr_path):
         database.log("UNETR was found in the local folder")
-        return
+        return unetr
     else:   
 
         zenodo_url = f"https://zenodo.org/records/{record_id}/files/{unetr}?download=1"
@@ -129,6 +129,7 @@ def dl_models(database):
                         for chunk in req.iter_content(chunk_size=8192):
                             if chunk:
                                 f.write(chunk)
+        return unetr
 
 
 

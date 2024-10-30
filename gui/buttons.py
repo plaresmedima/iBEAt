@@ -115,7 +115,7 @@ def fetch_kidney_masks(app):
 
 def segment_kidneys(app):
     database = app.database()
-    kidneys = segment.kidneys(database, weights)
+    kidneys = segment.kidneys(database)
     for kidney in kidneys:
         app.addWidget(SurfaceDisplay(kidney), title=kidney.label())
     app.refresh()
@@ -139,6 +139,13 @@ def segment_renal_artery(app):
     ra_masks = segment.renal_artery(database)
     for mask in ra_masks:
         app.display(mask)
+    app.refresh()
+
+def segment_cor_med(app):
+    database = app.database()
+    cor_med_masks = segment.cor_med(database)
+    for roi in cor_med_masks:
+        app.addWidget(SurfaceDisplay(roi), title=roi.label())
     app.refresh()
 
 def whole_kidney_canvas(app):
@@ -176,6 +183,7 @@ action_segment_kidneys = Action("Auto-segment kidneys...", on_clicked=segment_ki
 action_renal_sinus_fat = Action("Segment renal sinus fat..", on_clicked=segment_renal_sinus_fat, is_clickable=_if_a_database_is_open)
 action_aorta_on_dce = Action("Segment aorta on DCE..", on_clicked=segment_aorta_on_dce, is_clickable=_if_a_database_is_open)
 action_renal_artery = Action("Segment renal artery on PC..", on_clicked=segment_renal_artery, is_clickable=_if_a_database_is_open)
+action_cor_med = Action("Auto-segment cortex/medulla...(experimental)", on_clicked=segment_cor_med, is_clickable=_if_a_database_is_open)
 action_whole_kidney_canvas = Action("Calculate segmentation canvas..", on_clicked=whole_kidney_canvas, is_clickable=_if_a_database_is_open)
 action_export_kidney_segmentations = Action("Export segmentations..", on_clicked=export_segmentations, is_clickable=_if_a_database_is_open)
 
@@ -186,6 +194,7 @@ menu_segment.add(action_segment_kidneys)
 menu_segment.add(action_renal_sinus_fat)
 menu_segment.add(action_aorta_on_dce)
 menu_segment.add(action_renal_artery)
+menu_segment.add(action_cor_med)
 menu_segment.add_separator()
 menu_segment.add(action_whole_kidney_canvas)
 menu_segment.add_separator()

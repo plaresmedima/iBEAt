@@ -1,9 +1,12 @@
 import numpy as np
 from dbdicom.extensions import skimage, scipy, dipy, sklearn
 from dbdicom.pipelines import input_series
-from models import DCE_aorta, PC, UNETR_kidneys_v1
+from models import DCE_aorta, PC, UNETR_kidneys_v1, nnUnet_cor_med_v1
 import utilities.zenodo_link as UNETR_zenodo
 import os
+from pipelines.fetch import dl_models
+import nibabel as nib
+from tempfile import TemporaryDirectory
 
 export_study = '0: Segmentations'
 
@@ -17,7 +20,8 @@ def kidneys(database):
     #     database.dialog.information(msg)
     #     return
 
-    unetr, unetr_link= UNETR_zenodo.main()
+    unetr = dl_models(database)
+
     weights = os.path.join(os.path.dirname(database.path()),unetr)
 
     database.message('Segmenting kidneys. This could take a few minutes. Please be patient..')
@@ -54,8 +58,71 @@ def kidneys(database):
 
     database.save()
 
-    return
+    kidneys = []
+    kidneys.append(left) 
+    kidneys.append(right)
 
+    return kidneys
+
+def cor_med(database): #ADAPT TO THE nnUet for COR/MED segmentation
+
+    # Get weights file and check if valid 
+    # if not os.path.isfile(weights):
+    #     msg = 'The weights file ' + weights + ' has not been found. \n'
+    #     msg += 'Please check that the file with model weights is in the folder, and is named ' + UNETR_kidneys_v1.filename
+    #     database.dialog.information(msg)
+    #     return
+
+    #unetr, unetr_link= UNETR_zenodo.main()
+    nnUnet = 'checkpoint_best.pth'
+    weights = os.path.join(os.path.dirname(database.path()),nnUnet)
+
+    database.message('Segmenting kidneys. This could take a few minutes. Please be patient..')
+
+    # Get appropriate series and check if valid
+    #series = database.series(SeriesDescription=UNETR_kidneys_v1.trained_on)
+    sery, study = input_series(database, nnUnet_cor_med_v1.trained_on,export_study)
+    if sery is None:
+        msg = 'Cannot autosegment the kidneys: series ' + nnUnet_cor_med_v1.trained_on + ' not found.'
+        raise RuntimeError(msg)
+
+    array_in,    _      = sery[0].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_out,   _      = sery[1].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_water, _      = sery[2].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_fat,   header = sery[3].array(['SliceLocation'], pixels_first=True, first_volume=True)
+
+    array_to_predict = np.stack([array_in, array_out, array_water, array_fat], axis=0)
+
+    # Calculate predictions 
+    masks = nnUnet_cor_med_v1.apply(array_to_predict, weights)
+    rkc, rkm, lkc, lkm = nnUnet_cor_med_v1.kidney_masks(masks)
+
+    # Save UNETR output
+    result = study.new_child(SeriesDescription = 'BK_COR_MED')
+    result.set_array(masks, header, pixels_first=True)
+    # result[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+
+    rkc = study.new_child(SeriesDescription = 'RKC')
+    rkc.set_array(rkc, header, pixels_first=True)
+    # left[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+
+    rkm = study.new_child(SeriesDescription = 'RKM')
+    rkm.set_array(rkm, header, pixels_first=True)
+    # left[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+    
+    lkc = study.new_child(SeriesDescription = 'LKC')
+    lkc.set_array(lkc, header, pixels_first=True)
+    # left[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+
+    lkm = study.new_child(SeriesDescription = 'LKM')
+    lkm.set_array(lkm, header, pixels_first=True)
+    # left[['WindowCenter','WindowWidth']] = [1.0, 2.0]
+
+    database.save()
+
+    # kidneys = left + right
+
+    # return kidneys
 
 def renal_sinus_fat(folder):
 
@@ -222,7 +289,7 @@ def cortex_medulla_local(database):
 
     series, study = input_series(database, desc, export_study)
 
-    RKC = scipy.image_calculator(series[0], series[1], 'series 1 - series 2')
-    LKC = scipy.image_calculator(series[2], series[3], 'series 1 - series 2')
+    LKC = scipy.image_calculator(series[0], series[1], 'series 1 - series 2',series_desc='LKC')
+    RKC = scipy.image_calculator(series[2], series[3], 'series 1 - series 2',series_desc='RKC')
 
     database.save()

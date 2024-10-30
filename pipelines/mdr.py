@@ -43,7 +43,7 @@ def T2(folder):
     desc = "T2m_magnitude"
     series, study = input_series(folder, desc, export_study)
     if series is None:
-        raise RuntimeError('Cannot perform MDR on T2: series ' + desc + 'does not exist. ')
+        raise RuntimeError('Cannot perform MDR on T2: series ' + desc + ' does not exist. ')
 
     array, header = series.array(['SliceLocation', 'InversionTime'], pixels_first=True, first_volume=True)
     TE = series.values('InversionTime',  dims=('SliceLocation', 'InversionTime')).astype(np.float16)
@@ -59,15 +59,15 @@ def T1_T2(folder):
     desc_T1_T2 = "T1m_T2m_magnitude"
     series_T1_T2, study_T1_T2 = input_series(folder, desc_T1_T2, export_study)
     if series_T1_T2 is None:
-        raise RuntimeError('Cannot perform MDR on T1: series ' + desc_T1 + 'does not exist. ')
+        raise RuntimeError('Cannot perform MDR on T1: series ' + desc_T1_T2 + ' does not exist. ')
 
     desc_T1 = "T1m_magnitude"
-    series_T1, study_T1 = input_series(folder, desc_T1, export_study)
+    series_T1, study_T1 = input_series(folder, desc_T1, export_study,handle_duplicate=True)
     if series_T1 is None:
         raise RuntimeError('Cannot perform MDR on T1: series ' + desc_T1 + 'does not exist. ')
     
     desc_T2 = "T2m_magnitude"
-    series_T2, study_T2 = input_series(folder, desc_T2, export_study)
+    series_T2, study_T2 = input_series(folder, desc_T2, export_study,handle_duplicate=True)
     if series_T2 is None:
         raise RuntimeError('Cannot perform MDR on T1: series ' + desc_T2 + 'does not exist. ')
 
@@ -111,6 +111,7 @@ def MT(folder): # TODO: Note this is a 3D sequence - do not coreg slice by slice
         raise RuntimeError('Cannot perform MDR on MT: series ' + desc + ' does not exist. ')
 
     array, header = series.array(['SliceLocation', 'AcquisitionTime'], pixels_first=True, first_volume=True)
+    #array, header = series.array(['SliceLocation'], pixels_first=True)
     signal_pars = [{} for _ in range(array.shape[2])]
 
     series.message('Setting up MDR..')

@@ -36,9 +36,19 @@ def t1_t2_merge(database):
     t1 = database.series(SeriesDescription="T1m_magnitude")
     t2 = database.series(SeriesDescription="T2m_magnitude")
 
-    if len(t1)!=1 or len(t2)!=1:
-        return
+    # if len(t1)!=1 or len(t2)!=1:
+    #     return
+
+    if len(t1)>1:
+        last_t1 = t1[-1]
+        t1 =[]
+        t1.append(last_t1)
     
+    if len(t2)>1:
+        last_t2 = t2[-1]
+        t2 =[]
+        t2.append(last_t2)
+
     try:
         study = t1[0].parent()
         t1_t2 = study.new_series(SeriesDescription='T1m_T2m_magnitude')
@@ -81,7 +91,11 @@ def dti(database):
 
 def t2(database):
     desc = "T2m_magnitude"
-    series = database.series(SeriesDescription=desc)[0]
+    #series = database.series(SeriesDescription=desc)[0]
+    if len(database.series(SeriesDescription=desc))>1:
+        series = database.series(SeriesDescription=desc)[-1]
+    else:
+        series = database.series(SeriesDescription=desc)[0]
 
     if series.instance().Manufacturer=='SIEMENS':
         TE = [[0,30,40,50,60,70,80,90,100,110,120]]*5
