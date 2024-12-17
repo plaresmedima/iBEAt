@@ -239,7 +239,7 @@ def _mdr(series, array, header, fit_image, study, force_2d=True):
     fit.set_array(model_fit, header, pixels_first=True)
     moco = study.new_series(SeriesDescription = desc + '_mdr_moco')
     moco.set_array(coreg, header, pixels_first=True)
-    defo = study.new_series(SeriesDescription = desc + '_mdr_defo')
-    defo.set_array(mdreg.defo_norm(defo, 'eumip'), header[:,0], pixels_first=True)
+    defo_series = study.new_series(SeriesDescription = desc + '_mdr_defo')
+    defo_series.set_array(mdreg.defo_norm(defo, 'eumip'), header[:,0], pixels_first=True)
 
     return fit, moco
