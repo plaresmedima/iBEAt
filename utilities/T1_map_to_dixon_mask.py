@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
-from dbdicom.utils import vreg
-#from dbdicom.wrappers import vreg
+import vreg
 from dbdicom import Series
 
 def _get_input_volume(series):
