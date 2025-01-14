@@ -6,6 +6,10 @@ Load a previously downloaded XNAT dataset -> Name Standardization ->    Execute 
   select_save_folder.py                   -> pipelines.rename.py  ->             pipelines.mdr.py         ->            piplines.apply_AI_segmentation           ->      pipelines.mapping.py     ->      pipelines.align.py      ->     pipelines.export_ROI_stats -> scripts.upload.py
 """
 
+# Windows
+# py -3 -m venv .venv           
+# .venv/Scripts/activate 
+
 from scripts.single_subject_external_analysis import single_subject
 import utilities.select_folder_to_save as select_save_folder
 
