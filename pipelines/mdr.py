@@ -220,8 +220,14 @@ def DCE(folder):
 def _mdr(series, array, header, fit_image, study, force_2d=True):
 
     series.message('Setting up MDR..')
+    
+    if force_2d:
+        spacing = header[0,0].PixelSpacing
+    else:
+        spacing = header[0,0].PixelSpacing + [header[0,0].SliceThickness]
+
     fit_coreg = {
-        'spacing': header[0,0].PixelSpacing,
+        'spacing': spacing,
         'MaximumStepLength': 0.1,
         "FinalGridSpacingInPhysicalUnits": 20,
         'downsample': 2,
