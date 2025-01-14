@@ -1,7 +1,7 @@
 import numpy as np
-from dbdicom.extensions import vreg, elastix
+import vreg as vr
+from dbdicom.extensions import elastix
 from dbdicom.pipelines import input_series
-from dbdicom.utils import vreg as vr
 from dipy.align.imaffine import MutualInformationMetric, AffineRegistration
 from dipy.align.transforms import TranslationTransform2D
 
