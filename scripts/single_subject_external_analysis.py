@@ -9,7 +9,7 @@ def single_subject(path):
     
     pathScan = os.path.join(path)
     
-    filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
+    filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "LogFile.txt"
 
     #Available CPU cores
     try: 
@@ -41,7 +41,6 @@ def single_subject(path):
     steps_core.segment_aorta_on_dce(database)
     steps_core.segment_left_renal_artery(database)
     steps_core.segment_right_renal_artery(database)
-    steps_core.compute_whole_kidney_canvas(database)
     steps_core.export_segmentations(database) 
 
     # MOTION CORRECTION

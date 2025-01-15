@@ -200,18 +200,6 @@ def segment_right_renal_artery(database):
         database.restore()
 
 
-def compute_whole_kidney_canvas(database):
-    start_time = time.time()
-    database.log('Starting computing canvas')
-    try:
-        segment.compute_whole_kidney_canvas(database)
-        database.log("Computing canvas was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e: 
-        database.log("Computing canvas was NOT computed; error: "+str(e))
-        database.restore()
-
-
 # Set up exports as individual steps
 def export_segmentations(database):
     start_time = time.time()

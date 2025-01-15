@@ -3,7 +3,8 @@ from pipelines import (
     fetch_Drive_mask,
     mdr, 
     mapping, 
-    harmonize, 
+    harmonize,
+    segment, 
 )
 
 
@@ -32,6 +33,17 @@ def fetch_kidney_masks(database):
         database.save()
     except Exception as e:
         database.log("Fetching kidney masks was NOT completed; error: "+str(e))
+        database.restore()
+
+def compute_whole_kidney_canvas(database):
+    start_time = time.time()
+    database.log('Starting computing canvas')
+    try:
+        segment.compute_whole_kidney_canvas(database)
+        database.log("Computing canvas was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("Computing canvas was NOT computed; error: "+str(e))
         database.restore()
 
 
