@@ -1,6 +1,5 @@
 import time
 from pipelines import (
-    fetch_Drive_mask,
     fetch_AI_model,
     segment, 
     measure, 
@@ -58,17 +57,6 @@ def harmonize_t2(database):
         database.save()
     except Exception as e:
         database.log("Harmonizing T2 series was NOT completed; error: " + str(e)) 
-        database.restore()
-
-def harmonize_t1_t2(database):
-    start_time = time.time()
-    database.log("Harmonizing T1 and T2 series (merged) has started!")
-    try:
-        harmonize.t1_t2_merge(database)
-        database.log("Harmonizing T1 and T2 series (merged) was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e:
-        database.log("Harmonizing T1 and T2 series (merged) was NOT completed; error: " + str(e)) 
         database.restore()
 
 def harmonize_mt(database):
@@ -129,16 +117,6 @@ def harmonize_subject_name(database):
 
 ## SEGMENTATION
 
-def fetch_kidney_masks(database):
-    start_time = time.time()
-    database.log("Fetching kidney masks has started")
-    try:
-        fetch_Drive_mask.kidney_masks(database)
-        database.log("Fetching kidney masks was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e:
-        database.log("Fetching kidney masks was NOT completed; error: "+str(e))
-        database.restore()
 
 def fetch_dl_models(database):
     start_time = time.time()
@@ -336,16 +314,6 @@ def mdreg_dce(database):
         database.log("Model-driven registration for DCE was NOT completed; error: "+str(e))
         database.restore()
 
-def mdreg_t1_t2(database):
-    start_time = time.time()
-    database.log("Model-driven registration for T1 T2 has started")
-    try:
-        mdr.T1_T2(database)
-        database.log("Model-driven registration for T1 T2 was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e:
-        database.log("Model-driven registration for T1 T2 was NOT completed; error: "+str(e))
-        database.restore()
 
 def export_mdreg(database):
     start_time = time.time()
@@ -370,30 +338,6 @@ def map_T1(database):
         database.save()
     except Exception as e: 
         database.log("T1 mapping was NOT completed; error: "+str(e))
-        database.restore()
-
-def map_T1_from_T1_T2_mdr(database):
-    start_time = time.time()
-    print('Starting T1 mapping from T1_T2 MDR')
-    database.log("T1 mapping from T1_T2 MDR has started")
-    try:
-        mapping.T1_from_T1_T2_mdr(database)
-        database.log("T1 mapping from T1_T2 MDR was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e: 
-        database.log("T1 mapping from T1_T2 MDR was NOT completed; error: "+str(e))
-        database.restore()
-
-def map_T2_from_T1_T2_mdr(database):
-    start_time = time.time()
-    print('Starting T2 mapping from T1_T2 MDR')
-    database.log("T2 mapping from T1_T2 MDR has started")
-    try:
-        mapping.T2_from_T1_T2_mdr(database)
-        database.log("T2 mapping from T1_T2 MDR was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e: 
-        database.log("T2 mapping from T1_T2 MDR was NOT completed; error: "+str(e))
         database.restore()
 
 
@@ -609,14 +553,8 @@ def export_alignment(database):
         database.log("Export alignment was NOT completed; error: "+str(e))
         database.restore()
 
-
-
-
-
 ## MEASURE
         
-
-
 def measure_kidney_volumetrics(database):
     start_time = time.time()
     database.log("Kidney volumetrics has started")

@@ -6,7 +6,7 @@ Download XNAT dataset -> Name Standardization ->    Execute MDR   ->  Apply UNET
   pipelines.xnat.py   -> pipelines.rename.py  -> pipelines.mdr.py ->    piplines.apply_AI_segmentation    ->    pipelines.mapping.py       -> pipelines.export_ROI_stats -> scripts.upload.py
 """
 
-from scripts.subject_all import single_subject
+from scripts.single_subject_internal_analysis import single_subject
 import utilities.XNAT_credentials as XNAT_cred
 import utilities.select_folder_to_save as select_save_folder
 
@@ -18,8 +18,7 @@ if __name__ == '__main__':
     #dataset = '2128_007' #specific dataset
     #dataset = 'load'      #load a previously downloaded dataset
 
-    path = select_save_folder.main()
-    
+    path = select_save_folder.internal()
     #XNAT Credentials
     username, password = XNAT_cred.main()
 
