@@ -6,8 +6,6 @@ from dbdicom.extensions import vreg as vreg_dicom
 from dbdicom.extensions import elastix
 from dbdicom.pipelines import input_series
 
-
-
 export_study = "3: Alignment"
 
 
