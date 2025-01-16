@@ -8,7 +8,7 @@ Download XNAT dataset -> Name Standardization ->    Execute MDR   -> Custom Modd
 TO RUN THE SCRIPT YOU USE: python main_cluster.py --num n (WHERE n is an integer with the value of the XNAT dataset)
 """
 import argparse
-from scripts.subject_all import single_subject
+from scripts.single_subject_internal_analysis import single_subject
 import utilities.XNAT_credentials as XNAT_cred
 
 if __name__ == '__main__':

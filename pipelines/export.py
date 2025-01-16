@@ -449,6 +449,37 @@ def alignment(database):
             fig.suptitle(desc, fontsize=10)
             fig.savefig(os.path.join(results_path, desc + '.png'), dpi=600)
 
+def kidney_masks_sinus_fat_dixon_as_dicom(folder):
 
+    folder.message('Exporting whole kidney masks, sinus fat mask and post-contrast dixon as dicom..')
+    results_path = os.path.join(folder.path() + '_output')
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    fat_desc = 'Dixon_post_contrast_fat' 
+    out_desc = 'Dixon_post_contrast_out_phase'
+    in_desc = 'Dixon_post_contrast_in_phase'
+    water_desc = 'Dixon_post_contrast_water'
+    lk_mask = 'LK' 
+    rk_mask = 'RK'
+    lksf_mask = 'LKSF'
+    rksf_mask = 'RKSF'
+
+    fat = folder.series(SeriesDescription=fat_desc)
+    out_ph = folder.series(SeriesDescription=out_desc)
+    in_ph = folder.series(SeriesDescription=in_desc)
+    water = folder.series(SeriesDescription=water_desc)
+    LK = folder.series(SeriesDescription=lk_mask)
+    RK = folder.series(SeriesDescription=rk_mask)
+    lksf = folder.series(SeriesDescription=lksf_mask)
+    rksf = folder.series(SeriesDescription=rksf_mask)
+
+    export_to_folder = LK + RK + fat + out_ph + in_ph + water + lksf + rksf
+    
+    for series in export_to_folder:
+        try:
+            series.export_as_dicom(results_path)
+        except:
+            continue
 
 

@@ -4,7 +4,8 @@ from pipelines import (
     mdr, 
     mapping, 
     harmonize,
-    segment, 
+    segment,
+    export, 
 )
 
 
@@ -45,6 +46,21 @@ def compute_whole_kidney_canvas(database):
     except Exception as e: 
         database.log("Computing canvas was NOT computed; error: "+str(e))
         database.restore()
+
+def export_sinus_fat_segmentations(database):
+    start_time = time.time()
+    database.log("Export kidney segmentations has started")
+    try:
+        export.kidney_masks_as_png(database)
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+    
+    try:
+        export.kidney_masks_sinus_fat_dixon_as_dicom(database)
+    except Exception as e:
+        database.log("Export kidney masks sinus fat masks and dixon was NOT completed; error: "+str(e))
+
+    database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
 
 ## MODEL-DRIVEN MOTION CORRECTION
