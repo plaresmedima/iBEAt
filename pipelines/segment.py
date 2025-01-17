@@ -24,15 +24,18 @@ def kidneys(database):
 
     # Get appropriate series and check if valid
     #series = database.series(SeriesDescription=UNETR_kidneys_v1.trained_on)
-    sery, study = input_series(database, UNETR_kidneys_v1.trained_on,export_study)
-    if sery is None:
+    series, study = input_series(database, UNETR_kidneys_v1.trained_on,export_study)
+    if series is None:
         msg = 'Cannot autosegment the kidneys: series ' + UNETR_kidneys_v1.trained_on + ' not found.'
         raise RuntimeError(msg)
 
     # Loop over the series and create the mask
     #desc = sery.instance().SeriesDescription
-    array, header = sery.array(['SliceLocation'], pixels_first=True, first_volume=True)
-
+    array_out  , header   = series[0].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_in   , header_in    = series[1].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_water, header_water = series[2].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_fat  , header_fat   = series[3].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array = np.stack((array_out, array_in, array_water, array_fat), axis=0)
     # Calculate predictions 
     masks = UNETR_kidneys_v1.apply(array, weights)
     left_kidney, right_kidney = UNETR_kidneys_v1.kidney_masks(masks)
@@ -54,7 +57,11 @@ def kidneys(database):
 
     database.save()
 
-    return
+    kidneys = []
+    kidneys.append(left) 
+    kidneys.append(right)
+
+    return kidneys
 
 
 def renal_sinus_fat(folder):

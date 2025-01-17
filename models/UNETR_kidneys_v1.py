@@ -37,7 +37,7 @@ device = torch.device(device_str)
 
 # Define model architecture
 model = UNETR(
-    in_channels=1,
+    in_channels=4,
     out_channels=3, # BACKGROUND, RIGHT KIDNEY (left on image), LEFT KIDNEY (right on image)
     img_size=(80, 80, 80),
     feature_size=16,
@@ -51,7 +51,8 @@ model = UNETR(
 ).to(device)
 
 # Required - DICOM series description of validated data
-trained_on = "Dixon_post_contrast_out_phase"
+trained_on = ["Dixon_post_contrast_out_phase", "Dixon_post_contrast_in_phase", 
+              "Dixon_post_contrast_fat", "Dixon_post_contrast_water"]
 
 
 def largest_cluster(array:np.ndarray)->np.ndarray:
@@ -101,12 +102,16 @@ def apply(input_array:np.ndarray, file:str, overlap=0.3)->np.ndarray:
     """
 
     # Normalize data
-    input_array = (input_array-np.average(input_array))/np.std(input_array)
-    
-    # Convert to NCHW[D] format: (1,1,y,x,z)
+    input_array_out   = (input_array[0,...]-np.average(input_array[0,...]))/np.std(input_array[0,...])
+    input_array_in    = (input_array[1,...]-np.average(input_array[1,...]))/np.std(input_array[1,...])
+    input_array_water = (input_array[2,...]-np.average(input_array[2,...]))/np.std(input_array[2,...])
+    input_array_fat   = (input_array[3,...]-np.average(input_array[3,...]))/np.std(input_array[3,...])
+
+    input_array = np.stack((input_array_out, input_array_in, input_array_water, input_array_fat), axis=0)
+    # Convert to NCHW[D] format: (1,c,y,x,z)
     # NCHW[D] stands for: batch N, channels C, height H, width W, depth D
-    input_array = input_array.transpose(1,0,2) # from (x,y,z) to (y,x,z)
-    input_array = np.expand_dims(input_array, axis=(0, 1))
+    input_array = input_array.transpose(0,2,1,3) # from (x,y,z) to (y,x,z)
+    input_array = np.expand_dims(input_array, axis=(0))
 
     # Convert to tensor
     input_tensor = torch.tensor(input_array)

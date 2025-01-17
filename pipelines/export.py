@@ -41,8 +41,8 @@ def kidney_masks_as_dicom(folder):
 
 
 
-#def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK' ):
-def kidney_masks_as_png(database,backgroud_series = 'Dixon_out_phase',RK_mask = 'RK', LK_mask = 'LK' ): #ONLY FOR REPEATABILITY STUDY
+def kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK' ):
+#def kidney_masks_as_png(database,backgroud_series = 'Dixon_out_phase',RK_mask = 'RK', LK_mask = 'LK' ): #ONLY FOR REPEATABILITY STUDY
 
     database.message('Exporting masks as png..')
     results_path = database.path() + '_output'
