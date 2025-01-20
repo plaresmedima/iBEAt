@@ -237,6 +237,7 @@ def _mdr(series, array, header, fit_image, study, force_2d=True):
         fit_coreg = fit_coreg,
         maxit = 5,
         force_2d = force_2d,
+        verbose = 2,
     )
 
     # Save results as DICOM
