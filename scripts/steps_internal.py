@@ -105,7 +105,34 @@ def map_T2_from_T1_T2_mdr(database):
 
 
 ## ALIGNMENT
-        
+
+def export_alignment_t2s_project(database):
+    start_time = time.time()
+    print('Exporting alignment')
+    database.log("Export alignment has started")
+    try:
+        export.alignment_t2s_project(database)
+        database.log("Export alignment was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("Export alignment was NOT completed; error: "+str(e))
+        database.restore()
+
 ## MEASURE
     
 ## ROI ANALYSIS
+
+## DATA EXPORT
+
+def export_dicom_t2s_project(database):
+    start_time = time.time()
+    print('Exporting alignment')
+    database.log("Export alignment has started")
+    try:
+        export.project_t2s_prepare_dicom(database)
+        database.log("Export alignment was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("Export alignment was NOT completed; error: "+str(e))
+        database.restore()
+
