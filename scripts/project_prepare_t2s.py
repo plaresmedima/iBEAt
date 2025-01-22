@@ -76,7 +76,7 @@ def single_subject(username, password, path, dataset):
 
     steps_core.roi_fit_T2star(database)
 
-    steps_core.export_COR_MED_segmentations(database)
+    steps_internal.export_whole_kidney_only_segmentations_as_png(database)
 
     steps_internal.export_dicom_t2s_project(database)
 
