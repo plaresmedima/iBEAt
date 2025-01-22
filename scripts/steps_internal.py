@@ -177,11 +177,29 @@ def export_project_pre_Dixon_to_AI(database,subject_ID):
     except Exception as e:
         database.log("Export to AI was NOT completed; error: "+str(e))
 
+def export_project_pre_Dixon_in_out_to_AI(database,subject_ID):
+    start_time = time.time()
+    database.log("Export to AI has started")
+    try:
+        export.pre_Dixon_in_out_to_AI(database,subject_ID)
+        database.log("Export to AI was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("Export to AI was NOT completed; error: "+str(e))
+
 def export_project_post_contrast_Dixon_to_AI(database,subject_ID):
     start_time = time.time()
     database.log("Export to AI has started")
     try:
         export.post_contrast_Dixon_to_AI(database,subject_ID)
+        database.log("Export to AI was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("Export to AI was NOT completed; error: "+str(e))
+
+def export_project_post_contrast_in_out_Dixon_to_AI(database,subject_ID):
+    start_time = time.time()
+    database.log("Export to AI has started")
+    try:
+        export.post_contrast_in_out_Dixon_to_AI(database,subject_ID)
         database.log("Export to AI was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("Export to AI was NOT completed; error: "+str(e))
