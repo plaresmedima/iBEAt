@@ -595,7 +595,7 @@ def pre_Dixon_to_AI(folder, subject_ID):
 
     folder.message('Exporting kidney masks as nifti')
     #results_path = os.path.join(folder.path() + '_output', 'to_AI')
-    results_path = "//mnt//fastdata//md1jdsp//Pre_Dixon_to_AI"
+    results_path = "//mnt//fastdata//md1jdsp//nnUNet//Pre_Dixon_to_AI"
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -603,6 +603,64 @@ def pre_Dixon_to_AI(folder, subject_ID):
     out_desc = 'Dixon_out_phase [coreg]'
     in_desc = 'Dixon_in_phase [coreg]'
     water_desc = 'Dixon_water [coreg]'
+ 
+    lk_mask = 'LK' 
+    rk_mask = 'RK'
+
+    fat = folder.series(SeriesDescription=fat_desc)
+    out_ph = folder.series(SeriesDescription=out_desc)
+    in_ph = folder.series(SeriesDescription=in_desc)
+    water = folder.series(SeriesDescription=water_desc)
+    LK = folder.series(SeriesDescription=lk_mask)
+    RK = folder.series(SeriesDescription=rk_mask)
+
+    overlay_mask_LK  = vreg.map_to(LK[0],out_ph[0])
+    overlay_mask_RK  = vreg.map_to(RK[0],out_ph[0])
+
+    array_fat, _    = fat[0].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_out_ph, _ = out_ph[0].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_in_ph, _  = in_ph[0].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_water, _  = water[0].array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_RK, _  = overlay_mask_RK.array(['SliceLocation'], pixels_first=True, first_volume=True)
+    array_LK, _  = overlay_mask_LK.array(['SliceLocation'], pixels_first=True, first_volume=True)
+
+    array_RK[array_RK >0.5] = 1
+    array_RK[array_RK <0.5] = 0
+    array_LK[array_LK >0.5] = 1
+    array_LK[array_LK <0.5] = 0
+
+    array_LK = array_LK * 2
+    final_mask = array_RK + array_LK
+
+    affine = np.eye(4)
+    nii_final_mask = nib.Nifti1Image(final_mask, affine)
+    nib.save(nii_final_mask, os.path.join(results_path, 'Dixon_'+ subject_ID + '.nii.gz'))
+
+    nii_out_ph = nib.Nifti1Image(array_out_ph, affine)
+    nib.save(nii_out_ph, os.path.join(results_path, 'Dixon_'+ subject_ID + '_0000.nii.gz'))
+
+    nii_in_ph = nib.Nifti1Image(array_in_ph, affine)
+    nib.save(nii_in_ph, os.path.join(results_path, 'Dixon_'+ subject_ID + '_0001.nii.gz'))
+
+    nii_water = nib.Nifti1Image(array_water, affine)
+    nib.save(nii_water, os.path.join(results_path, 'Dixon_'+ subject_ID + '_0002.nii.gz'))
+
+    nii_fat = nib.Nifti1Image(array_fat, affine)
+    nib.save(nii_fat, os.path.join(results_path, 'Dixon_'+ subject_ID + '_0003.nii.gz'))
+
+
+def post_contrast_Dixon_to_AI(folder, subject_ID):
+
+    folder.message('Exporting kidney masks as nifti')
+    #results_path = os.path.join(folder.path() + '_output', 'to_AI')
+    results_path = "//mnt//fastdata//md1jdsp//nnUNet//Post_Dixon_to_AI"
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    fat_desc = 'Dixon_post_out_fat' 
+    out_desc = 'Dixon_post_out_phase'
+    in_desc = 'Dixon_post_out_in_phase'
+    water_desc = 'Dixon_post_out_water'
  
     lk_mask = 'LK' 
     rk_mask = 'RK'

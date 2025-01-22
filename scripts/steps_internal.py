@@ -84,6 +84,17 @@ def export_project_pre_Dixon_whole_kidney_only_segmentations_as_png(database):
 
     database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
+def export_project_post_Dixon_whole_kidney_only_segmentations_as_png(database):
+    start_time = time.time()
+    database.log("Export kidney segmentations has started")
+
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK',mask_name = 'Whole Kidney_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
 ## MODEL-DRIVEN MOTION CORRECTION
 
 def mdreg_t1_t2(database):
@@ -162,6 +173,15 @@ def export_project_pre_Dixon_to_AI(database,subject_ID):
     database.log("Export to AI has started")
     try:
         export.pre_Dixon_to_AI(database,subject_ID)
+        database.log("Export to AI was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("Export to AI was NOT completed; error: "+str(e))
+
+def export_project_post_contrast_Dixon_to_AI(database,subject_ID):
+    start_time = time.time()
+    database.log("Export to AI has started")
+    try:
+        export.post_contrast_Dixon_to_AI(database,subject_ID)
         database.log("Export to AI was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("Export to AI was NOT completed; error: "+str(e))
