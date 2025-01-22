@@ -8,16 +8,19 @@ Download XNAT dataset -> Name Standardization ->    Execute MDR   -> Custom Modd
 TO RUN THE SCRIPT YOU USE: python main_cluster.py --num n (WHERE n is an integer with the value of the XNAT dataset)
 """
 import argparse
-from scripts.single_subject_internal_analysis import single_subject
+from scripts.project_prepare_t2s import single_subject
 import utilities.XNAT_credentials as XNAT_cred
+import os
 
 if __name__ == '__main__':
 
     #XNAT Credentials
     username, password = XNAT_cred.main()
-
-    path = "//mnt//fastdata//" + username #CLUSTER PATH TO SAVE DATA, ADD YOUR LOCAL PATH IF YOU WANT TO RUN IT LOCALLY
-
+    
+    path = "//mnt//fastdata//" + username + "//<insert project name>" #CLUSTER PATH TO SAVE DATA, ADD YOUR LOCAL PATH IF YOU WANT TO RUN IT LOCALLY
+    if not os.path.exists(path):
+        os.mkdir(path)
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('--num',
                         dest='num',
