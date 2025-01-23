@@ -40,7 +40,7 @@ def single_subject(username, password, path, dataset,subject_ID=None):
     # SEGMENTATION
 
     steps_core.fetch_dl_models(database)
-    steps_core.fetch_kidney_masks(database)
+    steps_core.fetch_kidney_mask(database)
     steps_core.segment_kidneys(database)
 
     # ALIGNMENT

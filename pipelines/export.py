@@ -595,7 +595,7 @@ def pre_Dixon_to_AI(folder, subject_ID):
 
     folder.message('Exporting kidney masks as nifti')
     #results_path = os.path.join(folder.path() + '_output', 'to_AI')
-    results_path = "//mnt//fastdata//md1jdsp//nnUNet//Pre_Dixon_to_AI"
+    results_path = "//mnt//fastdata//md1jdsp//nnUNet_training_data//Pre_Dixon_to_AI"
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -652,7 +652,7 @@ def pre_Dixon_in_out_to_AI(folder, subject_ID):
 
     folder.message('Exporting kidney masks as nifti')
     #results_path = os.path.join(folder.path() + '_output', 'to_AI')
-    results_path = "//mnt//fastdata//md1jdsp//nnUNet//Pre_Dixon_in_out_to_AI"
+    results_path = "//mnt//fastdata//md1jdsp//nnUNet_training_data//Pre_Dixon_in_out_to_AI"
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
@@ -697,14 +697,14 @@ def post_contrast_Dixon_to_AI(folder, subject_ID):
 
     folder.message('Exporting kidney masks as nifti')
     #results_path = os.path.join(folder.path() + '_output', 'to_AI')
-    results_path = "//mnt//fastdata//md1jdsp//nnUNet//Post_Dixon_to_AI"
+    results_path = "//mnt//fastdata//md1jdsp//nnUNet_training_data//Post_Dixon_to_AI"
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
     fat_desc = 'Dixon_post_contrast_fat' 
     out_desc = 'Dixon_post_contrast_out_phase'
-    in_desc = 'Dixon_post_contrast_out_in_phase'
-    water_desc = 'Dixon_post_contrast_out_water'
+    in_desc = 'Dixon_post_contrast_in_phase'
+    water_desc = 'Dixon_post_contrast_water'
  
     lk_mask = 'LK' 
     rk_mask = 'RK'
@@ -756,12 +756,12 @@ def post_contrast_in_out_Dixon_to_AI(folder, subject_ID):
 
     folder.message('Exporting kidney masks as nifti')
     #results_path = os.path.join(folder.path() + '_output', 'to_AI')
-    results_path = "//mnt//fastdata//md1jdsp//nnUNet//Post_Dixon_in_out_to_AI"
+    results_path = "//mnt//fastdata//md1jdsp//nnUNet_training_data//Post_Dixon_in_out_to_AI"
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    out_desc = 'Dixon_post_out_phase'
-    in_desc = 'Dixon_post_out_in_phase'
+    out_desc = 'Dixon_post_contrast_out_phase'
+    in_desc = 'Dixon_post_contrast_in_phase'
  
     lk_mask = 'LK' 
     rk_mask = 'RK'
