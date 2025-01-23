@@ -5,9 +5,9 @@ from wezel.plugins.pyvista import SurfaceDisplay
 
 
 from pipelines import (
+    fetch_Drive_mask,
     rename, 
     harmonize, 
-    fetch, 
     segment, 
     measure, 
     mdr, 
@@ -105,12 +105,12 @@ menu_harmonize.add(action_harmonize_all)
 
 def fetch_dl_models(app):
     folder = app.database()
-    fetch.dl_models(folder)
+    fetch_Drive_mask.dl_models(folder)
     app.refresh()
 
 def fetch_kidney_masks(app):
     folder = app.database()
-    fetch.kidney_masks(folder)
+    fetch_Drive_mask.kidney_masks(folder)
     app.refresh()
 
 def segment_kidneys(app):
