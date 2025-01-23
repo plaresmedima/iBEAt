@@ -107,8 +107,8 @@ def kidney_masks(folder):
     # Check for masks on google drive and import into the database if exists.
     # Alternative: save them on XNAT on a separate project and download from there
 
-    #find_mask_in_drive(folder)
-    find_mask_in_local_rep(folder)
+    find_mask_in_drive(folder)
+    #find_mask_in_local_rep(folder)
 
 
 
