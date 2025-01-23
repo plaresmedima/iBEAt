@@ -2,7 +2,7 @@ import os
 import datetime
 import dbdicom as db
 
-from utilities import xnat, upload_project_sinus_fat
+from utilities import xnat, upload_project_t2s
 from scripts import steps_core
 from scripts import steps_internal
 
@@ -35,12 +35,8 @@ def single_subject(username, password, path, dataset):
     # HARMONIZATION
 
     steps_core.rename_all_series(database)
-    steps_core.harmonize_pc(database)
     steps_core.harmonize_t2(database)
-    steps_core.harmonize_mt(database)
-    steps_core.harmonize_dti(database)
-    steps_core.harmonize_ivim(database)
-    steps_core.harmonize_dce(database)
+    #steps_core.harmonize_dce(database)
     steps_core.harmonize_subject_name(database)
     
     # SEGMENTATION
@@ -48,33 +44,31 @@ def single_subject(username, password, path, dataset):
     steps_core.fetch_dl_models(database)
     steps_internal.fetch_kidney_masks(database)
     steps_core.segment_kidneys(database)
-    steps_core.segment_aorta_on_dce(database)
-    steps_internal.compute_whole_kidney_canvas(database)
-    steps_core.export_segmentations(database) 
+    #steps_core.segment_aorta_on_dce(database)
 
     # MOTION CORRECTION
 
     steps_core.mdreg_t2star(database)
-    steps_core.mdreg_dce(database)
+    #steps_core.mdreg_dce(database)
     steps_core.export_mdreg(database)
     
 
     # MAPPING
 
     steps_core.map_T2star(database)
-    steps_core.map_DCE(database)
+    #steps_core.map_DCE(database)
     steps_core.export_mapping(database)
 
     # ALIGNMENT
 
     steps_core.align_T2star(database)
-    steps_core.align_DCE(database)
-    steps_core.export_alignment(database)
+    #steps_core.align_DCE(database)
+    steps_internal.export_alignment_t2s_project(database)
 
     # MEASUREMENT
 
-    steps_core.fill_gaps(database)
-    steps_core.cortex_medulla(database)
+    #steps_core.fill_gaps(database)
+    #steps_core.cortex_medulla(database)
 
     steps_core.measure_t2star_maps(database)
 
@@ -82,6 +76,10 @@ def single_subject(username, password, path, dataset):
 
     steps_core.roi_fit_T2star(database)
 
+    steps_internal.export_whole_kidney_only_segmentations_as_png(database)
+
+    steps_internal.export_dicom_t2s_project(database)
+
     #upload images, logfile and csv to google drive
     filename_csv = os.path.join(database.path() + '_output',database.PatientName[0] + '_biomarkers.csv')
-    upload_project_sinus_fat.main(pathScan, filename_log, filename_csv)
+    upload_project_t2s.main(pathScan, filename_log, filename_csv)

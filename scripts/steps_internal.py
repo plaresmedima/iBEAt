@@ -62,6 +62,38 @@ def export_sinus_fat_segmentations(database):
 
     database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
+def export_whole_kidney_only_segmentations_as_png(database):
+    start_time = time.time()
+    database.log("Export kidney segmentations has started")
+
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK',mask_name = 'Whole Kidney_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
+def export_project_pre_Dixon_whole_kidney_only_segmentations_as_png(database):
+    start_time = time.time()
+    database.log("Export kidney segmentations has started")
+
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_out_phase [coreg]',RK_mask = 'RK', LK_mask = 'LK',mask_name = 'Whole Kidney_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
+
+def export_project_post_Dixon_whole_kidney_only_segmentations_as_png(database):
+    start_time = time.time()
+    database.log("Export kidney segmentations has started")
+
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK',mask_name = 'Whole Kidney_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
 ## MODEL-DRIVEN MOTION CORRECTION
 
@@ -105,7 +137,69 @@ def map_T2_from_T1_T2_mdr(database):
 
 
 ## ALIGNMENT
-        
+
+def export_alignment_t2s_project(database):
+    start_time = time.time()
+    print('Exporting alignment')
+    database.log("Export alignment has started")
+    try:
+        export.alignment_t2s_project(database)
+        database.log("Export alignment was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("Export alignment was NOT completed; error: "+str(e))
+        database.restore()
+
 ## MEASURE
     
 ## ROI ANALYSIS
+
+## DATA EXPORT
+
+def export_dicom_t2s_project(database):
+    start_time = time.time()
+    print('Exporting alignment')
+    database.log("Export alignment has started")
+    try:
+        export.project_t2s_prepare_dicom(database)
+        database.log("Export alignment was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("Export alignment was NOT completed; error: "+str(e))
+        database.restore()
+
+def export_project_pre_Dixon_to_AI(database,subject_ID):
+    start_time = time.time()
+    database.log("Export to AI has started")
+    try:
+        export.pre_Dixon_to_AI(database,subject_ID)
+        database.log("Export to AI was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("Export to AI was NOT completed; error: "+str(e))
+
+def export_project_pre_Dixon_in_out_to_AI(database,subject_ID):
+    start_time = time.time()
+    database.log("Export to AI has started")
+    try:
+        export.pre_Dixon_in_out_to_AI(database,subject_ID)
+        database.log("Export to AI was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("Export to AI was NOT completed; error: "+str(e))
+
+def export_project_post_contrast_Dixon_to_AI(database,subject_ID):
+    start_time = time.time()
+    database.log("Export to AI has started")
+    try:
+        export.post_contrast_Dixon_to_AI(database,subject_ID)
+        database.log("Export to AI was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("Export to AI was NOT completed; error: "+str(e))
+
+def export_project_post_contrast_in_out_Dixon_to_AI(database,subject_ID):
+    start_time = time.time()
+    database.log("Export to AI has started")
+    try:
+        export.post_contrast_in_out_Dixon_to_AI(database,subject_ID)
+        database.log("Export to AI was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("Export to AI was NOT completed; error: "+str(e))

@@ -225,7 +225,30 @@ def export_segmentations(database):
     except Exception as e:
         database.log("Export kidney segmentations was NOT completed; error: "+str(e))
 
+def export_COR_MED_segmentations(database):
+    start_time = time.time()
+    database.log("Export kidney segmentations has started")
 
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK',mask_name = 'Whole Kidney_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+    try:
+        export.aif_as_png(database)
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RKM', LK_mask = 'LKM',mask_name = 'Medulla_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RKC', LK_mask = 'LKC', mask_name = 'Cortex_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
 ## MODEL-DRIVEN MOTION CORRECTION
 

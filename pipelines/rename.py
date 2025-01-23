@@ -431,6 +431,15 @@ def Siemens_rename(series):
     if SeqName == '*fl3d2': 
         return 'Dixon'
 
+def GE_rename(series): 
+    """
+    The sequence names in Leeds have been removed by the anonymisation
+    procedure and must be recovered from other attributes
+    """
+    SeqName = series["SequenceName"]
+
+    if SeqName is None:
+        return
 
 def all_series(folder):
 
@@ -467,8 +476,14 @@ def all_series(folder):
             elif imDescription == 'ASL' and ASL_count == 4:
                 series.SeriesDescription = imDescription + '_label0_moco'
                 ASL_count = 0
-        else:
+        elif Manufacturer == 'Philips':
             imDescription = Philips_rename(series)
+            if imDescription is None:
+                continue
+            series.SeriesDescription = imDescription
+
+        elif Manufacturer == 'GE':
+            imDescription = GE_rename(series)
             if imDescription is None:
                 continue
             series.SeriesDescription = imDescription
