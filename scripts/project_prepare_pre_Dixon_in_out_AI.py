@@ -46,6 +46,8 @@ def single_subject(username, password, path, dataset,subject_ID=None):
     # ALIGNMENT
     steps_core.align_dixon(database)
 
+    steps_internal.map_fat_dominant(database)
+
     steps_internal.export_project_pre_Dixon_in_out_to_AI(database,subject_ID)
     steps_internal.export_project_pre_Dixon_whole_kidney_only_segmentations_as_png(database)
         

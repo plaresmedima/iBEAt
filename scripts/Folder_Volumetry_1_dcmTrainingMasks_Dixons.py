@@ -2,11 +2,12 @@ import os
 import datetime
 import dbdicom as db
 
-from utilities import xnat
-from scripts import steps_core, steps_internal
+from utilities import xnat, upload_folder_to_drive
+from scripts import steps_core
+from scripts import steps_internal
 
 
-def single_subject(username, password, path, dataset,subject_ID=None):
+def single_subject(username, password, path, dataset):
     
     #Import data from XNAT
     if isinstance(dataset,str) and '_' in dataset:
@@ -18,7 +19,7 @@ def single_subject(username, password, path, dataset,subject_ID=None):
     elif dataset == 'load':
         pathScan = os.path.join(path)
     
-    filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "MDRauto_LogFile.txt" #TODO FIND ANOTHER WAY TO GET A PATH
+    filename_log = pathScan +"_"+ datetime.datetime.now().strftime('%Y%m%d_%H%M_') + "LogFile.txt"
 
     #Available CPU cores
     try: 
@@ -33,15 +34,15 @@ def single_subject(username, password, path, dataset,subject_ID=None):
     
     # HARMONIZATION
 
-    #steps_core.rename_all_series(database)
-    #steps_core.harmonize_dce(database)
-    #steps_core.harmonize_subject_name(database)
+    steps_core.rename_all_series(database)
+    steps_core.harmonize_dce(database)
+    steps_core.harmonize_subject_name(database)
+    
+    # SEGMENTATION
+    
+    steps_core.fetch_dl_models(database)
+    steps_internal.fetch_kidney_masks(database)
+    steps_core.segment_kidneys(database)
+    steps_internal.export_segmentations_folder_volumetry_1
 
-    # MAPPING
-
-    steps_internal.map_post_contrast_fat_dominant(database)
-
-    # ALIGNMENT
-
-    steps_internal.export_project_post_contrast_in_out_Dixon_to_AI(database,subject_ID)
-    #steps_internal.export_project_post_Dixon_whole_kidney_only_segmentations_as_png(database)
+    upload_folder_to_drive( os.path.join(database.path() + '_output',database.PatientName), '1-UQX4KIVnMPKHRtVQAixNY2EgqVecZ_I')

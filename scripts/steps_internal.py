@@ -95,6 +95,17 @@ def export_project_post_Dixon_whole_kidney_only_segmentations_as_png(database):
 
     database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
+def export_segmentations_folder_volumetry_1(database):
+    start_time = time.time()
+    database.log("Export kidney segmentations has started")
+    try:
+        export.kidney_masks_as_dicom_folder_1(database)
+        export.kidney_masks_as_png_folder_1(database)
+        database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+
 ## MODEL-DRIVEN MOTION CORRECTION
 
 def mdreg_t1_t2(database):
@@ -110,6 +121,29 @@ def mdreg_t1_t2(database):
     
 ## MAPPING
 
+def map_post_contrast_fat_dominant(database):
+    start_time = time.time()
+    print('Starting fat dominant mapping')
+    database.log("Fat dominant mapping has started")
+    try:
+        mapping.Dixon_post_contrast_fat_dominant(database)
+        database.log("Fat dominant was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("Fat dominant was NOT completed; error: "+str(e))
+        database.restore()
+
+def map_fat_dominant(database):
+    start_time = time.time()
+    print('Starting fat dominant mapping')
+    database.log("Fat dominant mapping has started")
+    try:
+        mapping.Dixon_fat_dominant(database)
+        database.log("Fat dominant was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e: 
+        database.log("Fat dominant was NOT completed; error: "+str(e))
+        database.restore()
 
 def map_T1_from_T1_T2_mdr(database):
     start_time = time.time()
