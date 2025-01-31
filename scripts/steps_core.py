@@ -1,7 +1,7 @@
 import time
 from pipelines import (
     fetch_AI_model,
-    fetch_Drive_masks,
+    fetch_Drive_mask,
     segment, 
     measure, 
     export, 
@@ -133,7 +133,7 @@ def fetch_kidney_masks(database):
     start_time = time.time()
     database.log("Fetching kidney masks has started")
     try:
-        fetch_Drive_masks.kidney_masks(database)
+        fetch_Drive_mask.kidney_masks(database)
         database.log("Fetching kidney masks was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("Fetching kidney masks was NOT completed; error: "+str(e))
