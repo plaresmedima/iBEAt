@@ -144,7 +144,7 @@ def pc_right(database):
             vel = series.copy(SeriesDescription=d[:-11] + 'velocity')
             vel.set_pixel_values(velocity, dims='TriggerTime')
 
-def subject_name(database,dataset):
+def subject_name_internal(database,dataset):
 
     series_list = database.series()
     subject_name = series_list[0]['PatientID']
@@ -183,6 +183,32 @@ def subject_name(database,dataset):
             database.save()
             return
 
+def subject_name(database):
+
+    series_list = database.series()
+    subject_name = series_list[0]['PatientID']
+    if len(subject_name) != 7 or subject_name[4] != "_":
+
+        correct_name = standardize_subject_name.subject_hifen(subject_name)
+        #print(correct_name)
+        if correct_name != 0:
+            database.PatientName = correct_name
+            database.save()
+            return
+
+        correct_name = standardize_subject_name.subject_underscore(subject_name)
+        print(correct_name)
+        if correct_name != 0:
+            database.PatientName = correct_name
+            database.save()
+            return
+        
+        correct_name = standardize_subject_name.subject_seven_digitd(subject_name)
+        print(correct_name)
+        if correct_name != 0:
+            database.PatientName = correct_name
+            database.save()
+            return
 
 def all_series(database):
 

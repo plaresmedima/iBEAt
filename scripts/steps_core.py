@@ -104,11 +104,11 @@ def harmonize_dce(database):
         database.log("Harmonizing DCE series was NOT completed; error: " + str(e)) 
         database.restore()
 
-def harmonize_subject_name(database,dataset):
+def harmonize_subject_name(database):
     start_time = time.time()
     database.log("Harmonizing subject name has started!")
     try:
-        harmonize.subject_name(database,dataset)
+        harmonize.subject_name(database)
         database.log("Harmonizing subject name was completed --- %s seconds ---" % (int(time.time() - start_time)))
         database.save()
     except Exception as e:
