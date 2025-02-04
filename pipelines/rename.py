@@ -62,6 +62,7 @@ def check(database):
         list_of_series_description.append(series['SeriesDescription'])
     
     # Loop through the rows and update the second column based on the condition
+    dims = ['AcquisitionTime']
     for index, row in df.iterrows():
         if row['MRI Sequence'] in list_of_series_description:
             df.at[index, 'Checked'] = 1
@@ -84,18 +85,18 @@ def check(database):
 
             if row['MRI Sequence'] == 'PC_right_delta_magnitude':
                 series = database.series(SeriesDescription='PC_right_delta_magnitude')
-                if series[0]['XXXXX'] == 2.57:
+                if series[0]['EchoTime'] == 2.74:
                     continue
                 else:
-                    df.at[index, 'Notes'] = 'XXXXX = ' + str(series[0]['XXXXX'])
+                    df.at[index, 'Notes'] = 'Echo time (2.74ms) = ' + str(series[0]['EchoTime'])
                     df.at[index, 'Checked'] = 2        
 
             if row['MRI Sequence'] == 'PC_left_delta_magnitude':
                 series = database.series(SeriesDescription='PC_left_delta_magnitude')
-                if series[0]['XXXXX'] == 2.57:
+                if series[0]['EchoTime'] == 2.74:
                     continue
                 else:
-                    df.at[index, 'Notes'] = 'XXXXX = ' + str(series[0]['XXXXX'])
+                    df.at[index, 'Notes'] = 'Echo time (2.74ms) = ' + str(series[0]['XXXXX'])
                     df.at[index, 'Checked'] = 2        
 
             if row['MRI Sequence'] == 'T2starm_pancreas_magnitude':
@@ -109,24 +110,62 @@ def check(database):
 
             if row['MRI Sequence'] == 'T1w_magnitude':
                 series = database.series(SeriesDescription='T1w_magnitude')
-                if series[0]['InversionTime'] == 12:
+                if series[0]['EchoTime'] == 4.92:
                     df.at[index, 'Notes'] = 'Correct'
                     continue
                 else:
-                    df.at[index, 'Notes'] = 'Inversion time (12) = ' + str(series[0]['InversionTime'])
+                    df.at[index, 'Notes'] = 'Echo time (4.92) = ' + str(series[0]['EchoTime'])
+                    df.at[index, 'Checked'] = 2
+
+            if row['MRI Sequence'] == 'T1m_magnitude':
+                series = database.series(SeriesDescription='T1m_magnitude')
+                InversionTimes = series[0].values('InversionTime', dims=dims)
+                if len(InversionTimes) > 28:
+                    df.at[index, 'Notes'] = 'Correct'
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'Number of inversion times (< 28) = ' + str(len(InversionTimes))
+                    df.at[index, 'Checked'] = 2
+
+            if row['MRI Sequence'] == 'T2m_magnitude':
+                series = database.series(SeriesDescription='T2m_magnitude')
+                AcquisitiomTimes = series[0].values('AcquisitionTimes', dims=dims)
+                if len(AcquisitiomTimes) == 55:
+                    df.at[index, 'Notes'] = 'Correct'
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'Number of scans seems wrong (50) = ' + str(len(AcquisitiomTimes))
                     df.at[index, 'Checked'] = 2
 
             if row['MRI Sequence'] == 'T2starm_magnitude':
                 series = database.series(SeriesDescription='T2starm_magnitude')
-                if series[0]['EchoTrainLength'] == 13:
+                if series[0]['EchoTrainLength'] == 12:
                     df.at[index, 'Notes'] = 'Correct'
                     continue
                 else:
                     df.at[index, 'Notes'] = 'Echo train length (12) = ' + str(series[0]['EchoTrainLength'])
                     df.at[index, 'Checked'] = 2
 
+            if row['MRI Sequence'] == 'IVIM':
+                series = database.series(SeriesDescription='IVIM')
+                bvals = series[0].values('DiffusionBValue', dims=['SliceLocation', 'InstanceNumber'])
 
-                
+                if bvals.shape[0] == 30:
+                    df.at[index, 'Notes'] = 'Correct'
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'b-values length (12) = ' + str(len(bvals))
+                    df.at[index, 'Checked'] = 2
+
+            if row['MRI Sequence'] == 'DTI':
+                series = database.series(SeriesDescription='DTI')
+                bvecs = series[0].values('DiffusionGradientOrientation', dims=['SliceLocation', 'InstanceNumber'])
+                if bvecs.shape[1] == 146:
+                    df.at[index, 'Notes'] = 'Correct'
+                    continue
+                else:
+                    df.at[index, 'Notes'] = 'Number of diffusion directions (144) = ' + str(len(bvecs))
+                    df.at[index, 'Checked'] = 2               
 
     def color_rule(val):
         return ['background-color: red' if x == 0 else 'background-color: orange' if x == 2 else 'background-color: green' for x in val]
@@ -392,6 +431,15 @@ def Siemens_rename(series):
     if SeqName == '*fl3d2': 
         return 'Dixon'
 
+def GE_rename(series): 
+    """
+    The sequence names in Leeds have been removed by the anonymisation
+    procedure and must be recovered from other attributes
+    """
+    SeqName = series["SequenceName"]
+
+    if SeqName is None:
+        return
 
 def all_series(folder):
 
@@ -428,8 +476,14 @@ def all_series(folder):
             elif imDescription == 'ASL' and ASL_count == 4:
                 series.SeriesDescription = imDescription + '_label0_moco'
                 ASL_count = 0
-        else:
+        elif Manufacturer == 'Philips':
             imDescription = Philips_rename(series)
+            if imDescription is None:
+                continue
+            series.SeriesDescription = imDescription
+
+        elif Manufacturer == 'GE':
+            imDescription = GE_rename(series)
             if imDescription is None:
                 continue
             series.SeriesDescription = imDescription

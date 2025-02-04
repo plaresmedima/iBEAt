@@ -1,7 +1,8 @@
 import time
 from pipelines import (
+    fetch_AI_model,
+    fetch_Drive_mask,
     segment, 
-    fetch, 
     measure, 
     export, 
     rename, 
@@ -15,8 +16,6 @@ from pipelines import (
 
 
 ## HARMONIZATION
-
-
 
 def rename_all_series(database):
     start_time = time.time()
@@ -59,17 +58,6 @@ def harmonize_t2(database):
         database.save()
     except Exception as e:
         database.log("Harmonizing T2 series was NOT completed; error: " + str(e)) 
-        database.restore()
-
-def harmonize_t1_t2(database):
-    start_time = time.time()
-    database.log("Harmonizing T1 and T2 series (merged) has started!")
-    try:
-        harmonize.t1_t2_merge(database)
-        database.log("Harmonizing T1 and T2 series (merged) was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e:
-        database.log("Harmonizing T1 and T2 series (merged) was NOT completed; error: " + str(e)) 
         database.restore()
 
 def harmonize_mt(database):
@@ -130,25 +118,25 @@ def harmonize_subject_name(database):
 
 ## SEGMENTATION
 
-def fetch_kidney_masks(database):
-    start_time = time.time()
-    database.log("Fetching kidney masks has started")
-    try:
-        fetch.kidney_masks(database)
-        database.log("Fetching kidney masks was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e:
-        database.log("Fetching kidney masks was NOT completed; error: "+str(e))
-        database.restore()
 
 def fetch_dl_models(database):
     start_time = time.time()
     database.log("Fetching deep-learning models has started")
     try:
-        fetch.dl_models(database)
+        fetch_AI_model.dl_models(database)
         database.log("Fetching deep-learning models was completed --- %s seconds ---" % (int(time.time() - start_time)))
     except Exception as e:
         database.log("Fetching deep-learning models was NOT completed; error: "+str(e))
+        database.restore()
+
+def fetch_kidney_masks(database):
+    start_time = time.time()
+    database.log("Fetching kidney masks has started")
+    try:
+        fetch_Drive_mask.kidney_masks(database)
+        database.log("Fetching kidney masks was completed --- %s seconds ---" % (int(time.time() - start_time)))
+    except Exception as e:
+        database.log("Fetching kidney masks was NOT completed; error: "+str(e))
         database.restore()
 
 
@@ -223,18 +211,6 @@ def segment_right_renal_artery(database):
         database.restore()
 
 
-def compute_whole_kidney_canvas(database):
-    start_time = time.time()
-    database.log('Starting computing canvas')
-    try:
-        segment.compute_whole_kidney_canvas(database)
-        database.log("Computing canvas was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e: 
-        database.log("Computing canvas was NOT computed; error: "+str(e))
-        database.restore()
-
-
 # Set up exports as individual steps
 def export_segmentations(database):
     start_time = time.time()
@@ -249,7 +225,30 @@ def export_segmentations(database):
     except Exception as e:
         database.log("Export kidney segmentations was NOT completed; error: "+str(e))
 
+def export_COR_MED_segmentations(database):
+    start_time = time.time()
+    database.log("Export kidney segmentations has started")
 
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RK', LK_mask = 'LK',mask_name = 'Whole Kidney_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+    try:
+        export.aif_as_png(database)
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RKM', LK_mask = 'LKM',mask_name = 'Medulla_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    try:
+        export.kidney_masks_as_png(database,backgroud_series = 'Dixon_post_contrast_out_phase',RK_mask = 'RKC', LK_mask = 'LKC', mask_name = 'Cortex_masks')
+    except Exception as e:
+        database.log("Export kidney segmentations was NOT completed; error: "+str(e))
+
+    database.log("Export kidney segmentations was completed --- %s seconds ---" % (int(time.time() - start_time)))
 
 ## MODEL-DRIVEN MOTION CORRECTION
 
@@ -337,16 +336,6 @@ def mdreg_dce(database):
         database.log("Model-driven registration for DCE was NOT completed; error: "+str(e))
         database.restore()
 
-def mdreg_t1_t2(database):
-    start_time = time.time()
-    database.log("Model-driven registration for T1 T2 has started")
-    try:
-        mdr.T1_T2(database)
-        database.log("Model-driven registration for T1 T2 was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e:
-        database.log("Model-driven registration for T1 T2 was NOT completed; error: "+str(e))
-        database.restore()
 
 def export_mdreg(database):
     start_time = time.time()
@@ -371,30 +360,6 @@ def map_T1(database):
         database.save()
     except Exception as e: 
         database.log("T1 mapping was NOT completed; error: "+str(e))
-        database.restore()
-
-def map_T1_from_T1_T2_mdr(database):
-    start_time = time.time()
-    print('Starting T1 mapping from T1_T2 MDR')
-    database.log("T1 mapping from T1_T2 MDR has started")
-    try:
-        mapping.T1_from_T1_T2_mdr(database)
-        database.log("T1 mapping from T1_T2 MDR was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e: 
-        database.log("T1 mapping from T1_T2 MDR was NOT completed; error: "+str(e))
-        database.restore()
-
-def map_T2_from_T1_T2_mdr(database):
-    start_time = time.time()
-    print('Starting T2 mapping from T1_T2 MDR')
-    database.log("T2 mapping from T1_T2 MDR has started")
-    try:
-        mapping.T2_from_T1_T2_mdr(database)
-        database.log("T2 mapping from T1_T2 MDR was completed --- %s seconds ---" % (int(time.time() - start_time)))
-        database.save()
-    except Exception as e: 
-        database.log("T2 mapping from T1_T2 MDR was NOT completed; error: "+str(e))
         database.restore()
 
 
@@ -610,14 +575,8 @@ def export_alignment(database):
         database.log("Export alignment was NOT completed; error: "+str(e))
         database.restore()
 
-
-
-
-
 ## MEASURE
         
-
-
 def measure_kidney_volumetrics(database):
     start_time = time.time()
     database.log("Kidney volumetrics has started")

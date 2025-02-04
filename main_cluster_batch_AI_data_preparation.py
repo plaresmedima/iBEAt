@@ -8,7 +8,7 @@ Download XNAT dataset -> Name Standardization ->    Execute MDR   -> Custom Modd
 TO RUN THE SCRIPT YOU USE: python main_cluster.py --num n (WHERE n is an integer with the value of the XNAT dataset)
 """
 import argparse
-from scripts.project_prepare_t2s import single_subject
+from scripts.project_prepare_pre_Dixon_AI import single_subject
 import utilities.XNAT_credentials as XNAT_cred
 import os
 
@@ -16,11 +16,12 @@ if __name__ == '__main__':
 
     #XNAT Credentials
     username, password = XNAT_cred.main()
-    
+
     path = "//mnt//fastdata//" + username + "//<insert project name>" #CLUSTER PATH TO SAVE DATA, ADD YOUR LOCAL PATH IF YOU WANT TO RUN IT LOCALLY
+
     if not os.path.exists(path):
         os.mkdir(path)
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--num',
                         dest='num',
@@ -31,7 +32,7 @@ if __name__ == '__main__':
 
     #SELECT YOUR DATASET
     #dataset = [site, study, dataset]
-    dataset = [2,1,args.num]
+    dataset = [6,1,args.num]
 
     ################################################# EXAMPLE DATASET SELECTION #############################################################
     #DATASET CODE FOR LEEDS
@@ -43,6 +44,15 @@ if __name__ == '__main__':
     #->6: BEAt-DKD-WP4-Leeds          3: Leeds_RAVE_Reconstructions                       ..........
     #  7: BEAt-DKD-WP4-Sheffield      4: Leeds_setup_scans                      ->14: Leeds_Patient_4128015
     #########################################################################################################################################
+    offset = 0
+    
+    ID_num      = str(args.num + offset)
+    if len(ID_num) == 1:
+        ID_num = '00' + ID_num
+    
+    if len(ID_num) == 2:
+        ID_num = '0' + ID_num
+        
+    subject_ID = ID_num
 
-    single_subject(username, password, path, dataset)
-
+    single_subject(username, password, path, dataset,subject_ID=subject_ID)

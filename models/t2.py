@@ -23,7 +23,7 @@ class MonoExpOffset(Model):
     def signal(self,TE,S0,T2,C):
         if T2==0:
             return TE*0
-        return np.sqrt((S0*np.exp(-TE/T2))**2 + ((S0*C)**2)) 
+        return S0*np.sqrt((np.exp(-TE/T2))**2 + C**2) 
        
 
 class MonoExp(Model):
