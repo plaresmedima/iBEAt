@@ -117,7 +117,7 @@ def fetch_kidney_masks(app):
 
 def segment_kidneys(app):
     database = app.database()
-    kidneys = segment.kidneys(database, weights)
+    kidneys = segment.kidneys(database)
     for kidney in kidneys:
         app.addWidget(SurfaceDisplay(kidney), title=kidney.label())
     app.refresh()
