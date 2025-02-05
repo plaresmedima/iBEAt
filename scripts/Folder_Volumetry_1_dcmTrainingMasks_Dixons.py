@@ -34,15 +34,15 @@ def single_subject(username, password, path, dataset):
     
     # HARMONIZATION
 
-    steps_core.rename_all_series(database)
-    steps_core.harmonize_dce(database)
-    steps_core.harmonize_subject_name(database)
+    # steps_core.rename_all_series(database)
+    # steps_core.harmonize_dce(database)
+    # steps_internal.harmonize_subject_name(database,dataset)
     
     # SEGMENTATION
     
-    steps_core.fetch_dl_models(database)
-    steps_internal.fetch_kidney_masks(database)
-    steps_core.segment_kidneys(database)
-    steps_internal.export_segmentations_folder_volumetry_1
+    # steps_core.fetch_dl_models(database)
+    # steps_internal.fetch_kidney_masks(database)
+    # steps_core.segment_kidneys(database)
+    steps_internal.export_segmentations_folder_volumetry_1(database)
 
     upload_folder_to_drive( os.path.join(database.path() + '_output',database.PatientName), '1-UQX4KIVnMPKHRtVQAixNY2EgqVecZ_I')

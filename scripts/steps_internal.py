@@ -22,6 +22,16 @@ def harmonize_t1_t2(database):
         database.log("Harmonizing T1 and T2 series (merged) was NOT completed; error: " + str(e)) 
         database.restore()
 
+def harmonize_subject_name(database,dataset):
+    start_time = time.time()
+    database.log("Harmonizing subject name has started!")
+    try:
+        harmonize.subject_name_internal(database,dataset)
+        database.log("Harmonizing subject name was completed --- %s seconds ---" % (int(time.time() - start_time)))
+        database.save()
+    except Exception as e:
+        database.log("Harmonizing subject name was NOT completed; error: " + str(e)) 
+        database.restore()
 
 ## SEGMENTATION
 

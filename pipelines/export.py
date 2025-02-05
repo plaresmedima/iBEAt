@@ -48,7 +48,7 @@ def kidney_masks_as_dicom_folder_1(folder):
     if not os.path.exists(results_path):
         os.mkdir(results_path)
 
-    fat_desc = 'Dixon_post_contrast_fat_' 
+    fat_desc = 'Dixon_post_contrast_fat' 
     out_desc = 'Dixon_post_contrast_out_phase'
     in_desc = 'Dixon_post_contrast_in_phase'
     water_desc = 'Dixon_post_contrast_water'
